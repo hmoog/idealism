@@ -3,16 +3,16 @@ use std::sync::{Arc, Mutex};
 use utils::rx::{Callback, Callbacks, Countdown, Event, ResourceGuard, Subscription};
 use crate::block_metadata::BlockMetadata;
 use crate::block_address::BlockAddress;
-use crate::traits;
+use crate::block;
 
-pub struct BlockDAG<Block: traits::Block>(Arc<BlockDAGData<Block>>);
+pub struct BlockDAG<Block: block::Block>(Arc<BlockDAGData<Block>>);
 
-struct BlockDAGData<Block: traits::Block> {
+struct BlockDAGData<Block: block::Block> {
     blocks: Mutex<HashMap<Block::ID, BlockAddress<Block>>>,
     ready_event: Event<ResourceGuard<BlockMetadata<Block>>>,
 }
 
-impl<Block: traits::Block> BlockDAG<Block> {
+impl<Block: block::Block> BlockDAG<Block> {
     pub fn new() -> Self {
         Self(Arc::new(BlockDAGData {
             blocks: Mutex::new(HashMap::new()),
@@ -67,13 +67,13 @@ impl<Block: traits::Block> BlockDAG<Block> {
     }
 }
 
-impl<Block: traits::Block> Default for BlockDAG<Block> {
+impl<Block: block::Block> Default for BlockDAG<Block> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl <Block: traits::Block> Clone for BlockDAG<Block> {
+impl <Block: block::Block> Clone for BlockDAG<Block> {
     fn clone(&self) -> Self {
         Self(Arc::clone(&self.0))
     }

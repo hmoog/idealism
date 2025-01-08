@@ -1,17 +1,17 @@
 use std::ops::Deref;
 use std::sync::{Arc, Mutex, Weak};
 use utils::rx::{CallbackOnce, CallbacksOnce, Signal, Subscription};
-use crate::traits;
+use crate::block;
 
-pub struct BlockMetadata<Block: traits::Block>(Arc<Inner<Block>>);
+pub struct BlockMetadata<Block: block::Block>(Arc<Inner<Block>>);
 
-struct Inner<Block: traits::Block> {
+struct Inner<Block: block::Block> {
     parents: Mutex<Vec<BlockMetadataRef<Block>>>,
     processed: Signal<()>,
     block: Arc<Block>,
 }
 
-impl<Block: traits::Block> BlockMetadata<Block> {
+impl<Block: block::Block> BlockMetadata<Block> {
     pub fn new(block: Block) -> Self {
         Self(Arc::new(Inner {
             parents: Mutex::new(vec![BlockMetadataRef::new(); block.parents().len()]),
@@ -43,7 +43,7 @@ impl<Block: traits::Block> BlockMetadata<Block> {
     }
 }
 
-impl<Block: traits::Block> Deref for BlockMetadata<Block> {
+impl<Block: block::Block> Deref for BlockMetadata<Block> {
     type Target = Block;
 
     fn deref(&self) -> &Self::Target {
@@ -51,15 +51,15 @@ impl<Block: traits::Block> Deref for BlockMetadata<Block> {
     }
 }
 
-impl <Block: traits::Block> Clone for BlockMetadata<Block> {
+impl <Block: block::Block> Clone for BlockMetadata<Block> {
     fn clone(&self) -> Self {
         Self(Arc::clone(&self.0))
     }
 }
 
-pub struct BlockMetadataRef<Block: traits::Block>(Weak<Inner<Block>>);
+pub struct BlockMetadataRef<Block: block::Block>(Weak<Inner<Block>>);
 
-impl<Block: traits::Block> BlockMetadataRef<Block> {
+impl<Block: block::Block> BlockMetadataRef<Block> {
     pub fn new() -> Self {
         Self(Weak::new())
     }
@@ -69,13 +69,13 @@ impl<Block: traits::Block> BlockMetadataRef<Block> {
     }
 }
 
-impl<Block: traits::Block> Default for BlockMetadataRef<Block> {
+impl<Block: block::Block> Default for BlockMetadataRef<Block> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<Block: traits::Block> Clone for BlockMetadataRef<Block> {
+impl<Block: block::Block> Clone for BlockMetadataRef<Block> {
     fn clone(&self) -> Self {
         Self(Weak::clone(&self.0))
     }
