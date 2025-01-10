@@ -18,11 +18,15 @@ impl<T: CommitteeMemberID> VotesByIssuer<T> {
         self.0.entry(issuer.clone()).or_insert_with(Votes::new)
     }
 
+    pub fn retain<F: FnMut(&ArcKey<T>, &mut Votes<T>) -> bool>(&mut self, f: F) {
+        self.0.retain(f);
+    }
+
     fn issuers_with_round(&self, round: u64) -> usize {
         self.0.values().filter(|votes| votes.any_round() == round).count()
     }
 
-    fn collect_from(&mut self, source: &VotesByIssuer<T>) -> bool {
+    pub(crate) fn collect_from(&mut self, source: &VotesByIssuer<T>) -> bool {
         let mut updated = false;
         for (issuer, source_votes) in source {
             let target_votes = self.fetch(issuer);
