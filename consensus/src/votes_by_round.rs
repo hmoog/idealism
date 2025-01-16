@@ -44,7 +44,7 @@ impl<T: CommitteeMemberID> From<&VotesByIssuer<T>> for VotesByRound<T> {
             votes_by_round
                 .fetch(votes.any_round())
                 .fetch(issuer)
-                .extend(votes.iter().cloned());
+                .extend(votes.clone());
             votes_by_round
         })
     }

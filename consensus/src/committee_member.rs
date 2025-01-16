@@ -54,8 +54,8 @@ impl<T: CommitteeMemberID> CommitteeMember<T> {
         false
     }
 
-    pub(crate) fn key(&self) -> ArcKey<T> {
-        self.id.clone()
+    pub(crate) fn key(&self) -> &ArcKey<T> {
+        &self.id
     }
 }
 

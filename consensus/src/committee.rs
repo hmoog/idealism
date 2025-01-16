@@ -3,16 +3,19 @@ use std::sync::Arc;
 use utils::ArcKey;
 use crate::committee_member::CommitteeMember;
 use crate::committee_member_id::CommitteeMemberID;
+use crate::config::Config;
+use crate::error::Error;
+use crate::votes_by_issuer::VotesByIssuer;
 
-pub struct Committee<T: CommitteeMemberID>(Arc<CommitteeData<T>>);
+pub struct Committee<T: Config>(Arc<CommitteeData<T>>);
 
-struct CommitteeData<T: CommitteeMemberID> {
-    members_by_id: Arc<HashMap<ArcKey<T>, Arc<CommitteeMember<T>>>>,
+struct CommitteeData<T: Config> {
+    members_by_id: Arc<HashMap<ArcKey<T>, Arc<CommitteeMember<T::CommitteeMemberID>>>>,
     total_weight: u64,
     online_weight: u64,
 }
 
-impl <T> Clone for CommitteeData<T> where T: CommitteeMemberID {
+impl <T> Clone for CommitteeData<T> where T: Config {
     fn clone(&self) -> Self {
         Self {
             members_by_id: self.members_by_id.clone(),
@@ -22,13 +25,58 @@ impl <T> Clone for CommitteeData<T> where T: CommitteeMemberID {
     }
 }
 
-impl <T: CommitteeMemberID> Committee<T> {
+impl <T: Config> Committee<T> {
+    pub fn iter(&self) -> impl Iterator<Item = &CommitteeMember<T>> {
+        self.0.members_by_id.values().map(|member| &**member)
+    }
+
+    pub fn byzantine_threshold_for_acceptance(&self) -> u64 {
+        self.online_weight() / 3
+    }
+
+    pub fn byzantine_threshold_for_confirmation(&self) -> u64 {
+        self.total_weight() / 3
+    }
+
+    pub fn acceptance_threshold(&self) -> u64 {
+        self.online_weight() - self.byzantine_threshold_for_acceptance()
+    }
+
+    pub fn confirmation_threshold(&self) -> u64 {
+        self.total_weight() - self.byzantine_threshold_for_confirmation()
+    }
+
+    pub fn referenced_round_weight(&self, votes: &VotesByIssuer<T>) -> Result<u64, Error> {
+        let mut latest_round = 0;
+        let mut referenced_round_weight = 0;
+
+        for (issuer, votes) in votes {
+            if let Some(member) = self.0.members_by_id.get(issuer) {
+                if let Some(vote_ref) = votes.first() {
+                    let vote = vote_ref.as_vote()?;
+                    if vote.round() > latest_round {
+                        latest_round = vote.round();
+                        referenced_round_weight = member.weight();
+                    } else if vote.round() == latest_round {
+                        referenced_round_weight += member.weight();
+                    }
+                }
+            }
+        }
+
+        Ok(referenced_round_weight)
+    }
+
     pub fn total_weight(&self) -> u64 {
         self.0.total_weight
     }
 
     pub fn online_weight(&self) -> u64 {
         self.0.online_weight
+    }
+
+    pub fn member(&self, member_id: &ArcKey<T>) -> Option<&CommitteeMember<T>> {
+        self.0.members_by_id.get(member_id).map(|member| &**member)
     }
 
     pub fn member_weight(&self, member_id: &ArcKey<T>) -> u64 {
@@ -79,7 +127,7 @@ impl<ID: CommitteeMemberID, T: IntoIterator<Item = CommitteeMember<ID>>> From<T>
                 } else {
                     online_weight
                 };
-                map.insert(member.key(), Arc::new(member));
+                map.insert(member.key().clone(), Arc::new(member));
                 (map, updated_weight, updated_online_weight)
             },
         );
@@ -93,7 +141,7 @@ impl<ID: CommitteeMemberID, T: IntoIterator<Item = CommitteeMember<ID>>> From<T>
 }
 
 
-impl<T: CommitteeMemberID> Clone for Committee<T> {
+impl<T: Config> Clone for Committee<T> {
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
