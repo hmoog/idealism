@@ -3,6 +3,7 @@ use crate::committee_member_id::CommitteeMemberID;
 
 pub struct CommitteeMember<T: CommitteeMemberID> {
     id: ArcKey<T>,
+    index: u64,
     weight: u64,
     online: bool,
 }
@@ -11,9 +12,15 @@ impl<T: CommitteeMemberID> CommitteeMember<T> {
     pub fn new(id: T) -> Self {
         Self {
             id: ArcKey::new(id),
+            index: 0,
             weight: 1,
             online: true,
         }
+    }
+
+    pub fn with_index(mut self, index: u64) -> Self {
+        self.index = index;
+        self
     }
 
     pub fn with_weight(mut self, weight: u64) -> Self {
@@ -28,6 +35,10 @@ impl<T: CommitteeMemberID> CommitteeMember<T> {
 
     pub fn id(&self) -> &T {
         &self.id
+    }
+
+    pub fn index(&self) -> u64 {
+        self.index
     }
 
     pub fn weight(&self) -> u64 {
@@ -63,6 +74,7 @@ impl <T: CommitteeMemberID> Clone for CommitteeMember<T> {
     fn clone(&self) -> Self {
         Self {
             id: self.id.clone(),
+            index: self.index,
             weight: self.weight,
             online: self.online,
         }

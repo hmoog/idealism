@@ -1,34 +1,34 @@
 use std::collections::HashMap;
 use utils::ArcKey;
-use crate::committee_member_id::CommitteeMemberID;
+use crate::config::Config;
 use crate::vote_refs::VoteRefs;
 
-pub struct VotesByIssuer<ID: CommitteeMemberID>(HashMap<ArcKey<ID>, VoteRefs<ID>>);
+pub struct VotesByIssuer<ID: Config>(HashMap<ArcKey<ID::CommitteeMemberID>, VoteRefs<ID>>);
 
-impl<T: CommitteeMemberID> FromIterator<(ArcKey<T>, VoteRefs<T>)> for VotesByIssuer<T> {
-    fn from_iter<I: IntoIterator<Item=(ArcKey<T>, VoteRefs<T>)>>(iter: I) -> Self {
+impl<T: Config> FromIterator<(ArcKey<T::CommitteeMemberID>, VoteRefs<T>)> for VotesByIssuer<T> {
+    fn from_iter<I: IntoIterator<Item=(ArcKey<T::CommitteeMemberID>, VoteRefs<T>)>>(iter: I) -> Self {
         Self(iter.into_iter().collect())
     }
 }
 
-impl<T: CommitteeMemberID> VotesByIssuer<T> {
+impl<T: Config> VotesByIssuer<T> {
     pub fn new() -> Self {
         Self(HashMap::new())
     }
 
-    pub fn insert(&mut self, issuer: ArcKey<T>, vote: VoteRefs<T>) -> Option<VoteRefs<T>> {
+    pub fn insert(&mut self, issuer: ArcKey<T::CommitteeMemberID>, vote: VoteRefs<T>) -> Option<VoteRefs<T>> {
         self.0.insert(issuer, vote)
     }
 
-    pub fn iter(&self) -> std::collections::hash_map::Iter<ArcKey<T>, VoteRefs<T>> {
+    pub fn iter(&self) -> std::collections::hash_map::Iter<ArcKey<T::CommitteeMemberID>, VoteRefs<T>> {
         self.0.iter()
     }
 
-    pub fn fetch(&mut self, issuer: &ArcKey<T>) -> &mut VoteRefs<T> {
-        self.0.entry(issuer.clone()).or_insert_with(VoteRefs::default)
+    pub fn fetch(&mut self, issuer: &ArcKey<T::CommitteeMemberID>) -> &mut VoteRefs<T> {
+        self.0.entry(issuer.clone()).or_default()
     }
 
-    pub fn retain<F: FnMut(&ArcKey<T>, &mut VoteRefs<T>) -> bool>(&mut self, f: F) {
+    pub fn retain<F: FnMut(&ArcKey<T::CommitteeMemberID>, &mut VoteRefs<T>) -> bool>(&mut self, f: F) {
         self.0.retain(f);
     }
 
@@ -59,18 +59,24 @@ impl<T: CommitteeMemberID> VotesByIssuer<T> {
     }
 }
 
-impl<T: CommitteeMemberID> IntoIterator for VotesByIssuer<T> {
-    type Item = (ArcKey<T>, VoteRefs<T>);
-    type IntoIter = std::collections::hash_map::IntoIter<ArcKey<T>, VoteRefs<T>>;
+impl<T: Config> Default for VotesByIssuer<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<T: Config> IntoIterator for VotesByIssuer<T> {
+    type Item = (ArcKey<T::CommitteeMemberID>, VoteRefs<T>);
+    type IntoIter = std::collections::hash_map::IntoIter<ArcKey<T::CommitteeMemberID>, VoteRefs<T>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
     }
 }
 
-impl<'a, T: CommitteeMemberID> IntoIterator for &'a VotesByIssuer<T> {
-    type Item = (&'a ArcKey<T>, &'a VoteRefs<T>);
-    type IntoIter = std::collections::hash_map::Iter<'a, ArcKey<T>, VoteRefs<T>>;
+impl<'a, T: Config> IntoIterator for &'a VotesByIssuer<T> {
+    type Item = (&'a ArcKey<T::CommitteeMemberID>, &'a VoteRefs<T>);
+    type IntoIter = std::collections::hash_map::Iter<'a, ArcKey<T::CommitteeMemberID>, VoteRefs<T>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.iter()

@@ -1,11 +1,11 @@
 use std::collections::HashSet;
 use std::ops::{Deref, DerefMut};
-use crate::committee_member_id::CommitteeMemberID;
+use crate::config::Config;
 use crate::vote::Vote;
 
-pub struct Votes<T: CommitteeMemberID>(HashSet<Vote<T>>);
+pub struct Votes<T: Config>(HashSet<Vote<T>>);
 
-impl<T: CommitteeMemberID> Votes<T> {
+impl<T: Config> Votes<T> {
     pub fn new<const N: usize>(values: [Vote<T>; N]) -> Self {
         Votes(values.into_iter().collect())
     }
@@ -19,19 +19,19 @@ impl<T: CommitteeMemberID> Votes<T> {
     }
 }
 
-impl<ID: CommitteeMemberID> Clone for Votes<ID> {
+impl<ID: Config> Clone for Votes<ID> {
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
 }
 
-impl<ID: CommitteeMemberID> Default for Votes<ID> {
+impl<ID: Config> Default for Votes<ID> {
     fn default() -> Self {
         Self(HashSet::new())
     }
 }
 
-impl<T: CommitteeMemberID> IntoIterator for Votes<T> {
+impl<T: Config> IntoIterator for Votes<T> {
     type Item = Vote<T>;
     type IntoIter = std::collections::hash_set::IntoIter<Vote<T>>;
 
@@ -40,7 +40,7 @@ impl<T: CommitteeMemberID> IntoIterator for Votes<T> {
     }
 }
 
-impl<'a, T: CommitteeMemberID> IntoIterator for &'a Votes<T> {
+impl<'a, T: Config> IntoIterator for &'a Votes<T> {
     type Item = &'a Vote<T>;
     type IntoIter = std::collections::hash_set::Iter<'a, Vote<T>>;
 
@@ -49,7 +49,7 @@ impl<'a, T: CommitteeMemberID> IntoIterator for &'a Votes<T> {
     }
 }
 
-impl<T: CommitteeMemberID> Deref for Votes<T> {
+impl<T: Config> Deref for Votes<T> {
     type Target = HashSet<Vote<T>>;
 
     fn deref(&self) -> &Self::Target {
@@ -57,7 +57,7 @@ impl<T: CommitteeMemberID> Deref for Votes<T> {
     }
 }
 
-impl<T: CommitteeMemberID> DerefMut for Votes<T> {
+impl<T: Config> DerefMut for Votes<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }

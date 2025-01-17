@@ -1,7 +1,7 @@
-use std::cmp::max;
+use std::cmp::{max, Ordering};
 use std::collections::{HashMap};
 use crate::committee::Committee;
-use crate::committee_member_id::CommitteeMemberID;
+use crate::config::Config;
 use crate::consensus::WalkResult::{LatestAcceptedMilestoneFound, PreviousRoundTargets};
 use crate::vote::Vote;
 use crate::vote_ref::VoteRef;
@@ -9,13 +9,13 @@ use crate::vote_refs::VoteRefs;
 use crate::votes_by_issuer::VotesByIssuer;
 use crate::votes_by_round::VotesByRound;
 
-pub(crate) struct ConsensusRound<ID: CommitteeMemberID> {
+pub(crate) struct ConsensusRound<ID: Config> {
     committee: Committee<ID>,
     children: HashMap<VoteRef<ID>, VoteRefs<ID>>,
     weights: HashMap<VoteRef<ID>, u64>,
 }
 
-impl<ID: CommitteeMemberID> ConsensusRound<ID> {
+impl<ID: Config> ConsensusRound<ID> {
     pub(crate) fn new(committee: Committee<ID>) -> Self {
         Self {
             committee,
@@ -70,19 +70,23 @@ impl<ID: CommitteeMemberID> ConsensusRound<ID> {
                 }
 
                 let issuer_weight = self.committee.member_weight(vote.issuer());
-                let updated_weight = self.add_weight(&vote.target(), issuer_weight);
+                let updated_weight = self.add_weight(vote.target(), issuer_weight);
 
-                if updated_weight > heaviest_weight {
-                    heaviest_vote = Some(target);
-                    heaviest_weight = updated_weight;
-                } else if updated_weight == heaviest_weight {
-                    heaviest_vote = max(heaviest_vote, Some(target));
+                match updated_weight.cmp(&heaviest_weight) {
+                    Ordering::Greater => {
+                        heaviest_vote = Some(target);
+                        heaviest_weight = updated_weight;
+                    }
+                    Ordering::Equal => {
+                        heaviest_vote = max(heaviest_vote, Some(target));
+                    }
+                    Ordering::Less => continue,
                 }
 
                 let targets = targets.fetch(issuer);
                 targets.insert(vote.target().clone());
 
-                let children = self.children.entry(vote.target().clone()).or_insert_with(VoteRefs::default);
+                let children = self.children.entry(vote.target().clone()).or_default();
                 children.insert(vote.downgrade());
             }
         }
@@ -105,7 +109,7 @@ impl<ID: CommitteeMemberID> ConsensusRound<ID> {
     }
 }
 
-enum WalkResult<ID: CommitteeMemberID> {
+enum WalkResult<ID: Config> {
     LatestAcceptedMilestoneFound(Vote<ID>),
     PreviousRoundTargets(VotesByIssuer<ID>),
 }

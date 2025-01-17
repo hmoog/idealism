@@ -1,16 +1,18 @@
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::sync::Arc;
 use utils::ArcKey;
 use crate::committee_member::CommitteeMember;
-use crate::committee_member_id::CommitteeMemberID;
 use crate::config::Config;
 use crate::error::Error;
 use crate::votes_by_issuer::VotesByIssuer;
 
+type CommitteeMembersByID<T> = HashMap<ArcKey<<T as Config>::CommitteeMemberID>, Arc<CommitteeMember<<T as Config>::CommitteeMemberID>>>;
+
 pub struct Committee<T: Config>(Arc<CommitteeData<T>>);
 
 struct CommitteeData<T: Config> {
-    members_by_id: Arc<HashMap<ArcKey<T>, Arc<CommitteeMember<T::CommitteeMemberID>>>>,
+    members_by_id: Arc<CommitteeMembersByID<T>>,
     total_weight: u64,
     online_weight: u64,
 }
@@ -26,7 +28,11 @@ impl <T> Clone for CommitteeData<T> where T: Config {
 }
 
 impl <T: Config> Committee<T> {
-    pub fn iter(&self) -> impl Iterator<Item = &CommitteeMember<T>> {
+    pub fn size(&self) -> u64 {
+        self.0.members_by_id.len() as u64
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &CommitteeMember<T::CommitteeMemberID>> {
         self.0.members_by_id.values().map(|member| &**member)
     }
 
@@ -54,11 +60,15 @@ impl <T: Config> Committee<T> {
             if let Some(member) = self.0.members_by_id.get(issuer) {
                 if let Some(vote_ref) = votes.first() {
                     let vote = vote_ref.as_vote()?;
-                    if vote.round() > latest_round {
-                        latest_round = vote.round();
-                        referenced_round_weight = member.weight();
-                    } else if vote.round() == latest_round {
-                        referenced_round_weight += member.weight();
+                    match vote.round().cmp(&latest_round) {
+                        Ordering::Greater => {
+                            latest_round = vote.round();
+                            referenced_round_weight = member.weight();
+                        }
+                        Ordering::Equal => {
+                            referenced_round_weight += member.weight();
+                        }
+                        Ordering::Less => continue,
                     }
                 }
             }
@@ -75,19 +85,19 @@ impl <T: Config> Committee<T> {
         self.0.online_weight
     }
 
-    pub fn member(&self, member_id: &ArcKey<T>) -> Option<&CommitteeMember<T>> {
+    pub fn member(&self, member_id: &ArcKey<T::CommitteeMemberID>) -> Option<&CommitteeMember<T::CommitteeMemberID>> {
         self.0.members_by_id.get(member_id).map(|member| &**member)
     }
 
-    pub fn member_weight(&self, member_id: &ArcKey<T>) -> u64 {
+    pub fn member_weight(&self, member_id: &ArcKey<T::CommitteeMemberID>) -> u64 {
         self.0.members_by_id.get(member_id).map(|member| member.weight()).unwrap_or(0)
     }
 
-    pub fn is_member_online(&self, member_id: &ArcKey<T>) -> bool {
+    pub fn is_member_online(&self, member_id: &ArcKey<T::CommitteeMemberID>) -> bool {
         self.0.members_by_id.get(member_id).map_or(false, |member| member.is_online())
     }
 
-    pub fn set_online(&self, member_id: &ArcKey<T>, online: bool) -> Self {
+    pub fn set_online(&self, member_id: &ArcKey<T::CommitteeMemberID>, online: bool) -> Self {
         let mut new_committee = Committee(self.0.clone());
 
         if let Some(member) = self.0.members_by_id.get(member_id) {
@@ -115,11 +125,12 @@ impl <T: Config> Committee<T> {
     }
 }
 
-impl<ID: CommitteeMemberID, T: IntoIterator<Item = CommitteeMember<ID>>> From<T> for Committee<ID> {
+impl<C: Config, T: IntoIterator<Item = CommitteeMember<C::CommitteeMemberID>>> From<T> for Committee<C> {
     fn from(members: T) -> Self {
         let (members_by_id, weight, online_weight) = members.into_iter().fold(
             (HashMap::new(), 0, 0),
             |(mut map, total_weight, online_weight), member| {
+                let member = member.with_index(map.len() as u64);
                 let member_weight = member.weight();
                 let updated_weight = total_weight + member_weight;
                 let updated_online_weight = if member.is_online() {
@@ -151,10 +162,11 @@ impl<T: Config> Clone for Committee<T> {
 mod test {
     use super::*;
     use crate::committee_member::CommitteeMember;
+    use crate::config::DefaultConfig;
 
     #[test]
     fn test_committee() {
-        let committee = Committee::from(vec![
+        let committee: Committee<DefaultConfig> = Committee::from(vec![
             CommitteeMember::new(1).with_weight(10).with_online(true),
             CommitteeMember::new(2).with_weight(20).with_online(false)
         ]);

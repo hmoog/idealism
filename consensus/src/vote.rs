@@ -3,17 +3,18 @@ use std::hash::{Hash, Hasher};
 use std::sync::{Arc, RwLock};
 use utils::{rx, ArcKey};
 use crate::committee::Committee;
-use crate::committee_member_id::CommitteeMemberID;
+use crate::config::Config;
 use crate::consensus::ConsensusRound;
 use crate::error::Error;
 use crate::vote_ref::VoteRef;
 use crate::vote_refs::VoteRefs;
 use crate::votes_by_issuer::VotesByIssuer;
 
-pub struct Vote<T: CommitteeMemberID>(Arc<VoteData<T>>);
+pub struct Vote<T: Config>(Arc<VoteData<T>>);
 
-pub(crate) struct VoteData<T: CommitteeMemberID> {
-    pub issuer: ArcKey<T>,
+pub struct VoteData<T: Config> {
+    config: Arc<T>,
+    pub issuer: ArcKey<T::CommitteeMemberID>,
     pub accepted: rx::Signal<bool>,
     pub cumulative_slot_weight: u64,
     pub round: u64,
@@ -24,7 +25,7 @@ pub(crate) struct VoteData<T: CommitteeMemberID> {
     debug_alias: RwLock<Option<String>>
 }
 
-impl<T: CommitteeMemberID> VoteData<T> {
+impl<T: Config> VoteData<T> {
     pub(crate) fn build(mut self) -> Result<Arc<Self>, Error> {
         // abort if the issuer is not a member of the committee
         let Some(committee_member) = self.committee.member(&self.issuer).cloned() else {
@@ -45,7 +46,6 @@ impl<T: CommitteeMemberID> VoteData<T> {
         if let Some(own_vote) = own_votes.first() {
             let own_round = own_vote.as_vote()?.round();
             if own_round == self.round && referenced_round_weight < acceptance_threshold {
-                println!("aborting vote: own vote already cast and below acceptance threshold {} of {}", referenced_round_weight, acceptance_threshold);
                 return Ok(Arc::new(self));
             }
         }
@@ -57,8 +57,8 @@ impl<T: CommitteeMemberID> VoteData<T> {
 
         // advance the round if the acceptance threshold is now met
         if referenced_round_weight + committee_member.weight() >= acceptance_threshold {
+            self.leader_weight = self.config.leader_weight(&self);
             self.round += 1;
-            self.leader_weight = 0; // TODO: DETERMINE NEW LEADER WEIGHT FOR ROUND
         }
 
         Ok(Arc::new_cyclic(|me| {
@@ -68,31 +68,34 @@ impl<T: CommitteeMemberID> VoteData<T> {
     }
 }
 
-impl<ID: CommitteeMemberID> Vote<ID> {
-    pub fn new_genesis(committee: Committee<ID>) -> Vote<ID> {
+impl<ID: Config> Vote<ID> {
+    pub fn new_genesis(config: ID) -> Vote<ID> {
         Vote(Arc::new_cyclic(|me| {
+            let committee = config.select_committee(None);
+
             VoteData {
                 accepted: rx::Signal::new().init(true),
                 cumulative_slot_weight: 0,
                 round: 0,
                 leader_weight: 0,
-                issuer: ArcKey::new(ID::default()),
+                issuer: ArcKey::new(ID::CommitteeMemberID::default()),
                 votes_by_issuer: committee
                     .iter()
                     .map(|member| (member.key().clone(), VoteRefs::new([me.into()])))
                     .collect::<VotesByIssuer<ID>>(),
                 target: me.into(),
-                committee,
                 debug_alias: RwLock::new(None),
+                committee: config.select_committee(None),
+                config: Arc::new(config),
             }
         }))
     }
 
-    pub fn aggregate(issuing_identity: &ArcKey<ID>, votes: Vec<&Vote<ID>>) -> Result<Vote<ID>, Error> {
+    pub fn aggregate(issuing_identity: &ArcKey<ID::CommitteeMemberID>, votes: Vec<&Vote<ID>>) -> Result<Vote<ID>, Error> {
         let mut heaviest_vote = *votes.first().ok_or(Error::VotesMustNotBeEmpty)?;
         let mut votes_by_issuer: VotesByIssuer<ID> = VotesByIssuer::new();
         for vote in votes {
-            votes_by_issuer.collect_from(&vote.votes_by_issuer());
+            votes_by_issuer.collect_from(vote.votes_by_issuer());
 
             if vote > heaviest_vote {
                 heaviest_vote = vote;
@@ -105,6 +108,7 @@ impl<ID: CommitteeMemberID> Vote<ID> {
         votes_by_issuer.retain(|id, _| committee.is_member_online(id));
 
         Ok(Vote(VoteData {
+            config: heaviest_vote.0.config.clone(),
             accepted: rx::Signal::new(),
             cumulative_slot_weight: heaviest_vote.cumulative_slot_weight(),
             round: heaviest_vote.round(),
@@ -132,7 +136,7 @@ impl<ID: CommitteeMemberID> Vote<ID> {
         Arc::ptr_eq(&self.0, &other.0)
     }
 
-    pub fn issuer(&self) -> &ArcKey<ID> {
+    pub fn issuer(&self) -> &ArcKey<ID::CommitteeMemberID> {
         &self.0.issuer
     }
 
@@ -169,13 +173,13 @@ impl<ID: CommitteeMemberID> Vote<ID> {
     }
 }
 
-impl<T: CommitteeMemberID> Clone for Vote<T> {
+impl<T: Config> Clone for Vote<T> {
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
 }
 
-impl<ID: CommitteeMemberID> Ord for Vote<ID> {
+impl<ID: Config> Ord for Vote<ID> {
     fn cmp(&self, other: &Self) -> Ordering {
         let self_weight = (self.0.cumulative_slot_weight, self.0.round, self.0.leader_weight);
         let other_weight = (other.0.cumulative_slot_weight, other.0.round, other.0.leader_weight);
@@ -184,28 +188,28 @@ impl<ID: CommitteeMemberID> Ord for Vote<ID> {
     }
 }
 
-impl<ID: CommitteeMemberID> PartialOrd for Vote<ID> {
+impl<ID: Config> PartialOrd for Vote<ID> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(&other))
+        Some(self.cmp(other))
     }
 }
 
-impl<ID: CommitteeMemberID> PartialEq for Vote<ID> {
+impl<ID: Config> PartialEq for Vote<ID> {
     fn eq(&self, other: &Self) -> bool {
         self.cmp(other) == Ordering::Equal
     }
 }
 
-impl<ID: CommitteeMemberID> Eq for Vote<ID> {}
+impl<ID: Config> Eq for Vote<ID> {}
 
-impl<T: CommitteeMemberID> From<Arc<VoteData<T>>> for Vote<T> {
+impl<T: Config> From<Arc<VoteData<T>>> for Vote<T> {
     fn from(arc: Arc<VoteData<T>>) -> Self {
         Self(arc)
     }
 }
 
-impl<T: CommitteeMemberID> Hash for Vote<T> {
-    fn hash<H : Hasher> (self: &'_ Self, hasher: &'_ mut H) {
+impl<T: Config> Hash for Vote<T> {
+    fn hash<H : Hasher> (&self, hasher: &mut H) {
         Arc::as_ptr(&self.0).hash(hasher)
     }
 }
