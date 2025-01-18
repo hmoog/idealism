@@ -7,12 +7,12 @@ use crate::config::Config;
 use crate::error::Error;
 use crate::votes_by_issuer::VotesByIssuer;
 
-type CommitteeMembersByID<T> = HashMap<ArcKey<<T as Config>::CommitteeMemberID>, Arc<CommitteeMember<<T as Config>::CommitteeMemberID>>>;
+type CommitteeMembersByID<C> = HashMap<ArcKey<<C as Config>::CommitteeMemberID>, Arc<CommitteeMember<<C as Config>::CommitteeMemberID>>>;
 
-pub struct Committee<T: Config>(Arc<CommitteeData<T>>);
+pub struct Committee<C: Config>(Arc<CommitteeData<C>>);
 
-struct CommitteeData<T: Config> {
-    members_by_id: Arc<CommitteeMembersByID<T>>,
+struct CommitteeData<C: Config> {
+    members_by_id: Arc<CommitteeMembersByID<C>>,
     total_weight: u64,
     online_weight: u64,
 }
@@ -87,6 +87,12 @@ impl <T: Config> Committee<T> {
 
     pub fn member(&self, member_id: &ArcKey<T::CommitteeMemberID>) -> Option<&CommitteeMember<T::CommitteeMemberID>> {
         self.0.members_by_id.get(member_id).map(|member| &**member)
+    }
+
+    pub fn members(&self) -> Vec<CommitteeMember<T::CommitteeMemberID>> {
+        let mut values: Vec<_> = self.0.members_by_id.values().map(|member| CommitteeMember::clone(member)).collect();
+        values.sort_by_key(|item| item.index());
+        values
     }
 
     pub fn member_weight(&self, member_id: &ArcKey<T::CommitteeMemberID>) -> u64 {
