@@ -1,25 +1,22 @@
 mod committee;
-mod committee_member;
-mod committee_member_id;
-mod vote;
-mod votes;
-mod vote_ref;
-mod votes_by_issuer;
-mod vote_refs;
-mod votes_by_round;
 mod error;
 mod consensus;
 mod config;
+mod voting;
+
+pub use committee::*;
+pub use config::*;
 
 #[cfg(test)]
 mod test {
-    use crate::config::DefaultConfig;
+    use crate::config::Config;
     use crate::error::Error;
-    use crate::vote::Vote;
+    use crate::voting::Vote;
 
     #[test]
     fn test_consensus() -> Result<(), Error> {
-        let genesis = Vote::new_genesis(DefaultConfig).with_alias("genesis");
+        let genesis = Vote::new_genesis(Config::new()).with_alias("genesis");
+
         let members = genesis.committee().members();
 
         let member1_vote_1_1 = Vote::aggregate(members[0].key(), vec![&genesis])?.with_alias("a1");

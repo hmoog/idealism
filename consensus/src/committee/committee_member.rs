@@ -1,5 +1,5 @@
 use utils::ArcKey;
-use crate::committee_member_id::CommitteeMemberID;
+use crate::committee::CommitteeMemberID;
 
 pub struct CommitteeMember<T: CommitteeMemberID> {
     id: ArcKey<T>,

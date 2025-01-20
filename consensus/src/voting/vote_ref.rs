@@ -1,12 +1,12 @@
 use std::hash::{Hash, Hasher};
 use std::sync::{Arc, Weak};
-use crate::config::Config;
+use crate::config::ConfigInterface;
 use crate::error::Error;
-use crate::vote::{Vote, VoteData};
+use crate::voting::{Vote, VoteData};
 
-pub struct VoteRef<T: Config>(Weak<VoteData<T>>);
+pub struct VoteRef<T: ConfigInterface>(Weak<VoteData<T>>);
 
-impl<T: Config> VoteRef<T> {
+impl<T: ConfigInterface> VoteRef<T> {
     pub fn upgrade(&self) -> Option<Vote<T>> {
         self.0.upgrade().map(|x| x.into())
     }
@@ -20,7 +20,7 @@ impl<T: Config> VoteRef<T> {
     }
 }
 
-impl<T: Config> TryFrom<VoteRef<T>> for Vote<T> {
+impl<T: ConfigInterface> TryFrom<VoteRef<T>> for Vote<T> {
     type Error = Error;
 
     fn try_from(value: VoteRef<T>) -> Result<Self, Self::Error> {
@@ -28,46 +28,46 @@ impl<T: Config> TryFrom<VoteRef<T>> for Vote<T> {
     }
 }
 
-impl<T: Config> From<Vote<T>> for VoteRef<T> {
+impl<T: ConfigInterface> From<Vote<T>> for VoteRef<T> {
     fn from(vote: Vote<T>) -> Self {
         vote.downgrade()
     }
 }
 
-impl<'a, T: Config> From<&'a Vote<T>> for VoteRef<T> {
+impl<'a, T: ConfigInterface> From<&'a Vote<T>> for VoteRef<T> {
     fn from(weak: &'a Vote<T>) -> Self {
         weak.downgrade()
     }
 }
 
-impl<T: Config> From<&Arc<VoteData<T>>> for VoteRef<T> {
+impl<T: ConfigInterface> From<&Arc<VoteData<T>>> for VoteRef<T> {
     fn from(weak: &Arc<VoteData<T>>) -> Self {
         Self(Arc::downgrade(weak))
     }
 }
 
-impl<T: Config> From<&Weak<VoteData<T>>> for VoteRef<T> {
+impl<T: ConfigInterface> From<&Weak<VoteData<T>>> for VoteRef<T> {
     fn from(weak: &Weak<VoteData<T>>) -> Self {
         Self(weak.clone())
     }
 }
 
-impl<T: Config> Hash for VoteRef<T> {
+impl<T: ConfigInterface> Hash for VoteRef<T> {
     fn hash<H : Hasher> (&self, hasher: &mut H) {
         self.0.as_ptr().hash(hasher)
     }
 }
 
-impl<T: Config> Clone for VoteRef<T> {
+impl<T: ConfigInterface> Clone for VoteRef<T> {
     fn clone(&self) -> Self {
         VoteRef(self.0.clone())
     }
 }
 
-impl<T: Config> PartialEq for VoteRef<T> {
+impl<T: ConfigInterface> PartialEq for VoteRef<T> {
     fn eq (&self, other: &Self) -> bool {
         self.0.as_ptr() == other.0.as_ptr()
     }
 }
 
-impl<T: Config> Eq for VoteRef<T> {}
+impl<T: ConfigInterface> Eq for VoteRef<T> {}

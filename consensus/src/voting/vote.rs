@@ -3,16 +3,16 @@ use std::hash::{Hash, Hasher};
 use std::sync::{Arc, RwLock};
 use utils::{rx, ArcKey};
 use crate::committee::Committee;
-use crate::config::Config;
+use crate::config::ConfigInterface;
 use crate::consensus::ConsensusRound;
 use crate::error::Error;
-use crate::vote_ref::VoteRef;
-use crate::vote_refs::VoteRefs;
-use crate::votes_by_issuer::VotesByIssuer;
+use crate::voting::VoteRef;
+use crate::voting::VoteRefs;
+use crate::voting::VotesByIssuer;
 
-pub struct Vote<T: Config>(Arc<VoteData<T>>);
+pub struct Vote<T: ConfigInterface>(Arc<VoteData<T>>);
 
-pub struct VoteData<T: Config> {
+pub struct VoteData<T: ConfigInterface> {
     config: Arc<T>,
     pub issuer: ArcKey<T::CommitteeMemberID>,
     pub accepted: rx::Signal<bool>,
@@ -25,7 +25,7 @@ pub struct VoteData<T: Config> {
     debug_alias: RwLock<Option<String>>
 }
 
-impl<T: Config> VoteData<T> {
+impl<T: ConfigInterface> VoteData<T> {
     pub(crate) fn build(mut self) -> Result<Arc<Self>, Error> {
         // abort if the issuer is not a member of the committee
         let Some(committee_member) = self.committee.member(&self.issuer).cloned() else {
@@ -52,8 +52,8 @@ impl<T: Config> VoteData<T> {
 
         // determine the target vote
         let mut consensus_round = ConsensusRound::new(self.committee.clone());
-        let latest_accepted_milestone = consensus_round.latest_accepted_milestone((&self.votes_by_issuer).into());
-        self.target = consensus_round.heaviest_descendant(&latest_accepted_milestone);
+        let latest_accepted_milestone = consensus_round.latest_accepted_milestone((&self.votes_by_issuer).into())?;
+        self.target = consensus_round.heaviest_descendant(&latest_accepted_milestone).downgrade();
 
         // advance the round if the acceptance threshold is now met
         if referenced_round_weight + committee_member.weight() >= acceptance_threshold {
@@ -68,7 +68,7 @@ impl<T: Config> VoteData<T> {
     }
 }
 
-impl<ID: Config> Vote<ID> {
+impl<ID: ConfigInterface> Vote<ID> {
     pub fn new_genesis(config: ID) -> Vote<ID> {
         Vote(Arc::new_cyclic(|me| {
             let committee = config.select_committee(None);
@@ -85,8 +85,8 @@ impl<ID: Config> Vote<ID> {
                     .collect::<VotesByIssuer<ID>>(),
                 target: me.into(),
                 debug_alias: RwLock::new(None),
-                committee: config.select_committee(None),
                 config: Arc::new(config),
+                committee,
             }
         }))
     }
@@ -173,13 +173,13 @@ impl<ID: Config> Vote<ID> {
     }
 }
 
-impl<T: Config> Clone for Vote<T> {
+impl<T: ConfigInterface> Clone for Vote<T> {
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
 }
 
-impl<ID: Config> Ord for Vote<ID> {
+impl<ID: ConfigInterface> Ord for Vote<ID> {
     fn cmp(&self, other: &Self) -> Ordering {
         let self_weight = (self.0.cumulative_slot_weight, self.0.round, self.0.leader_weight);
         let other_weight = (other.0.cumulative_slot_weight, other.0.round, other.0.leader_weight);
@@ -188,27 +188,27 @@ impl<ID: Config> Ord for Vote<ID> {
     }
 }
 
-impl<ID: Config> PartialOrd for Vote<ID> {
+impl<ID: ConfigInterface> PartialOrd for Vote<ID> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl<ID: Config> PartialEq for Vote<ID> {
+impl<ID: ConfigInterface> PartialEq for Vote<ID> {
     fn eq(&self, other: &Self) -> bool {
         self.cmp(other) == Ordering::Equal
     }
 }
 
-impl<ID: Config> Eq for Vote<ID> {}
+impl<ID: ConfigInterface> Eq for Vote<ID> {}
 
-impl<T: Config> From<Arc<VoteData<T>>> for Vote<T> {
+impl<T: ConfigInterface> From<Arc<VoteData<T>>> for Vote<T> {
     fn from(arc: Arc<VoteData<T>>) -> Self {
         Self(arc)
     }
 }
 
-impl<T: Config> Hash for Vote<T> {
+impl<T: ConfigInterface> Hash for Vote<T> {
     fn hash<H : Hasher> (&self, hasher: &mut H) {
         Arc::as_ptr(&self.0).hash(hasher)
     }

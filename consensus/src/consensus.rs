@@ -1,21 +1,21 @@
 use std::cmp::{max, Ordering};
 use std::collections::{HashMap};
 use crate::committee::Committee;
-use crate::config::Config;
+use crate::config::ConfigInterface;
 use crate::consensus::WalkResult::{LatestAcceptedMilestoneFound, PreviousRoundTargets};
-use crate::vote::Vote;
-use crate::vote_ref::VoteRef;
-use crate::vote_refs::VoteRefs;
-use crate::votes_by_issuer::VotesByIssuer;
-use crate::votes_by_round::VotesByRound;
+use crate::error::Error;
+use crate::voting::Vote;
+use crate::voting::Votes;
+use crate::voting::VotesByIssuer;
+use crate::voting::VotesByRound;
 
-pub(crate) struct ConsensusRound<ID: Config> {
+pub(crate) struct ConsensusRound<ID: ConfigInterface> {
     committee: Committee<ID>,
-    children: HashMap<VoteRef<ID>, VoteRefs<ID>>,
-    weights: HashMap<VoteRef<ID>, u64>,
+    children: HashMap<Vote<ID>, Votes<ID>>,
+    weights: HashMap<Vote<ID>, u64>,
 }
 
-impl<ID: Config> ConsensusRound<ID> {
+impl<ID: ConfigInterface> ConsensusRound<ID> {
     pub(crate) fn new(committee: Committee<ID>) -> Self {
         Self {
             committee,
@@ -25,11 +25,11 @@ impl<ID: Config> ConsensusRound<ID> {
     }
 
     /// Walks through the votes of each round and returns the latest accepted milestone.
-    pub(crate) fn latest_accepted_milestone(&mut self, mut votes_by_round: VotesByRound<ID>) -> VoteRef<ID> {
+    pub(crate) fn latest_accepted_milestone(&mut self, mut votes_by_round: VotesByRound<ID>) -> Result<Vote<ID>, Error> {
         for round in (0..=votes_by_round.max_round()).rev() {
-            match self.heaviest_target(votes_by_round.fetch(round)) {
+            match self.heaviest_target(votes_by_round.fetch(round))? {
                 LatestAcceptedMilestoneFound(latest_accepted_milestone) =>
-                    return latest_accepted_milestone.downgrade(),
+                    return Ok(latest_accepted_milestone),
                 PreviousRoundTargets(previous_round_targets) => if round > 0 {
                     votes_by_round.insert_votes_by_issuer(round - 1, previous_round_targets)
                 },
@@ -39,10 +39,10 @@ impl<ID: Config> ConsensusRound<ID> {
         unreachable!("we should never reach this point in the logic as the root is always accepted")
     }
 
-    pub(crate) fn heaviest_descendant(&self, vote: &VoteRef<ID>) -> VoteRef<ID> {
+    pub(crate) fn heaviest_descendant(&self, vote: &Vote<ID>) -> Vote<ID> {
         let mut heaviest_descendant = vote.clone();
         while let Some(children) = self.children.get(&heaviest_descendant) {
-            match self.heaviest_vote(children) {
+            match children.heaviest(&self.weights) {
                 Some(heaviest_child) => heaviest_descendant = heaviest_child,
                 None => break,
             }
@@ -51,65 +51,49 @@ impl<ID: Config> ConsensusRound<ID> {
         heaviest_descendant
     }
 
-    fn add_weight(&mut self, vote: &VoteRef<ID>, weight: u64) -> u64 {
+    fn add_weight(&mut self, vote: &Vote<ID>, weight: u64) -> u64 {
         *self.weights.entry(vote.clone()).and_modify(|w| *w += weight).or_insert(weight)
     }
 
-    fn heaviest_target(&mut self, votes_of_round: &VotesByIssuer<ID>) -> WalkResult<ID> {
+    fn heaviest_target(&mut self, votes_of_round: &VotesByIssuer<ID>) -> Result<WalkResult<ID>, Error> {
         let mut targets = VotesByIssuer::new();
         let mut heaviest_vote = None;
         let mut heaviest_weight = 0;
 
         for (issuer, votes) in votes_of_round {
             for vote in votes {
-                let Ok(vote) = vote.as_vote() else { continue };
-                let Ok(target) = vote.target().as_vote() else { continue };
+                let vote = vote.as_vote()?;
+                let target = vote.target().as_vote()?;
 
                 if vote.is_accepted() {
-                    return LatestAcceptedMilestoneFound(vote);
+                    return Ok(LatestAcceptedMilestoneFound(vote));
                 }
 
-                let issuer_weight = self.committee.member_weight(vote.issuer());
-                let updated_weight = self.add_weight(vote.target(), issuer_weight);
-
+                let updated_weight = self.add_weight(&target, self.committee.member_weight(vote.issuer()));
                 match updated_weight.cmp(&heaviest_weight) {
                     Ordering::Greater => {
-                        heaviest_vote = Some(target);
+                        heaviest_vote = Some(target.clone());
                         heaviest_weight = updated_weight;
                     }
                     Ordering::Equal => {
-                        heaviest_vote = max(heaviest_vote, Some(target));
+                        heaviest_vote = max(heaviest_vote, Some(target.clone()));
                     }
                     Ordering::Less => continue,
                 }
 
-                let targets = targets.fetch(issuer);
-                targets.insert(vote.target().clone());
-
-                let children = self.children.entry(vote.target().clone()).or_default();
-                children.insert(vote.downgrade());
+                targets.fetch(issuer).insert(target.downgrade());
+                self.children.entry(target).or_default().insert(vote);
             }
         }
 
         match heaviest_weight > (2.0 / 3.0 * self.committee.online_weight() as f64) as u64 {
-            true => LatestAcceptedMilestoneFound(heaviest_vote.unwrap()),
-            false => PreviousRoundTargets(targets),
+            true => Ok(LatestAcceptedMilestoneFound(heaviest_vote.unwrap())),
+            false => Ok(PreviousRoundTargets(targets)),
         }
-    }
-
-    fn heaviest_vote(&self, votes: &VoteRefs<ID>) -> Option<VoteRef<ID>> {
-        votes.iter()
-            .filter_map(|candidate_weak| {
-                Some((candidate_weak.upgrade()?, self.weights.get(candidate_weak).unwrap_or(&0)))
-            })
-            .max_by(|(candidate1, weight1), (candidate2, weight2)| {
-                weight1.cmp(weight2).then_with(|| candidate1.cmp(candidate2))
-            })
-            .map(|(candidate, _)| { candidate.downgrade() })
     }
 }
 
-enum WalkResult<ID: Config> {
+enum WalkResult<ID: ConfigInterface> {
     LatestAcceptedMilestoneFound(Vote<ID>),
     PreviousRoundTargets(VotesByIssuer<ID>),
 }
