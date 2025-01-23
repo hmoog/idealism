@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 use utils::ArcKey;
-use crate::error::Error;
+use crate::errors::Error;
 use crate::{ConfigInterface, VoteRefs, VotesByIssuer};
 
 pub struct VoteRefsByIssuer<ID: ConfigInterface>(HashMap<ArcKey<ID::CommitteeMemberID>, VoteRefs<ID>>);

@@ -3,7 +3,7 @@ use std::collections::{HashMap};
 use crate::bft_committee::Committee;
 use crate::ConfigInterface;
 use crate::consensus::WalkResult::{LatestAcceptedMilestoneFound, PreviousRoundTargets};
-use crate::error::Error;
+use crate::errors::Error;
 use crate::Vote;
 use crate::Votes;
 use crate::VotesByIssuer;
@@ -62,7 +62,7 @@ impl<ID: ConfigInterface> ConsensusRound<ID> {
 
         for (issuer, votes) in votes_of_round.iter() {
             for vote in votes.iter() {
-                let target = vote.target().as_vote()?;
+                let target = vote.target().upgrade().ok_or(Error::ReferencedVoteEvicted)?;
 
                 if vote.is_accepted() {
                     return Ok(LatestAcceptedMilestoneFound(vote.clone()));

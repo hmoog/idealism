@@ -5,7 +5,7 @@ use utils::ArcKey;
 use crate::bft_committee::CommitteeData;
 use crate::bft_committee::CommitteeMember;
 use crate::ConfigInterface;
-use crate::error::Error;
+use crate::errors::Error;
 use crate::VoteRefsByIssuer;
 
 pub struct Committee<C: ConfigInterface>(Arc<CommitteeData<C>>);

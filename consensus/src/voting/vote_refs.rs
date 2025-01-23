@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 use std::ops::{Deref, DerefMut};
-use crate::error::Error;
+use crate::errors::Error;
 use crate::{ConfigInterface, VoteRef, Votes};
 
 pub struct VoteRefs<T: ConfigInterface>(HashSet<VoteRef<T>>);
@@ -31,6 +31,12 @@ impl<T: ConfigInterface> VoteRefs<T> {
     }
 }
 
+impl<ID: ConfigInterface> Default for VoteRefs<ID> {
+    fn default() -> Self {
+        Self(HashSet::default())
+    }
+}
+
 impl<ID: ConfigInterface> FromIterator<VoteRef<ID>> for VoteRefs<ID> {
     fn from_iter<I: IntoIterator<Item=VoteRef<ID>>>(iter: I) -> Self {
         Self(iter.into_iter().collect())
@@ -43,11 +49,7 @@ impl<ID: ConfigInterface> Clone for VoteRefs<ID> {
     }
 }
 
-impl<ID: ConfigInterface> Default for VoteRefs<ID> {
-    fn default() -> Self {
-        Self(HashSet::new())
-    }
-}
+
 
 impl<T: ConfigInterface> IntoIterator for VoteRefs<T> {
     type Item = VoteRef<T>;

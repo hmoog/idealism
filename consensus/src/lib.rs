@@ -1,5 +1,5 @@
 mod bft_committee;
-mod error;
+mod errors;
 mod consensus;
 
 pub use bft_committee::*;
@@ -18,19 +18,21 @@ pub use crate::configuration::{
     leader_rotation::LeaderRotation,
 };
 
-mod voting {
-    pub mod vote;
-    pub mod votes;
-    pub mod vote_ref;
-    pub mod votes_by_issuer;
-    pub mod vote_refs;
-    pub mod vote_refs_by_issuer;
-    pub mod votes_by_round;
+pub(crate) mod voting {
+    pub(crate) mod vote;
+    pub(crate) mod vote_data;
+    pub(crate) mod votes;
+    pub(crate) mod vote_ref;
+    pub(crate) mod votes_by_issuer;
+    pub(crate) mod vote_refs;
+    pub(crate) mod vote_refs_by_issuer;
+    pub(crate) mod votes_by_round;
 }
 
 pub use crate::voting::{
-    vote::{Vote, VoteData},
+    vote::Vote,
     votes::Votes,
+    vote_data::VoteData,
     vote_ref::VoteRef,
     votes_by_issuer::VotesByIssuer,
     vote_refs::VoteRefs,
@@ -41,7 +43,7 @@ pub use crate::voting::{
 #[cfg(test)]
 mod test {
     use crate::Config;
-    use crate::error::Error;
+    use crate::errors::Error;
     use crate::Vote;
 
     #[test]

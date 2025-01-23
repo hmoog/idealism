@@ -1,6 +1,6 @@
 use std::hash::{Hash, Hasher};
 use std::sync::{Arc, Weak};
-use crate::error::Error;
+use crate::errors::Error;
 use crate::{ConfigInterface, Vote, VoteData};
 
 pub struct VoteRef<T: ConfigInterface>(Weak<VoteData<T>>);
@@ -19,23 +19,9 @@ impl<T: ConfigInterface> VoteRef<T> {
     }
 }
 
-impl<T: ConfigInterface> TryFrom<VoteRef<T>> for Vote<T> {
-    type Error = Error;
-
-    fn try_from(value: VoteRef<T>) -> Result<Self, Self::Error> {
-        value.as_vote()
-    }
-}
-
-impl<T: ConfigInterface> From<Vote<T>> for VoteRef<T> {
-    fn from(vote: Vote<T>) -> Self {
+impl<T: ConfigInterface> From<&Vote<T>> for VoteRef<T> {
+    fn from(vote: &Vote<T>) -> Self {
         vote.downgrade()
-    }
-}
-
-impl<'a, T: ConfigInterface> From<&'a Vote<T>> for VoteRef<T> {
-    fn from(weak: &'a Vote<T>) -> Self {
-        weak.downgrade()
     }
 }
 
