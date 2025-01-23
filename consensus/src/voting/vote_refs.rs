@@ -1,34 +1,31 @@
 use std::collections::HashSet;
 use std::ops::{Deref, DerefMut};
-use crate::errors::Error;
-use crate::{ConfigInterface, VoteRef, Votes};
+use crate::{ConfigInterface, Vote, VoteRef, Votes};
 
 #[derive(Clone, Default)]
-pub struct VoteRefs<T: ConfigInterface>(HashSet<VoteRef<T>>);
+pub struct VoteRefs<C: ConfigInterface>(HashSet<VoteRef<C>>);
 
-impl<T: ConfigInterface> VoteRefs<T> {
-    pub fn upgrade(&self) -> Result<Votes<T>, Error> {
-        self.iter()
-            .map(|vote_ref| vote_ref.upgrade().ok_or(Error::ReferencedVoteEvicted))
-            .collect()
+impl<C: ConfigInterface> From<&Votes<C>> for VoteRefs<C> {
+    fn from(votes: &Votes<C>) -> Self {
+        votes.iter().map(Vote::downgrade).collect()
     }
 }
 
-impl<ID: ConfigInterface> FromIterator<VoteRef<ID>> for VoteRefs<ID> {
-    fn from_iter<I: IntoIterator<Item=VoteRef<ID>>>(iter: I) -> Self {
+impl<C: ConfigInterface> FromIterator<VoteRef<C>> for VoteRefs<C> {
+    fn from_iter<I: IntoIterator<Item=VoteRef<C>>>(iter: I) -> Self {
         Self(iter.into_iter().collect())
     }
 }
 
-impl<T: ConfigInterface> Deref for VoteRefs<T> {
-    type Target = HashSet<VoteRef<T>>;
+impl<C: ConfigInterface> Deref for VoteRefs<C> {
+    type Target = HashSet<VoteRef<C>>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-impl<T: ConfigInterface> DerefMut for VoteRefs<T> {
+impl<C: ConfigInterface> DerefMut for VoteRefs<C> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }

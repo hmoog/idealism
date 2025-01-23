@@ -1,15 +1,17 @@
 use std::collections::{HashMap, HashSet};
 use std::ops::{Deref, DerefMut};
 use crate::{ConfigInterface, Vote, VoteRefs};
+use crate::errors::Error;
 
-pub struct Votes<T: ConfigInterface>(HashSet<Vote<T>>);
+#[derive(Clone, Default)]
+pub struct Votes<C: ConfigInterface>(HashSet<Vote<C>>);
 
-impl<T: ConfigInterface> Votes<T> {
+impl<C: ConfigInterface> Votes<C> {
     pub fn any_round(&self) -> u64 {
         self.0.iter().next().map(|vote| vote.round()).unwrap_or(0)
     }
 
-    pub fn heaviest(&self, weights: &HashMap<Vote<T>, u64>) -> Option<Vote<T>> {
+    pub fn heaviest(&self, weights: &HashMap<Vote<C>, u64>) -> Option<Vote<C>> {
         self.iter()
             .map(|candidate_weak| {
                 (candidate_weak.clone(), weights.get(candidate_weak).unwrap_or(&0))
@@ -19,39 +21,31 @@ impl<T: ConfigInterface> Votes<T> {
             })
             .map(|(candidate, _)| { candidate })
     }
+}
 
-    pub fn downgrade(&self) -> VoteRefs<T> {
-        self.iter().map(|vote| vote.downgrade()).collect()
+impl<C: ConfigInterface> TryFrom<&VoteRefs<C>> for Votes<C> {
+    type Error = Error;
+
+    fn try_from(vote_refs: &VoteRefs<C>) -> Result<Self, Self::Error> {
+        vote_refs.iter().map(|v| v.upgrade().ok_or(Error::ReferencedVoteEvicted)).collect()
     }
 }
 
-impl<ID: ConfigInterface> Default for Votes<ID> {
-    fn default() -> Self {
-        Self(HashSet::default())
-    }
-}
-
-impl<ID: ConfigInterface> FromIterator<Vote<ID>> for Votes<ID> {
-    fn from_iter<I: IntoIterator<Item=Vote<ID>>>(iter: I) -> Self {
+impl<C: ConfigInterface> FromIterator<Vote<C>> for Votes<C> {
+    fn from_iter<I: IntoIterator<Item=Vote<C>>>(iter: I) -> Self {
         Self(iter.into_iter().collect())
     }
 }
 
-impl<ID: ConfigInterface> Clone for Votes<ID> {
-    fn clone(&self) -> Self {
-        Self(self.0.clone())
-    }
-}
-
-impl<T: ConfigInterface> Deref for Votes<T> {
-    type Target = HashSet<Vote<T>>;
+impl<C: ConfigInterface> Deref for Votes<C> {
+    type Target = HashSet<Vote<C>>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-impl<T: ConfigInterface> DerefMut for Votes<T> {
+impl<C: ConfigInterface> DerefMut for Votes<C> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }

@@ -11,7 +11,7 @@ impl<T: ConfigInterface> VotesByIssuer<T> {
     }
 
     pub fn downgrade(&self) -> VoteRefsByIssuer<T> {
-        self.0.iter().map(|(k, v)| (k.clone(), v.downgrade())).collect()
+        self.0.iter().map(|(k, v)| (k.clone(), v.into())).collect()
     }
 
     pub(crate) fn collect_from(&mut self, source: &VotesByIssuer<T>) -> bool {

@@ -14,7 +14,7 @@ impl<T: ConfigInterface> VoteRefsByIssuer<T> {
     pub fn upgrade(&self) -> Result<VotesByIssuer<T>, Error> {
         let mut votes_by_issuer = VotesByIssuer::default();
         for (k, v) in self.0.iter() {
-            votes_by_issuer.insert(k.clone(), v.upgrade()?);
+            votes_by_issuer.insert(k.clone(), v.try_into()?);
         }
         Ok(votes_by_issuer)
     }
