@@ -1,56 +1,36 @@
 use std::collections::HashMap;
+use std::ops::{Deref, DerefMut};
 use utils::ArcKey;
-use crate::config::ConfigInterface;
-use crate::voting::VoteRefs;
+use crate::{ConfigInterface, VoteRefsByIssuer, Votes};
 
-pub struct VotesByIssuer<ID: ConfigInterface>(HashMap<ArcKey<ID::CommitteeMemberID>, VoteRefs<ID>>);
-
-impl<T: ConfigInterface> FromIterator<(ArcKey<T::CommitteeMemberID>, VoteRefs<T>)> for VotesByIssuer<T> {
-    fn from_iter<I: IntoIterator<Item=(ArcKey<T::CommitteeMemberID>, VoteRefs<T>)>>(iter: I) -> Self {
-        Self(iter.into_iter().collect())
-    }
-}
+pub struct VotesByIssuer<ID: ConfigInterface>(HashMap<ArcKey<ID::CommitteeMemberID>, Votes<ID>>);
 
 impl<T: ConfigInterface> VotesByIssuer<T> {
     pub fn new() -> Self {
         Self(HashMap::new())
     }
 
-    pub fn insert(&mut self, issuer: ArcKey<T::CommitteeMemberID>, vote: VoteRefs<T>) -> Option<VoteRefs<T>> {
-        self.0.insert(issuer, vote)
-    }
-
-    pub fn iter(&self) -> std::collections::hash_map::Iter<ArcKey<T::CommitteeMemberID>, VoteRefs<T>> {
-        self.0.iter()
-    }
-
-    pub fn fetch(&mut self, issuer: &ArcKey<T::CommitteeMemberID>) -> &mut VoteRefs<T> {
+    pub fn fetch(&mut self, issuer: &ArcKey<T::CommitteeMemberID>) -> &mut Votes<T> {
         self.0.entry(issuer.clone()).or_default()
     }
 
-    pub fn retain<F: FnMut(&ArcKey<T::CommitteeMemberID>, &mut VoteRefs<T>) -> bool>(&mut self, f: F) {
-        self.0.retain(f);
-    }
-
-    pub fn len(&self) -> usize {
-        self.0.len()
+    pub fn downgrade(&self) -> VoteRefsByIssuer<T> {
+        self.0.iter().map(|(k, v)| (k.clone(), v.downgrade())).collect()
     }
 
     pub(crate) fn collect_from(&mut self, source: &VotesByIssuer<T>) -> bool {
         let mut updated = false;
-        for (issuer, source_votes) in source {
+        for (issuer, source_votes) in source.iter() {
             let target_votes = self.fetch(issuer);
             let current_round = target_votes.any_round();
 
-            for vote_ref in source_votes {
-                if let Ok(vote) = vote_ref.as_vote() {
-                    if vote.round() >= current_round {
-                        if vote.round() > current_round {
-                            target_votes.clear();
-                        }
-
-                        updated = target_votes.insert(vote.downgrade()) || updated;
+            for vote in source_votes.iter() {
+                if vote.round() >= current_round {
+                    if vote.round() > current_round {
+                        target_votes.clear();
                     }
+
+                    updated = target_votes.insert(vote.clone()) || updated;
                 }
             }
         }
@@ -65,20 +45,22 @@ impl<T: ConfigInterface> Default for VotesByIssuer<T> {
     }
 }
 
-impl<T: ConfigInterface> IntoIterator for VotesByIssuer<T> {
-    type Item = (ArcKey<T::CommitteeMemberID>, VoteRefs<T>);
-    type IntoIter = std::collections::hash_map::IntoIter<ArcKey<T::CommitteeMemberID>, VoteRefs<T>>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
+impl<T: ConfigInterface> FromIterator<(ArcKey<T::CommitteeMemberID>, Votes<T>)> for VotesByIssuer<T> {
+    fn from_iter<I: IntoIterator<Item=(ArcKey<T::CommitteeMemberID>, Votes<T>)>>(iter: I) -> Self {
+        Self(iter.into_iter().collect())
     }
 }
 
-impl<'a, T: ConfigInterface> IntoIterator for &'a VotesByIssuer<T> {
-    type Item = (&'a ArcKey<T::CommitteeMemberID>, &'a VoteRefs<T>);
-    type IntoIter = std::collections::hash_map::Iter<'a, ArcKey<T::CommitteeMemberID>, VoteRefs<T>>;
+impl<T: ConfigInterface> Deref for VotesByIssuer<T> {
+    type Target = HashMap<ArcKey<T::CommitteeMemberID>, Votes<T>>;
 
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.iter()
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T: ConfigInterface> DerefMut for VotesByIssuer<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }

@@ -1,8 +1,7 @@
 use std::hash::{Hash, Hasher};
 use std::sync::{Arc, Weak};
-use crate::config::ConfigInterface;
 use crate::error::Error;
-use crate::voting::{Vote, VoteData};
+use crate::{ConfigInterface, Vote, VoteData};
 
 pub struct VoteRef<T: ConfigInterface>(Weak<VoteData<T>>);
 

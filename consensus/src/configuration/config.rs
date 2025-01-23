@@ -1,8 +1,6 @@
-use crate::committee::Committee;
-use crate::committee::CommitteeMember;
-use crate::config::{CommitteeSelection, ConfigInterface};
-use crate::config::leader_rotation::LeaderRotation;
-use crate::voting::{Vote, VoteData};
+use crate::bft_committee::Committee;
+use crate::bft_committee::CommitteeMember;
+use crate::{CommitteeSelection, ConfigInterface, LeaderRotation, Vote, VoteData};
 
 pub struct Config {
     committee_selection: CommitteeSelection,

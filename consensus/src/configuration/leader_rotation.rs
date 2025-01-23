@@ -1,5 +1,5 @@
-use crate::config::config::Config;
-use crate::voting::VoteData;
+use crate::configuration::config::Config;
+use crate::VoteData;
 
 pub enum LeaderRotation {
     RoundRobin,

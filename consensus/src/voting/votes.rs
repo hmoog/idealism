@@ -1,7 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::ops::{Deref, DerefMut};
-use crate::config::ConfigInterface;
-use crate::voting::Vote;
+use crate::{ConfigInterface, Vote, VoteRefs};
 
 pub struct Votes<T: ConfigInterface>(HashSet<Vote<T>>);
 
@@ -20,13 +19,17 @@ impl<T: ConfigInterface> Votes<T> {
 
     pub fn heaviest(&self, weights: &HashMap<Vote<T>, u64>) -> Option<Vote<T>> {
         self.iter()
-            .filter_map(|candidate_weak| {
-                Some((candidate_weak.clone(), weights.get(candidate_weak).unwrap_or(&0)))
+            .map(|candidate_weak| {
+                (candidate_weak.clone(), weights.get(candidate_weak).unwrap_or(&0))
             })
             .max_by(|(candidate1, weight1), (candidate2, weight2)| {
                 weight1.cmp(weight2).then_with(|| candidate1.cmp(candidate2))
             })
             .map(|(candidate, _)| { candidate })
+    }
+
+    pub fn downgrade(&self) -> VoteRefs<T> {
+        self.iter().map(|vote| vote.downgrade()).collect()
     }
 }
 
@@ -39,24 +42,6 @@ impl<ID: ConfigInterface> Clone for Votes<ID> {
 impl<ID: ConfigInterface> Default for Votes<ID> {
     fn default() -> Self {
         Self(HashSet::new())
-    }
-}
-
-impl<T: ConfigInterface> IntoIterator for Votes<T> {
-    type Item = Vote<T>;
-    type IntoIter = std::collections::hash_set::IntoIter<Vote<T>>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
-    }
-}
-
-impl<'a, T: ConfigInterface> IntoIterator for &'a Votes<T> {
-    type Item = &'a Vote<T>;
-    type IntoIter = std::collections::hash_set::Iter<'a, Vote<T>>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.iter()
     }
 }
 

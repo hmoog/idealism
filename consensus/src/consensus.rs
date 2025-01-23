@@ -1,13 +1,13 @@
 use std::cmp::{max, Ordering};
 use std::collections::{HashMap};
-use crate::committee::Committee;
-use crate::config::ConfigInterface;
+use crate::bft_committee::Committee;
+use crate::ConfigInterface;
 use crate::consensus::WalkResult::{LatestAcceptedMilestoneFound, PreviousRoundTargets};
 use crate::error::Error;
-use crate::voting::Vote;
-use crate::voting::Votes;
-use crate::voting::VotesByIssuer;
-use crate::voting::VotesByRound;
+use crate::Vote;
+use crate::Votes;
+use crate::VotesByIssuer;
+use crate::VotesByRound;
 
 pub(crate) struct ConsensusRound<ID: ConfigInterface> {
     committee: Committee<ID>,
@@ -60,13 +60,12 @@ impl<ID: ConfigInterface> ConsensusRound<ID> {
         let mut heaviest_vote = None;
         let mut heaviest_weight = 0;
 
-        for (issuer, votes) in votes_of_round {
-            for vote in votes {
-                let vote = vote.as_vote()?;
+        for (issuer, votes) in votes_of_round.iter() {
+            for vote in votes.iter() {
                 let target = vote.target().as_vote()?;
 
                 if vote.is_accepted() {
-                    return Ok(LatestAcceptedMilestoneFound(vote));
+                    return Ok(LatestAcceptedMilestoneFound(vote.clone()));
                 }
 
                 let updated_weight = self.add_weight(&target, self.committee.member_weight(vote.issuer()));
@@ -81,8 +80,8 @@ impl<ID: ConfigInterface> ConsensusRound<ID> {
                     Ordering::Less => continue,
                 }
 
-                targets.fetch(issuer).insert(target.downgrade());
-                self.children.entry(target).or_default().insert(vote);
+                targets.fetch(issuer).insert(target.clone());
+                self.children.entry(target).or_default().insert(vote.clone());
             }
         }
 

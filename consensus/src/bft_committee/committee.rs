@@ -2,11 +2,11 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::sync::Arc;
 use utils::ArcKey;
-use crate::committee::CommitteeData;
-use crate::committee::CommitteeMember;
-use crate::config::ConfigInterface;
+use crate::bft_committee::CommitteeData;
+use crate::bft_committee::CommitteeMember;
+use crate::ConfigInterface;
 use crate::error::Error;
-use crate::voting::VotesByIssuer;
+use crate::VoteRefsByIssuer;
 
 pub struct Committee<C: ConfigInterface>(Arc<CommitteeData<C>>);
 
@@ -19,7 +19,7 @@ impl <T: ConfigInterface> Committee<T> {
         self.total_weight() - self.total_weight() / 3
     }
 
-    pub fn referenced_round_weight(&self, votes: &VotesByIssuer<T>) -> Result<u64, Error> {
+    pub fn referenced_round_weight(&self, votes: &VoteRefsByIssuer<T>) -> Result<u64, Error> {
         let mut latest_round = 0;
         let mut referenced_round_weight = 0;
 

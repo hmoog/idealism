@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use std::ops::{Deref, DerefMut};
-use crate::config::ConfigInterface;
-use crate::voting::VoteRef;
+use crate::error::Error;
+use crate::{ConfigInterface, VoteRef, Votes};
 
 pub struct VoteRefs<T: ConfigInterface>(HashSet<VoteRef<T>>);
 
@@ -20,6 +20,20 @@ impl<T: ConfigInterface> VoteRefs<T> {
                 vote_ref.upgrade().map(|vote| vote.round())
             )
             .unwrap_or(0)
+    }
+
+    pub fn upgrade(&self) -> Result<Votes<T>, Error> {
+        let mut votes = Votes::default();
+        for vote_ref in self {
+            votes.insert(vote_ref.as_vote()?);
+        }
+        Ok(votes)
+    }
+}
+
+impl<ID: ConfigInterface> FromIterator<VoteRef<ID>> for VoteRefs<ID> {
+    fn from_iter<I: IntoIterator<Item=VoteRef<ID>>>(iter: I) -> Self {
+        Self(iter.into_iter().collect())
     }
 }
 

@@ -1,14 +1,15 @@
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 use utils::{rx, ArcKey};
-use crate::committee::Committee;
-use crate::config::ConfigInterface;
+use crate::bft_committee::Committee;
+use crate::ConfigInterface;
 use crate::consensus::ConsensusRound;
 use crate::error::Error;
-use crate::voting::VoteRef;
-use crate::voting::VoteRefs;
-use crate::voting::VotesByIssuer;
+use crate::VoteRef;
+use crate::VoteRefsByIssuer;
+use crate::VoteRefs;
+use crate::VotesByIssuer;
 
 pub struct Vote<T: ConfigInterface>(Arc<VoteData<T>>);
 
@@ -20,9 +21,8 @@ pub struct VoteData<T: ConfigInterface> {
     pub round: u64,
     pub leader_weight: u64,
     pub committee: Committee<T>,
-    pub votes_by_issuer: VotesByIssuer<T>,
+    pub votes_by_issuer: VoteRefsByIssuer<T>,
     pub target: VoteRef<T>,
-    debug_alias: RwLock<Option<String>>
 }
 
 impl<T: ConfigInterface> VoteData<T> {
@@ -52,7 +52,7 @@ impl<T: ConfigInterface> VoteData<T> {
 
         // determine the target vote
         let mut consensus_round = ConsensusRound::new(self.committee.clone());
-        let latest_accepted_milestone = consensus_round.latest_accepted_milestone((&self.votes_by_issuer).into())?;
+        let latest_accepted_milestone = consensus_round.latest_accepted_milestone((&self.votes_by_issuer.upgrade()?).into())?;
         self.target = consensus_round.heaviest_descendant(&latest_accepted_milestone).downgrade();
 
         // advance the round if the acceptance threshold is now met
@@ -82,9 +82,8 @@ impl<ID: ConfigInterface> Vote<ID> {
                 votes_by_issuer: committee
                     .iter()
                     .map(|member| (member.key().clone(), VoteRefs::new([me.into()])))
-                    .collect::<VotesByIssuer<ID>>(),
+                    .collect::<VoteRefsByIssuer<ID>>(),
                 target: me.into(),
-                debug_alias: RwLock::new(None),
                 config: Arc::new(config),
                 committee,
             }
@@ -95,7 +94,7 @@ impl<ID: ConfigInterface> Vote<ID> {
         let mut heaviest_vote = *votes.first().ok_or(Error::VotesMustNotBeEmpty)?;
         let mut votes_by_issuer: VotesByIssuer<ID> = VotesByIssuer::new();
         for vote in votes {
-            votes_by_issuer.collect_from(vote.votes_by_issuer());
+            votes_by_issuer.collect_from(&vote.votes_by_issuer().upgrade()?);
 
             if vote > heaviest_vote {
                 heaviest_vote = vote;
@@ -115,21 +114,9 @@ impl<ID: ConfigInterface> Vote<ID> {
             leader_weight: heaviest_vote.leader_weight(),
             issuer: issuing_identity.clone(),
             committee,
-            votes_by_issuer,
+            votes_by_issuer: votes_by_issuer.downgrade(),
             target: heaviest_vote.target().clone(),
-            debug_alias: RwLock::new(None),
         }.build()?))
-    }
-
-    pub fn alias(&self) -> String {
-        self.0.debug_alias.read().ok()
-            .and_then(|alias| alias.clone())
-            .unwrap_or_else(|| "<undefined>".to_string())
-    }
-
-    pub fn with_alias(self, alias: &str) -> Self {
-        *self.0.debug_alias.write().unwrap() = Some(alias.to_string());
-        self
     }
 
     pub fn ptr_eq(&self, other: &Vote<ID>) -> bool {
@@ -144,7 +131,7 @@ impl<ID: ConfigInterface> Vote<ID> {
         self.0.committee.clone()
     }
 
-    pub fn votes_by_issuer(&self) -> &VotesByIssuer<ID> {
+    pub fn votes_by_issuer(&self) -> &VoteRefsByIssuer<ID> {
         &self.0.votes_by_issuer
     }
 

@@ -1,6 +1,6 @@
-use crate::committee::Committee;
-use crate::config::Config;
-use crate::voting::Vote;
+use crate::bft_committee::Committee;
+use crate::Config;
+use crate::Vote;
 
 pub enum CommitteeSelection {
     FixedCommittee(Committee<Config>),
@@ -19,6 +19,6 @@ impl CommitteeSelection {
 pub fn fixed_committee(committee: &Committee<Config>, vote: Option<&Vote<Config>>) -> Committee<Config> {
     match vote {
         Some(vote) => vote.committee().clone(),
-        None => committee.clone(),
+        None => (*committee).clone(),
     }
 }
