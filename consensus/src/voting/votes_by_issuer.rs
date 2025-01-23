@@ -6,10 +6,6 @@ use crate::{ConfigInterface, VoteRefsByIssuer, Votes};
 pub struct VotesByIssuer<ID: ConfigInterface>(HashMap<ArcKey<ID::CommitteeMemberID>, Votes<ID>>);
 
 impl<T: ConfigInterface> VotesByIssuer<T> {
-    pub fn new() -> Self {
-        Self(HashMap::new())
-    }
-
     pub fn fetch(&mut self, issuer: &ArcKey<T::CommitteeMemberID>) -> &mut Votes<T> {
         self.0.entry(issuer.clone()).or_default()
     }
@@ -22,7 +18,7 @@ impl<T: ConfigInterface> VotesByIssuer<T> {
         let mut updated = false;
         for (issuer, source_votes) in source.iter() {
             let target_votes = self.fetch(issuer);
-            let current_round = target_votes.any_round();
+            let current_round = target_votes.iter().next().map_or(0, |v| v.round());
 
             for vote in source_votes.iter() {
                 if vote.round() >= current_round {
@@ -41,7 +37,7 @@ impl<T: ConfigInterface> VotesByIssuer<T> {
 
 impl<T: ConfigInterface> Default for VotesByIssuer<T> {
     fn default() -> Self {
-        Self::new()
+        Self(HashMap::new())
     }
 }
 

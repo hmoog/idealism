@@ -56,7 +56,7 @@ impl<ID: ConfigInterface> ConsensusRound<ID> {
     }
 
     fn heaviest_target(&mut self, votes_of_round: &VotesByIssuer<ID>) -> Result<WalkResult<ID>, Error> {
-        let mut targets = VotesByIssuer::new();
+        let mut targets = VotesByIssuer::default();
         let mut heaviest_vote = None;
         let mut heaviest_weight = 0;
 

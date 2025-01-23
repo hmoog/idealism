@@ -92,7 +92,7 @@ impl<ID: ConfigInterface> Vote<ID> {
 
     pub fn aggregate(issuing_identity: &ArcKey<ID::CommitteeMemberID>, votes: Vec<&Vote<ID>>) -> Result<Vote<ID>, Error> {
         let mut heaviest_vote = *votes.first().ok_or(Error::VotesMustNotBeEmpty)?;
-        let mut votes_by_issuer: VotesByIssuer<ID> = VotesByIssuer::new();
+        let mut votes_by_issuer: VotesByIssuer<ID> = VotesByIssuer::default();
         for vote in votes {
             votes_by_issuer.collect_from(&vote.votes_by_issuer().upgrade()?);
 

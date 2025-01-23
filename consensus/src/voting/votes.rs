@@ -5,14 +5,6 @@ use crate::{ConfigInterface, Vote, VoteRefs};
 pub struct Votes<T: ConfigInterface>(HashSet<Vote<T>>);
 
 impl<T: ConfigInterface> Votes<T> {
-    pub fn new<const N: usize>(values: [Vote<T>; N]) -> Self {
-        Votes(values.into_iter().collect())
-    }
-
-    pub fn first(&self) -> Option<Vote<T>> {
-        self.0.iter().next().cloned()
-    }
-
     pub fn any_round(&self) -> u64 {
         self.0.iter().next().map(|vote| vote.round()).unwrap_or(0)
     }
@@ -33,15 +25,21 @@ impl<T: ConfigInterface> Votes<T> {
     }
 }
 
-impl<ID: ConfigInterface> Clone for Votes<ID> {
-    fn clone(&self) -> Self {
-        Self(self.0.clone())
+impl<ID: ConfigInterface> Default for Votes<ID> {
+    fn default() -> Self {
+        Self(HashSet::default())
     }
 }
 
-impl<ID: ConfigInterface> Default for Votes<ID> {
-    fn default() -> Self {
-        Self(HashSet::new())
+impl<ID: ConfigInterface> FromIterator<Vote<ID>> for Votes<ID> {
+    fn from_iter<I: IntoIterator<Item=Vote<ID>>>(iter: I) -> Self {
+        Self(iter.into_iter().collect())
+    }
+}
+
+impl<ID: ConfigInterface> Clone for Votes<ID> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
     }
 }
 

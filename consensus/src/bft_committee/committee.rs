@@ -23,7 +23,7 @@ impl <T: ConfigInterface> Committee<T> {
         let mut latest_round = 0;
         let mut referenced_round_weight = 0;
 
-        for (issuer, votes) in votes {
+        for (issuer, votes) in votes.iter() {
             if let Some(member) = self.0.members_by_id.get(issuer) {
                 if let Some(vote_ref) = votes.first() {
                     let vote = vote_ref.as_vote()?;
