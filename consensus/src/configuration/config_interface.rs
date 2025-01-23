@@ -1,6 +1,4 @@
-use crate::bft_committee::Committee;
-use crate::bft_committee::CommitteeMemberID;
-use crate::{Vote, VoteData};
+use crate::{Committee, CommitteeMemberID, Vote, VoteData};
 
 pub trait ConfigInterface: Default {
     type CommitteeMemberID: CommitteeMemberID;

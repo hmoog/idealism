@@ -76,7 +76,7 @@ impl<T: ConfigInterface> VoteData<T> {
         // determine the target vote
         let mut consensus_round = ConsensusRound::new(self.committee.clone());
         let latest_accepted_milestone = consensus_round.latest_accepted_milestone((&self.votes_by_issuer.upgrade()?).into())?;
-        self.target = consensus_round.heaviest_descendant(&latest_accepted_milestone).downgrade();
+        self.target = VoteRef::from(&consensus_round.heaviest_descendant(&latest_accepted_milestone));
 
         // advance the round if the acceptance threshold is now met
         if referenced_round_weight + committee_member.weight() >= acceptance_threshold {

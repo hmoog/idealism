@@ -62,10 +62,6 @@ impl<ID: ConfigInterface> Vote<ID> {
             target: heaviest_vote.target().clone(),
         }.build()?))
     }
-
-    pub fn downgrade(&self) -> VoteRef<ID> {
-        VoteRef::new(Arc::downgrade(&self.0))
-    }
 }
 
 impl<ID: ConfigInterface> TryFrom<&VoteRef<ID>> for Vote<ID> {

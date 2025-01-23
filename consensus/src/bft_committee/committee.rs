@@ -2,11 +2,8 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::sync::Arc;
 use utils::ArcKey;
-use crate::bft_committee::CommitteeData;
-use crate::bft_committee::CommitteeMember;
-use crate::{ConfigInterface, Vote};
+use crate::{CommitteeData, CommitteeMember, ConfigInterface, Vote, VoteRefsByIssuer};
 use crate::errors::Error;
-use crate::VoteRefsByIssuer;
 
 pub struct Committee<C: ConfigInterface>(Arc<CommitteeData<C>>);
 
@@ -26,7 +23,7 @@ impl <T: ConfigInterface> Committee<T> {
         for (issuer, votes) in votes.iter() {
             if let Some(member) = self.0.members_by_id.get(issuer) {
                 if let Some(vote_ref) = votes.iter().next() {
-                    let vote: Vote<T> = vote_ref.try_into()?;
+                    let vote = Vote::try_from(vote_ref)?;
                     match vote.round().cmp(&latest_round) {
                         Ordering::Greater => {
                             latest_round = vote.round();

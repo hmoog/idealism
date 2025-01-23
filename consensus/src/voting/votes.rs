@@ -7,10 +7,6 @@ use crate::errors::Error;
 pub struct Votes<C: ConfigInterface>(HashSet<Vote<C>>);
 
 impl<C: ConfigInterface> Votes<C> {
-    pub fn any_round(&self) -> u64 {
-        self.0.iter().next().map(|vote| vote.round()).unwrap_or(0)
-    }
-
     pub fn heaviest(&self, weights: &HashMap<Vote<C>, u64>) -> Option<Vote<C>> {
         self.iter()
             .map(|candidate_weak| {

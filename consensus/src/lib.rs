@@ -1,15 +1,12 @@
-mod bft_committee;
-mod errors;
-mod consensus;
+pub use crate::bft_committee::{
+    committee::Committee,
+    committee_member::CommitteeMember,
+    committee_member_id::CommitteeMemberID,
+};
 
-pub use bft_committee::*;
-
-mod configuration {
-    pub mod leader_rotation;
-    pub mod committee_selection;
-    pub mod config_interface;
-    pub mod config;
-}
+pub(crate) use crate::bft_committee::{
+    committee_data::CommitteeData,
+};
 
 pub use crate::configuration::{
     committee_selection::CommitteeSelection,
@@ -17,17 +14,6 @@ pub use crate::configuration::{
     config_interface::ConfigInterface,
     leader_rotation::LeaderRotation,
 };
-
-pub(crate) mod voting {
-    pub(crate) mod vote;
-    pub(crate) mod vote_data;
-    pub(crate) mod votes;
-    pub(crate) mod vote_ref;
-    pub(crate) mod votes_by_issuer;
-    pub(crate) mod vote_refs;
-    pub(crate) mod vote_refs_by_issuer;
-    pub(crate) mod votes_by_round;
-}
 
 pub use crate::voting::{
     vote::Vote,
@@ -39,6 +25,34 @@ pub use crate::voting::{
     vote_refs_by_issuer::VoteRefsByIssuer,
     votes_by_round::VotesByRound,
 };
+
+mod errors;
+mod consensus;
+
+pub(crate) mod bft_committee {
+    pub(crate) mod committee_member;
+    pub(crate) mod committee_member_id;
+    pub(crate) mod committee;
+    pub(crate) mod committee_data;
+}
+
+pub(crate) mod configuration {
+    pub(crate) mod leader_rotation;
+    pub(crate) mod committee_selection;
+    pub(crate) mod config_interface;
+    pub(crate) mod config;
+}
+
+pub(crate) mod voting {
+    pub(crate) mod vote;
+    pub(crate) mod vote_data;
+    pub(crate) mod votes;
+    pub(crate) mod vote_ref;
+    pub(crate) mod votes_by_issuer;
+    pub(crate) mod vote_refs;
+    pub(crate) mod vote_refs_by_issuer;
+    pub(crate) mod votes_by_round;
+}
 
 #[cfg(test)]
 mod test {

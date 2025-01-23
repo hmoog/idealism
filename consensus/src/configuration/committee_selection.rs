@@ -1,6 +1,4 @@
-use crate::bft_committee::Committee;
-use crate::Config;
-use crate::Vote;
+use crate::{Committee, Config, Vote};
 
 pub enum CommitteeSelection {
     FixedCommittee(Committee<Config>),

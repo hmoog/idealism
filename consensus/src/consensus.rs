@@ -1,13 +1,8 @@
 use std::cmp::{max, Ordering};
 use std::collections::{HashMap};
-use crate::bft_committee::Committee;
-use crate::ConfigInterface;
+use crate::{Committee, ConfigInterface, Vote, Votes, VotesByIssuer, VotesByRound};
 use crate::consensus::WalkResult::{LatestAcceptedMilestoneFound, PreviousRoundTargets};
 use crate::errors::Error;
-use crate::Vote;
-use crate::Votes;
-use crate::VotesByIssuer;
-use crate::VotesByRound;
 
 pub(crate) struct ConsensusRound<ID: ConfigInterface> {
     committee: Committee<ID>,

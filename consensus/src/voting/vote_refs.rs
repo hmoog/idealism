@@ -1,13 +1,13 @@
 use std::collections::HashSet;
 use std::ops::{Deref, DerefMut};
-use crate::{ConfigInterface, Vote, VoteRef, Votes};
+use crate::{ConfigInterface, VoteRef, Votes};
 
 #[derive(Clone, Default)]
 pub struct VoteRefs<C: ConfigInterface>(HashSet<VoteRef<C>>);
 
 impl<C: ConfigInterface> From<&Votes<C>> for VoteRefs<C> {
     fn from(votes: &Votes<C>) -> Self {
-        votes.iter().map(Vote::downgrade).collect()
+        votes.iter().map(VoteRef::from).collect()
     }
 }
 
