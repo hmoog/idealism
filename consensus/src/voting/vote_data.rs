@@ -85,7 +85,7 @@ impl<T: ConfigInterface> VoteData<T> {
         }
 
         Ok(Arc::new_cyclic(|me| {
-            self.votes_by_issuer.insert(self.issuer.clone(), VoteRefs::new([VoteRef::new(me)]));
+            self.votes_by_issuer.insert(self.issuer.clone(), VoteRefs::new([VoteRef::new(me.clone())]));
             self
         }))
     }

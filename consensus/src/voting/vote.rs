@@ -4,7 +4,7 @@ use std::ops::Deref;
 use std::sync::Arc;
 use utils::{rx, ArcKey};
 use crate::errors::Error;
-use crate::{ConfigInterface, VoteData, VoteRef, VoteRefsByIssuer, VoteRefs, VotesByIssuer};
+use crate::{ConfigInterface, VoteData, VoteRef, VoteRefs, VotesByIssuer};
 
 pub struct Vote<T: ConfigInterface>(Arc<VoteData<T>>);
 
@@ -25,9 +25,9 @@ impl<ID: ConfigInterface> Vote<ID> {
                 issuer: ArcKey::new(ID::CommitteeMemberID::default()),
                 votes_by_issuer: committee
                     .iter()
-                    .map(|member| (member.key().clone(), VoteRefs::from_iter([VoteRef::new(me)])))
-                    .collect::<VoteRefsByIssuer<ID>>(),
-                target: VoteRef::new(me),
+                    .map(|member| (member.key().clone(), VoteRefs::from_iter([VoteRef::new(me.clone())])))
+                    .collect(),
+                target: VoteRef::new(me.clone()),
                 config: Arc::new(config),
                 committee,
             }
@@ -64,11 +64,7 @@ impl<ID: ConfigInterface> Vote<ID> {
     }
 
     pub fn downgrade(&self) -> VoteRef<ID> {
-        (&self.0).into()
-    }
-
-    pub fn ptr_eq(&self, other: &Vote<ID>) -> bool {
-        Arc::ptr_eq(&self.0, &other.0)
+        VoteRef::new(Arc::downgrade(&self.0))
     }
 }
 

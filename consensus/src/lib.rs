@@ -56,17 +56,17 @@ mod test {
         let member2_vote_1_1 = Vote::aggregate(members[1].key(), vec![&genesis])?;
         let member3_vote_1_1 = Vote::aggregate(members[2].key(), vec![&genesis])?;
         let member4_vote_1_1 = Vote::aggregate(members[3].key(), vec![&genesis])?;
-        assert!(member1_vote_1_1.target().ptr_eq(&genesis));
-        assert!(member2_vote_1_1.target().ptr_eq(&genesis));
-        assert!(member3_vote_1_1.target().ptr_eq(&genesis));
-        assert!(member4_vote_1_1.target().ptr_eq(&genesis));
+        assert!(member1_vote_1_1.target().points_to(&genesis));
+        assert!(member2_vote_1_1.target().points_to(&genesis));
+        assert!(member3_vote_1_1.target().points_to(&genesis));
+        assert!(member4_vote_1_1.target().points_to(&genesis));
 
         let a2 = Vote::aggregate(members[0].key(), vec![&member1_vote_1_1, &member2_vote_1_1, &member3_vote_1_1])?;
         let b2 = Vote::aggregate(members[1].key(), vec![&member1_vote_1_1, &member2_vote_1_1, &member3_vote_1_1])?;
         let c2 = Vote::aggregate(members[2].key(), vec![&member1_vote_1_1, &member2_vote_1_1, &member3_vote_1_1, &member4_vote_1_1])?;
-        assert!(a2.target().ptr_eq(&member3_vote_1_1));
-        assert!(b2.target().ptr_eq(&member3_vote_1_1));
-        assert!(c2.target().ptr_eq(&member4_vote_1_1));
+        assert!(a2.target().points_to(&member3_vote_1_1));
+        assert!(b2.target().points_to(&member3_vote_1_1));
+        assert!(c2.target().points_to(&member4_vote_1_1));
 
         Ok(())
     }
