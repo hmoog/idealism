@@ -1,4 +1,5 @@
 use std::hash::{Hash, Hasher};
+use std::ops::Deref;
 use std::sync::Weak;
 use crate::{ConfigInterface, Vote, VoteData};
 
@@ -7,10 +8,6 @@ pub struct VoteRef<T: ConfigInterface>(Weak<VoteData<T>>);
 impl<T: ConfigInterface> VoteRef<T> {
     pub fn new(weak: Weak<VoteData<T>>) -> Self {
         Self(weak)
-    }
-
-    pub fn upgrade(&self) -> Option<Vote<T>> {
-        self.0.upgrade().map(Vote::new)
     }
 
     pub fn points_to(&self, vote: &Vote<T>) -> bool {
@@ -35,5 +32,12 @@ impl<T: ConfigInterface> Eq for VoteRef<T> {}
 impl<T: ConfigInterface> Hash for VoteRef<T> {
     fn hash<H : Hasher> (&self, hasher: &mut H) {
         self.0.as_ptr().hash(hasher)
+    }
+}
+
+impl<T: ConfigInterface> Deref for VoteRef<T> {
+    type Target = Weak<VoteData<T>>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }

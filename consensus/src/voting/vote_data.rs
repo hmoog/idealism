@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use utils::{rx, ArcKey};
-use crate::{Committee, ConfigInterface, VoteRef, VoteRefs, VoteRefsByIssuer};
+use crate::{Committee, ConfigInterface, Vote, VoteRef, VoteRefs, VoteRefsByIssuer};
 use crate::consensus::ConsensusRound;
 use crate::errors::Error;
 
@@ -67,8 +67,8 @@ impl<T: ConfigInterface> VoteData<T> {
         // abort if we have already voted and are below the acceptance threshold
         let own_votes = self.votes_by_issuer.fetch(&self.issuer);
         if let Some(own_vote) = own_votes.iter().next() {
-            let own_round = own_vote.upgrade().ok_or(Error::ReferencedVoteEvicted)?.round();
-            if own_round == self.round && referenced_round_weight < acceptance_threshold {
+            let vote: Vote<T> = own_vote.try_into()?;
+            if vote.round() == self.round && referenced_round_weight < acceptance_threshold {
                 return Ok(Arc::new(self));
             }
         }

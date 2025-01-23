@@ -62,7 +62,7 @@ impl<ID: ConfigInterface> ConsensusRound<ID> {
 
         for (issuer, votes) in votes_of_round.iter() {
             for vote in votes.iter() {
-                let target = vote.target().upgrade().ok_or(Error::ReferencedVoteEvicted)?;
+                let target = vote.target().try_into()?;
 
                 if vote.is_accepted() {
                     return Ok(LatestAcceptedMilestoneFound(vote.clone()));

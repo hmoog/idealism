@@ -27,7 +27,7 @@ impl<C: ConfigInterface> TryFrom<&VoteRefs<C>> for Votes<C> {
     type Error = Error;
 
     fn try_from(vote_refs: &VoteRefs<C>) -> Result<Self, Self::Error> {
-        vote_refs.iter().map(|v| v.upgrade().ok_or(Error::ReferencedVoteEvicted)).collect()
+        vote_refs.iter().map(Vote::try_from).collect()
     }
 }
 

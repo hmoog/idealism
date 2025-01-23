@@ -68,6 +68,14 @@ impl<ID: ConfigInterface> Vote<ID> {
     }
 }
 
+impl<ID: ConfigInterface> TryFrom<&VoteRef<ID>> for Vote<ID> {
+    type Error = Error;
+
+    fn try_from(vote_ref: &VoteRef<ID>) -> Result<Self, Self::Error> {
+        vote_ref.upgrade().map(Vote::new).ok_or(Error::ReferencedVoteEvicted)
+    }
+}
+
 impl<T: ConfigInterface> Clone for Vote<T> {
     fn clone(&self) -> Self {
         Self(self.0.clone())
