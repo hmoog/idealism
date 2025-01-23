@@ -26,7 +26,7 @@ impl <T: ConfigInterface> Committee<T> {
         for (issuer, votes) in votes.iter() {
             if let Some(member) = self.0.members_by_id.get(issuer) {
                 if let Some(vote_ref) = votes.first() {
-                    let vote = vote_ref.as_vote()?;
+                    let vote = vote_ref.upgrade().ok_or(Error::ReferencedVoteEvicted)?;
                     match vote.round().cmp(&latest_round) {
                         Ordering::Greater => {
                             latest_round = vote.round();

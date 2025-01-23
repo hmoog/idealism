@@ -25,7 +25,7 @@ impl<T: ConfigInterface> VoteRefs<T> {
     pub fn upgrade(&self) -> Result<Votes<T>, Error> {
         let mut votes = Votes::default();
         for vote_ref in self {
-            votes.insert(vote_ref.as_vote()?);
+            votes.insert(vote_ref.upgrade().ok_or(Error::ReferencedVoteEvicted)?);
         }
         Ok(votes)
     }

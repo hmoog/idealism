@@ -67,7 +67,7 @@ impl<T: ConfigInterface> VoteData<T> {
         // abort if we have already voted and are below the acceptance threshold
         let own_votes = self.votes_by_issuer.fetch(&self.issuer);
         if let Some(own_vote) = own_votes.first() {
-            let own_round = own_vote.as_vote()?.round();
+            let own_round = own_vote.upgrade().ok_or(Error::ReferencedVoteEvicted)?.round();
             if own_round == self.round && referenced_round_weight < acceptance_threshold {
                 return Ok(Arc::new(self));
             }
@@ -85,7 +85,7 @@ impl<T: ConfigInterface> VoteData<T> {
         }
 
         Ok(Arc::new_cyclic(|me| {
-            self.votes_by_issuer.insert(self.issuer.clone(), VoteRefs::new([me.into()]));
+            self.votes_by_issuer.insert(self.issuer.clone(), VoteRefs::new([VoteRef::new(me)]));
             self
         }))
     }

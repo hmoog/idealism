@@ -9,6 +9,10 @@ use crate::{ConfigInterface, VoteData, VoteRef, VoteRefsByIssuer, VoteRefs, Vote
 pub struct Vote<T: ConfigInterface>(Arc<VoteData<T>>);
 
 impl<ID: ConfigInterface> Vote<ID> {
+    pub fn new(vote_data: Arc<VoteData<ID>>) -> Self {
+        Self(vote_data)
+    }
+
     pub fn new_genesis(config: ID) -> Vote<ID> {
         Vote(Arc::new_cyclic(|me| {
             let committee = config.select_committee(None);
@@ -21,9 +25,9 @@ impl<ID: ConfigInterface> Vote<ID> {
                 issuer: ArcKey::new(ID::CommitteeMemberID::default()),
                 votes_by_issuer: committee
                     .iter()
-                    .map(|member| (member.key().clone(), VoteRefs::from_iter([me.into()])))
+                    .map(|member| (member.key().clone(), VoteRefs::from_iter([VoteRef::new(me)])))
                     .collect::<VoteRefsByIssuer<ID>>(),
-                target: me.into(),
+                target: VoteRef::new(me),
                 config: Arc::new(config),
                 committee,
             }
@@ -104,12 +108,6 @@ impl<ID: ConfigInterface> PartialEq for Vote<ID> {
 }
 
 impl<ID: ConfigInterface> Eq for Vote<ID> {}
-
-impl<T: ConfigInterface> From<Arc<VoteData<T>>> for Vote<T> {
-    fn from(arc: Arc<VoteData<T>>) -> Self {
-        Self(arc)
-    }
-}
 
 impl<T: ConfigInterface> Hash for Vote<T> {
     fn hash<H : Hasher> (&self, hasher: &mut H) {
