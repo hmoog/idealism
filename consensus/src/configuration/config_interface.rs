@@ -2,7 +2,7 @@ use crate::bft_committee::Committee;
 use crate::bft_committee::CommitteeMemberID;
 use crate::{Vote, VoteData};
 
-pub trait ConfigInterface {
+pub trait ConfigInterface: Default {
     type CommitteeMemberID: CommitteeMemberID;
 
     fn select_committee(&self, vote: Option<&Vote<Self>>) -> Committee<Self> where Self: Sized;
