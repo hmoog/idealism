@@ -21,6 +21,22 @@ macro_rules! define {
             }
         }
 
+        impl<$($generics $(: $bounds)?),*> PartialOrd for $wrapper<$($generics),*> where $wrapper<$($generics),*>: Ord {
+            fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+                Some(self.cmp(other))
+            }
+        }
+
+        // Implement PartialEq for the wrapper type if it implements Ord
+        impl<$($generics $(: $bounds)?),*> PartialEq for $wrapper<$($generics),*> where $wrapper<$($generics),*>: Ord {
+            fn eq(&self, other: &Self) -> bool {
+                self.cmp(other) == std::cmp::Ordering::Equal
+            }
+        }
+
+        // Implement Eq for the wrapper type if it implements Ord
+        impl<$($generics $(: $bounds)?),*> Eq for $wrapper<$($generics),*> where $wrapper<$($generics),*>: Ord {}
+
         // Implement Clone for the wrapper type if the inner type is Clone
         impl<$($generics $(: $bounds)?),*> Clone for $wrapper<$($generics),*>
         where

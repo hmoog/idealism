@@ -5,7 +5,7 @@ use std::{
 
 use utils::ArcKey;
 
-use crate::{ConfigInterface, VoteRefs, VoteRefsByIssuer, Votes};
+use crate::{ConfigInterface, VoteRefsByIssuer, Votes};
 
 pub struct VotesByIssuer<ID: ConfigInterface>(HashMap<ArcKey<ID::CommitteeMemberID>, Votes<ID>>);
 
@@ -15,7 +15,7 @@ impl<T: ConfigInterface> VotesByIssuer<T> {
     }
 
     pub fn downgrade(&self) -> VoteRefsByIssuer<T> {
-        self.0.iter().map(|(k, v)| (k.clone(), VoteRefs::from_iter(v))).collect()
+        self.0.iter().map(|(k, v)| (k.clone(), v.into())).collect()
     }
 
     pub(crate) fn collect_from(&mut self, source: &VotesByIssuer<T>) -> bool {

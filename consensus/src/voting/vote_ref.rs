@@ -18,6 +18,12 @@ impl<T: ConfigInterface> VoteRef<T> {
     }
 }
 
+impl<T: ConfigInterface> From<Vote<T>> for VoteRef<T> {
+    fn from(vote: Vote<T>) -> Self {
+        VoteRef::new(Arc::downgrade(&vote))
+    }
+}
+
 impl<T: ConfigInterface> From<&Vote<T>> for VoteRef<T> {
     fn from(vote: &Vote<T>) -> Self {
         VoteRef::new(Arc::downgrade(vote))

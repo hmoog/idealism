@@ -1,10 +1,9 @@
 use std::{
     cmp::Ordering,
     hash::{Hash, Hasher},
-    ops::Deref,
     sync::Arc,
 };
-
+use newtype::define;
 use utils::{ArcKey, rx};
 
 use crate::{
@@ -12,13 +11,9 @@ use crate::{
     errors::{Error, Error::ReferencedVoteEvicted},
 };
 
-pub struct Vote<T: ConfigInterface>(Arc<VoteData<T>>);
+define!(Vote, Arc<VoteData<T>>, T: ConfigInterface);
 
 impl<ID: ConfigInterface> Vote<ID> {
-    pub fn new(vote_data: Arc<VoteData<ID>>) -> Self {
-        Self(vote_data)
-    }
-
     pub fn new_genesis(config: ID) -> Vote<ID> {
         Vote(Arc::new_cyclic(|me| {
             let committee = config.select_committee(None);
@@ -104,20 +99,6 @@ impl<ID: ConfigInterface> TryFrom<&VoteRef<ID>> for Vote<ID> {
     }
 }
 
-impl<T: ConfigInterface> Clone for Vote<T> {
-    fn clone(&self) -> Self {
-        Self(self.0.clone())
-    }
-}
-
-impl<T: ConfigInterface> Deref for Vote<T> {
-    type Target = Arc<VoteData<T>>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
 impl<ID: ConfigInterface> Ord for Vote<ID> {
     fn cmp(&self, other: &Self) -> Ordering {
         let self_weight = (
@@ -134,20 +115,6 @@ impl<ID: ConfigInterface> Ord for Vote<ID> {
         self_weight.cmp(&other_weight)
     }
 }
-
-impl<ID: ConfigInterface> PartialOrd for Vote<ID> {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl<ID: ConfigInterface> PartialEq for Vote<ID> {
-    fn eq(&self, other: &Self) -> bool {
-        self.cmp(other) == Ordering::Equal
-    }
-}
-
-impl<ID: ConfigInterface> Eq for Vote<ID> {}
 
 impl<T: ConfigInterface> Hash for Vote<T> {
     fn hash<H: Hasher>(&self, hasher: &mut H) {
