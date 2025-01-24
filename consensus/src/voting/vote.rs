@@ -7,7 +7,10 @@ use std::{
 
 use utils::{ArcKey, rx};
 
-use crate::{ConfigInterface, VoteData, VoteRef, VoteRefs, VotesByIssuer, errors::Error};
+use crate::{
+    ConfigInterface, VoteData, VoteRef, VoteRefs, VotesByIssuer,
+    errors::{Error, Error::ReferencedVoteEvicted},
+};
 
 pub struct Vote<T: ConfigInterface>(Arc<VoteData<T>>);
 
@@ -79,6 +82,17 @@ impl<ID: ConfigInterface> Vote<ID> {
     }
 }
 
+impl<ID: ConfigInterface> TryFrom<VoteRef<ID>> for Vote<ID> {
+    type Error = Error;
+
+    fn try_from(vote_ref: VoteRef<ID>) -> Result<Self, Self::Error> {
+        vote_ref
+            .upgrade()
+            .map(Vote::new)
+            .ok_or(ReferencedVoteEvicted)
+    }
+}
+
 impl<ID: ConfigInterface> TryFrom<&VoteRef<ID>> for Vote<ID> {
     type Error = Error;
 
@@ -86,7 +100,7 @@ impl<ID: ConfigInterface> TryFrom<&VoteRef<ID>> for Vote<ID> {
         vote_ref
             .upgrade()
             .map(Vote::new)
-            .ok_or(Error::ReferencedVoteEvicted)
+            .ok_or(ReferencedVoteEvicted)
     }
 }
 

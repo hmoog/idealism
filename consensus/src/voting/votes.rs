@@ -1,12 +1,10 @@
 use std::{
-    collections::{HashMap, HashSet},
-    ops::{Deref, DerefMut},
+    collections::HashMap,
 };
-
+use newtype::define_hashset;
 use crate::{ConfigInterface, Vote, VoteRefs, errors::Error};
 
-#[derive(Clone, Default)]
-pub struct Votes<C: ConfigInterface>(HashSet<Vote<C>>);
+define_hashset!(Votes, Vote<C>, C: ConfigInterface);
 
 impl<C: ConfigInterface> Votes<C> {
     pub fn heaviest(&self, weights: &HashMap<Vote<C>, u64>) -> Option<Vote<C>> {
@@ -26,30 +24,16 @@ impl<C: ConfigInterface> Votes<C> {
     }
 }
 
+impl<C: ConfigInterface> TryFrom<VoteRefs<C>> for Votes<C> {
+    type Error = Error;
+    fn try_from(vote_refs: VoteRefs<C>) -> Result<Self, Self::Error> {
+        vote_refs.0.into_iter().map(Vote::try_from).collect()
+    }
+}
+
 impl<C: ConfigInterface> TryFrom<&VoteRefs<C>> for Votes<C> {
     type Error = Error;
-
     fn try_from(vote_refs: &VoteRefs<C>) -> Result<Self, Self::Error> {
         vote_refs.iter().map(Vote::try_from).collect()
-    }
-}
-
-impl<C: ConfigInterface> FromIterator<Vote<C>> for Votes<C> {
-    fn from_iter<I: IntoIterator<Item = Vote<C>>>(iter: I) -> Self {
-        Self(iter.into_iter().collect())
-    }
-}
-
-impl<C: ConfigInterface> Deref for Votes<C> {
-    type Target = HashSet<Vote<C>>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl<C: ConfigInterface> DerefMut for Votes<C> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
     }
 }
