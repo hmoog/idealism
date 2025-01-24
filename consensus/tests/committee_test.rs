@@ -5,7 +5,7 @@ use utils::ArcKey;
 fn test_committee() {
     let committee: Committee<Config> = Committee::from(vec![
         CommitteeMember::new(1).with_weight(10).with_online(true),
-        CommitteeMember::new(2).with_weight(20).with_online(false)
+        CommitteeMember::new(2).with_weight(20).with_online(false),
     ]);
 
     // assert initial state
@@ -34,6 +34,6 @@ fn test_committee() {
     assert_eq!(committee.member_weight(&ArcKey::new(2)), 20);
 
     // set member 2 online again (no change / same underlying data)
-    //let committee2 = committee1.set_online(&ArcKey::new(2), true);
-    //assert!(Arc::ptr_eq(&committee1.0, &committee2.0));
+    // let committee2 = committee1.set_online(&ArcKey::new(2), true);
+    // assert!(Arc::ptr_eq(&committee1.0, &committee2.0));
 }

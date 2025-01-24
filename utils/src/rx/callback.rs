@@ -1,7 +1,9 @@
 use std::sync::Mutex;
+
 use slotmap::HopSlotMap;
 use trait_set::trait_set;
-use crate::rx::subscription::{Unsubscribable, ID};
+
+use crate::rx::subscription::{ID, Unsubscribable};
 
 trait_set! {
     pub trait Callback<T> = FnMut(&T) + Send + Sync + 'static;

@@ -1,5 +1,4 @@
-use blockdag::Block;
-use blockdag::BlockDAG;
+use blockdag::{Block, BlockDAG};
 
 struct MyBlock {
     id: String,
@@ -22,17 +21,19 @@ impl Block for MyBlock {
 fn test_block_dag() {
     let block_dag: BlockDAG<MyBlock> = BlockDAG::new();
 
-    block_dag.on_ready(|block| {
-        println!("Block {} is ready", block.id());
-    }).forever();
+    block_dag
+        .on_ready(|block| {
+            println!("Block {} is ready", block.id());
+        })
+        .forever();
 
     block_dag.queue(MyBlock {
         id: String::from("block2"),
-        parents: vec![String::from("block1")]
+        parents: vec![String::from("block1")],
     });
 
     block_dag.queue(MyBlock {
         id: String::from("block1"),
-        parents: vec![]
+        parents: vec![],
     });
 }

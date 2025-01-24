@@ -1,10 +1,15 @@
-use std::collections::HashMap;
-use std::ops::{Deref, DerefMut};
-use utils::ArcKey;
-use crate::errors::Error;
-use crate::{ConfigInterface, VoteRefs, VotesByIssuer};
+use std::{
+    collections::HashMap,
+    ops::{Deref, DerefMut},
+};
 
-pub struct VoteRefsByIssuer<ID: ConfigInterface>(HashMap<ArcKey<ID::CommitteeMemberID>, VoteRefs<ID>>);
+use utils::ArcKey;
+
+use crate::{ConfigInterface, VoteRefs, VotesByIssuer, errors::Error};
+
+pub struct VoteRefsByIssuer<ID: ConfigInterface>(
+    HashMap<ArcKey<ID::CommitteeMemberID>, VoteRefs<ID>>,
+);
 
 impl<T: ConfigInterface> VoteRefsByIssuer<T> {
     pub fn fetch(&mut self, issuer: &ArcKey<T::CommitteeMemberID>) -> &mut VoteRefs<T> {
@@ -26,8 +31,12 @@ impl<T: ConfigInterface> Default for VoteRefsByIssuer<T> {
     }
 }
 
-impl<T: ConfigInterface> FromIterator<(ArcKey<T::CommitteeMemberID>, VoteRefs<T>)> for VoteRefsByIssuer<T> {
-    fn from_iter<I: IntoIterator<Item=(ArcKey<T::CommitteeMemberID>, VoteRefs<T>)>>(iter: I) -> Self {
+impl<T: ConfigInterface> FromIterator<(ArcKey<T::CommitteeMemberID>, VoteRefs<T>)>
+    for VoteRefsByIssuer<T>
+{
+    fn from_iter<I: IntoIterator<Item = (ArcKey<T::CommitteeMemberID>, VoteRefs<T>)>>(
+        iter: I,
+    ) -> Self {
         Self(iter.into_iter().collect())
     }
 }

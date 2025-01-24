@@ -1,6 +1,10 @@
-use std::collections::HashMap;
-use std::ops::{Deref, DerefMut};
+use std::{
+    collections::HashMap,
+    ops::{Deref, DerefMut},
+};
+
 use utils::ArcKey;
+
 use crate::{ConfigInterface, VoteRefsByIssuer, Votes};
 
 pub struct VotesByIssuer<ID: ConfigInterface>(HashMap<ArcKey<ID::CommitteeMemberID>, Votes<ID>>);
@@ -41,8 +45,12 @@ impl<T: ConfigInterface> Default for VotesByIssuer<T> {
     }
 }
 
-impl<T: ConfigInterface> FromIterator<(ArcKey<T::CommitteeMemberID>, Votes<T>)> for VotesByIssuer<T> {
-    fn from_iter<I: IntoIterator<Item=(ArcKey<T::CommitteeMemberID>, Votes<T>)>>(iter: I) -> Self {
+impl<T: ConfigInterface> FromIterator<(ArcKey<T::CommitteeMemberID>, Votes<T>)>
+    for VotesByIssuer<T>
+{
+    fn from_iter<I: IntoIterator<Item = (ArcKey<T::CommitteeMemberID>, Votes<T>)>>(
+        iter: I,
+    ) -> Self {
         Self(iter.into_iter().collect())
     }
 }

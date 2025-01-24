@@ -1,5 +1,5 @@
-use std::sync::{atomic, Arc};
-use std::sync::atomic::AtomicU64;
+use std::sync::{Arc, atomic, atomic::AtomicU64};
+
 use utils::rx::Signal;
 
 #[test]
@@ -11,11 +11,9 @@ fn test_signal() {
     let subscription = signal.subscribe({
         let callback_counter = callback_counter.clone();
 
-        move |new_value: &i32| {
-            match &callback_counter.fetch_add(1, atomic::Ordering::SeqCst) {
-                0 => assert_eq!(*new_value, 42),
-                _ => panic!(),
-            }
+        move |new_value: &i32| match &callback_counter.fetch_add(1, atomic::Ordering::SeqCst) {
+            0 => assert_eq!(*new_value, 42),
+            _ => panic!(),
         }
     });
 
@@ -34,14 +32,15 @@ fn test_signal() {
     assert_eq!(*signal.get(), Some(42));
     assert_eq!(callback_counter.load(atomic::Ordering::SeqCst), 1);
 
-    signal.subscribe({
-        let callback_counter = callback_counter.clone();
+    signal
+        .subscribe({
+            let callback_counter = callback_counter.clone();
 
-        move |new_value: &i32| {
-            match (&callback_counter).fetch_add(1, atomic::Ordering::SeqCst) {
+            move |new_value: &i32| match (&callback_counter).fetch_add(1, atomic::Ordering::SeqCst)
+            {
                 1 => assert_eq!(*new_value, 42),
                 _ => panic!(),
             }
-        }
-    }).forever();
+        })
+        .forever();
 }

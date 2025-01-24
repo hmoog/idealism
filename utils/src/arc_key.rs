@@ -1,6 +1,8 @@
-use std::hash::{Hash, Hasher};
-use std::ops::Deref;
-use std::sync::Arc;
+use std::{
+    hash::{Hash, Hasher},
+    ops::Deref,
+    sync::Arc,
+};
 
 pub struct ArcKey<T>(Arc<T>);
 
@@ -40,8 +42,9 @@ impl<T: Eq> Eq for ArcKey<T> {}
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::collections::HashMap;
+
+    use super::*;
 
     #[test]
     fn test_arc_key_behaves_correctly() {

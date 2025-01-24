@@ -1,4 +1,5 @@
 use utils::ArcKey;
+
 use crate::CommitteeMemberID;
 
 pub struct CommitteeMember<T: CommitteeMemberID> {
@@ -70,7 +71,7 @@ impl<T: CommitteeMemberID> CommitteeMember<T> {
     }
 }
 
-impl <T: CommitteeMemberID> Clone for CommitteeMember<T> {
+impl<T: CommitteeMemberID> Clone for CommitteeMember<T> {
     fn clone(&self) -> Self {
         Self {
             id: self.id.clone(),

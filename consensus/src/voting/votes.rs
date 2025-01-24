@@ -1,7 +1,9 @@
-use std::collections::{HashMap, HashSet};
-use std::ops::{Deref, DerefMut};
-use crate::{ConfigInterface, Vote, VoteRefs};
-use crate::errors::Error;
+use std::{
+    collections::{HashMap, HashSet},
+    ops::{Deref, DerefMut},
+};
+
+use crate::{ConfigInterface, Vote, VoteRefs, errors::Error};
 
 #[derive(Clone, Default)]
 pub struct Votes<C: ConfigInterface>(HashSet<Vote<C>>);
@@ -10,12 +12,17 @@ impl<C: ConfigInterface> Votes<C> {
     pub fn heaviest(&self, weights: &HashMap<Vote<C>, u64>) -> Option<Vote<C>> {
         self.iter()
             .map(|candidate_weak| {
-                (candidate_weak.clone(), weights.get(candidate_weak).unwrap_or(&0))
+                (
+                    candidate_weak.clone(),
+                    weights.get(candidate_weak).unwrap_or(&0),
+                )
             })
             .max_by(|(candidate1, weight1), (candidate2, weight2)| {
-                weight1.cmp(weight2).then_with(|| candidate1.cmp(candidate2))
+                weight1
+                    .cmp(weight2)
+                    .then_with(|| candidate1.cmp(candidate2))
             })
-            .map(|(candidate, _)| { candidate })
+            .map(|(candidate, _)| candidate)
     }
 }
 
@@ -28,7 +35,7 @@ impl<C: ConfigInterface> TryFrom<&VoteRefs<C>> for Votes<C> {
 }
 
 impl<C: ConfigInterface> FromIterator<Vote<C>> for Votes<C> {
-    fn from_iter<I: IntoIterator<Item=Vote<C>>>(iter: I) -> Self {
+    fn from_iter<I: IntoIterator<Item = Vote<C>>>(iter: I) -> Self {
         Self(iter.into_iter().collect())
     }
 }

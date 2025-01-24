@@ -1,5 +1,5 @@
-use std::sync::{atomic, Arc};
-use std::sync::atomic::AtomicU64;
+use std::sync::{Arc, atomic, atomic::AtomicU64};
+
 use utils::rx::Variable;
 
 #[test]
@@ -18,11 +18,11 @@ fn test_variable() {
                 0 => {
                     assert_eq!(*old_value, None);
                     assert_eq!(*new_value, Some(42));
-                },
+                }
                 1 => {
                     assert_eq!(*old_value, Some(42));
                     assert_eq!(*new_value, Some(43));
-                },
+                }
                 _ => panic!(),
             }
         }

@@ -1,7 +1,11 @@
 use std::sync::{Arc, Mutex, MutexGuard};
+
 use slotmap::HopSlotMap;
-use crate::rx::callback::{CallbackOnce, CallbacksOnce};
-use crate::rx::subscription::{Subscription, ID};
+
+use crate::rx::{
+    callback::{CallbackOnce, CallbacksOnce},
+    subscription::{ID, Subscription},
+};
 
 pub struct Signal<T> {
     signal: Mutex<Option<T>>,
@@ -46,7 +50,10 @@ impl<T> Signal<T> {
     }
 
     pub fn subscribe(&self, callback: impl CallbackOnce<T>) -> Subscription<CallbacksOnce<T>> {
-        Subscription::new(Arc::downgrade(&self.callbacks), self.try_add_callback(callback))
+        Subscription::new(
+            Arc::downgrade(&self.callbacks),
+            self.try_add_callback(callback),
+        )
     }
 
     fn try_add_callback(&self, callback: impl CallbackOnce<T>) -> Option<ID> {
@@ -55,7 +62,7 @@ impl<T> Signal<T> {
                 callback(emitted_signal);
                 None
             }
-            None => Some(self.callbacks.lock().unwrap().insert(Box::new(callback)))
+            None => Some(self.callbacks.lock().unwrap().insert(Box::new(callback))),
         }
     }
 }

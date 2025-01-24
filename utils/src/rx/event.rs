@@ -1,7 +1,11 @@
 use std::sync::{Arc, Mutex};
+
 use slotmap::HopSlotMap;
-use crate::rx::callback::{Callback, Callbacks};
-use crate::rx::subscription::{Subscription, ID};
+
+use crate::rx::{
+    callback::{Callback, Callbacks},
+    subscription::{ID, Subscription},
+};
 
 #[derive(Clone)]
 pub struct Event<T>(Arc<Callbacks<T>>);

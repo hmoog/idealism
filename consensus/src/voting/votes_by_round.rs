@@ -1,5 +1,5 @@
-use std::cmp::max;
-use std::collections::HashMap;
+use std::{cmp::max, collections::HashMap};
+
 use crate::{ConfigInterface, Vote, VotesByIssuer};
 
 pub struct VotesByRound<T: ConfigInterface> {
@@ -10,7 +10,9 @@ pub struct VotesByRound<T: ConfigInterface> {
 impl<T: ConfigInterface> VotesByRound<T> {
     pub fn insert_votes_by_issuer(&mut self, round: u64, votes_by_issuer: VotesByIssuer<T>) {
         for (issuer, votes) in votes_by_issuer.iter() {
-            self.fetch(round).fetch(issuer).extend(votes.iter().map(Vote::clone));
+            self.fetch(round)
+                .fetch(issuer)
+                .extend(votes.iter().map(Vote::clone));
         }
     }
 
@@ -35,12 +37,15 @@ impl<T: ConfigInterface> Default for VotesByRound<T> {
 
 impl<T: ConfigInterface> From<&VotesByIssuer<T>> for VotesByRound<T> {
     fn from(votes_by_issuer: &VotesByIssuer<T>) -> VotesByRound<T> {
-        votes_by_issuer.iter().fold(VotesByRound::default(), |mut votes_by_round, (issuer, votes)| {
-            votes_by_round
-                .fetch(votes.iter().next().map(|v| v.round()).unwrap_or(0))
-                .fetch(issuer)
-                .extend(votes.iter().map(Vote::clone));
-            votes_by_round
-        })
+        votes_by_issuer.iter().fold(
+            VotesByRound::default(),
+            |mut votes_by_round, (issuer, votes)| {
+                votes_by_round
+                    .fetch(votes.iter().next().map(|v| v.round()).unwrap_or(0))
+                    .fetch(issuer)
+                    .extend(votes.iter().map(Vote::clone));
+                votes_by_round
+            },
+        )
     }
 }

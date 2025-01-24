@@ -1,6 +1,10 @@
-use std::ops::Deref;
-use std::sync::{Arc, Mutex, Weak};
+use std::{
+    ops::Deref,
+    sync::{Arc, Mutex, Weak},
+};
+
 use utils::rx::{CallbackOnce, CallbacksOnce, Signal, Subscription};
+
 use crate::block;
 
 pub struct BlockMetadata<Block: block::Block>(Arc<Inner<Block>>);
@@ -33,7 +37,9 @@ impl<Block: block::Block> BlockMetadata<Block> {
     }
 
     pub(crate) fn register_parent(&self, index: usize, parent: BlockMetadataRef<Block>) {
-        self.0.parents.lock()
+        self.0
+            .parents
+            .lock()
             .expect("failed to lock parents")
             .insert(index, parent);
     }
@@ -51,7 +57,7 @@ impl<Block: block::Block> Deref for BlockMetadata<Block> {
     }
 }
 
-impl <Block: block::Block> Clone for BlockMetadata<Block> {
+impl<Block: block::Block> Clone for BlockMetadata<Block> {
     fn clone(&self) -> Self {
         Self(Arc::clone(&self.0))
     }

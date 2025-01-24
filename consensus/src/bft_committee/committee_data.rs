@@ -1,6 +1,7 @@
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
+
 use utils::ArcKey;
+
 use crate::{CommitteeMember, ConfigInterface};
 
 pub(crate) struct CommitteeData<C: ConfigInterface> {
@@ -9,7 +10,9 @@ pub(crate) struct CommitteeData<C: ConfigInterface> {
     pub(crate) online_weight: u64,
 }
 
-impl <T> Clone for CommitteeData<T> where T: ConfigInterface
+impl<T> Clone for CommitteeData<T>
+where
+    T: ConfigInterface,
 {
     fn clone(&self) -> Self {
         Self {
@@ -20,4 +23,7 @@ impl <T> Clone for CommitteeData<T> where T: ConfigInterface
     }
 }
 
-type CommitteeMembersByID<C> = HashMap<ArcKey<<C as ConfigInterface>::CommitteeMemberID>, Arc<CommitteeMember<<C as ConfigInterface>::CommitteeMemberID>>>;
+type CommitteeMembersByID<C> = HashMap<
+    ArcKey<<C as ConfigInterface>::CommitteeMemberID>,
+    Arc<CommitteeMember<<C as ConfigInterface>::CommitteeMemberID>>,
+>;

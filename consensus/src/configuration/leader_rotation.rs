@@ -1,5 +1,4 @@
-use crate::configuration::config::Config;
-use crate::VoteData;
+use crate::{VoteData, configuration::config::Config};
 
 pub enum LeaderRotation {
     RoundRobin,
@@ -16,7 +15,7 @@ impl LeaderRotation {
 }
 
 fn round_robin(vote: &VoteData<Config>) -> u64 {
-    vote.committee
-        .member(&vote.issuer)
-        .map_or(0, |member| (member.index() + vote.round) % vote.committee.size())
+    vote.committee.member(&vote.issuer).map_or(0, |member| {
+        (member.index() + vote.round) % vote.committee.size()
+    })
 }

@@ -1,4 +1,7 @@
-use std::sync::{Arc, atomic::{AtomicUsize, Ordering}};
+use std::sync::{
+    Arc,
+    atomic::{AtomicUsize, Ordering},
+};
 
 pub struct Countdown {
     inner: Arc<Inner>,
@@ -17,7 +20,10 @@ impl Countdown {
                 count: AtomicUsize::new(0),
                 target: x,
                 callback: match x {
-                    0 => { callback(); Box::new(|| {}) },
+                    0 => {
+                        callback();
+                        Box::new(|| {})
+                    }
                     _ => Box::new(callback),
                 },
             }),

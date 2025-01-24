@@ -1,5 +1,6 @@
-use std::sync::{Weak};
-use slotmap::{new_key_type};
+use std::sync::Weak;
+
+use slotmap::new_key_type;
 
 new_key_type! {
     pub struct ID;

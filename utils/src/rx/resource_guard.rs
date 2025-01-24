@@ -1,5 +1,5 @@
-use std::ops::Deref;
-use std::sync::Arc;
+use std::{ops::Deref, sync::Arc};
+
 use crate::rx::callback::CallbackOnce;
 
 #[must_use]
@@ -7,12 +7,15 @@ pub struct ResourceGuard<T>(Arc<Inner<T>>);
 
 pub struct Inner<T> {
     value: T,
-    done_callback: Option<Box<dyn CallbackOnce<T>>>
+    done_callback: Option<Box<dyn CallbackOnce<T>>>,
 }
 
 impl<T> ResourceGuard<T> {
     pub fn new(value: T, done_callback: impl CallbackOnce<T>) -> Self {
-        Self(Arc::new(Inner { value, done_callback: Some(Box::new(done_callback)) }))
+        Self(Arc::new(Inner {
+            value,
+            done_callback: Some(Box::new(done_callback)),
+        }))
     }
 
     pub fn get(&self) -> &T {
@@ -20,7 +23,7 @@ impl<T> ResourceGuard<T> {
     }
 }
 
-impl <T> Clone for ResourceGuard<T> {
+impl<T> Clone for ResourceGuard<T> {
     fn clone(&self) -> Self {
         Self(Arc::clone(&self.0))
     }

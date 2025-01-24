@@ -1,6 +1,9 @@
-use std::hash::{Hash, Hasher};
-use std::ops::Deref;
-use std::sync::{Arc, Weak};
+use std::{
+    hash::{Hash, Hasher},
+    ops::Deref,
+    sync::{Arc, Weak},
+};
+
 use crate::{ConfigInterface, Vote, VoteData};
 
 pub struct VoteRef<T: ConfigInterface>(Weak<VoteData<T>>);
@@ -28,7 +31,7 @@ impl<T: ConfigInterface> Clone for VoteRef<T> {
 }
 
 impl<T: ConfigInterface> PartialEq for VoteRef<T> {
-    fn eq (&self, other: &Self) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         Weak::ptr_eq(&self.0, &other.0)
     }
 }
@@ -36,7 +39,7 @@ impl<T: ConfigInterface> PartialEq for VoteRef<T> {
 impl<T: ConfigInterface> Eq for VoteRef<T> {}
 
 impl<T: ConfigInterface> Hash for VoteRef<T> {
-    fn hash<H : Hasher> (&self, hasher: &mut H) {
+    fn hash<H: Hasher>(&self, hasher: &mut H) {
         self.0.as_ptr().hash(hasher)
     }
 }

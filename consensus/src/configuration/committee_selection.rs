@@ -14,7 +14,10 @@ impl CommitteeSelection {
     }
 }
 
-pub fn fixed_committee(committee: &Committee<Config>, vote: Option<&Vote<Config>>) -> Committee<Config> {
+pub fn fixed_committee(
+    committee: &Committee<Config>,
+    vote: Option<&Vote<Config>>,
+) -> Committee<Config> {
     match vote {
         Some(vote) => vote.committee().clone(),
         None => (*committee).clone(),

@@ -1,8 +1,13 @@
-use std::cmp::{max, Ordering};
-use std::collections::{HashMap};
-use crate::{Committee, ConfigInterface, Vote, Votes, VotesByIssuer, VotesByRound};
-use crate::consensus::WalkResult::{LatestAcceptedMilestoneFound, PreviousRoundTargets};
-use crate::errors::Error;
+use std::{
+    cmp::{Ordering, max},
+    collections::HashMap,
+};
+
+use crate::{
+    Committee, ConfigInterface, Vote, Votes, VotesByIssuer, VotesByRound,
+    consensus::WalkResult::{LatestAcceptedMilestoneFound, PreviousRoundTargets},
+    errors::Error,
+};
 
 pub(crate) struct ConsensusRound<ID: ConfigInterface> {
     committee: Committee<ID>,
@@ -19,15 +24,22 @@ impl<ID: ConfigInterface> ConsensusRound<ID> {
         }
     }
 
-    /// Walks through the votes of each round and returns the latest accepted milestone.
-    pub(crate) fn latest_accepted_milestone(&mut self, mut votes_by_round: VotesByRound<ID>) -> Result<Vote<ID>, Error> {
+    /// Walks through the votes of each round and returns the latest accepted
+    /// milestone.
+    pub(crate) fn latest_accepted_milestone(
+        &mut self,
+        mut votes_by_round: VotesByRound<ID>,
+    ) -> Result<Vote<ID>, Error> {
         for round in (0..=votes_by_round.max_round()).rev() {
             match self.heaviest_target(votes_by_round.fetch(round))? {
-                LatestAcceptedMilestoneFound(latest_accepted_milestone) =>
-                    return Ok(latest_accepted_milestone),
-                PreviousRoundTargets(previous_round_targets) => if round > 0 {
-                    votes_by_round.insert_votes_by_issuer(round - 1, previous_round_targets)
-                },
+                LatestAcceptedMilestoneFound(latest_accepted_milestone) => {
+                    return Ok(latest_accepted_milestone);
+                }
+                PreviousRoundTargets(previous_round_targets) => {
+                    if round > 0 {
+                        votes_by_round.insert_votes_by_issuer(round - 1, previous_round_targets)
+                    }
+                }
             }
         }
 
@@ -47,10 +59,17 @@ impl<ID: ConfigInterface> ConsensusRound<ID> {
     }
 
     fn add_weight(&mut self, vote: &Vote<ID>, weight: u64) -> u64 {
-        *self.weights.entry(vote.clone()).and_modify(|w| *w += weight).or_insert(weight)
+        *self
+            .weights
+            .entry(vote.clone())
+            .and_modify(|w| *w += weight)
+            .or_insert(weight)
     }
 
-    fn heaviest_target(&mut self, votes_of_round: &VotesByIssuer<ID>) -> Result<WalkResult<ID>, Error> {
+    fn heaviest_target(
+        &mut self,
+        votes_of_round: &VotesByIssuer<ID>,
+    ) -> Result<WalkResult<ID>, Error> {
         let mut targets = VotesByIssuer::default();
         let mut heaviest_vote = None;
         let mut heaviest_weight = 0;
@@ -63,7 +82,8 @@ impl<ID: ConfigInterface> ConsensusRound<ID> {
                     return Ok(LatestAcceptedMilestoneFound(vote.clone()));
                 }
 
-                let updated_weight = self.add_weight(&target, self.committee.member_weight(vote.issuer()));
+                let updated_weight =
+                    self.add_weight(&target, self.committee.member_weight(vote.issuer()));
                 match updated_weight.cmp(&heaviest_weight) {
                     Ordering::Greater => {
                         heaviest_vote = Some(target.clone());
@@ -76,7 +96,10 @@ impl<ID: ConfigInterface> ConsensusRound<ID> {
                 }
 
                 targets.fetch(issuer).insert(target.clone());
-                self.children.entry(target).or_default().insert(vote.clone());
+                self.children
+                    .entry(target)
+                    .or_default()
+                    .insert(vote.clone());
             }
         }
 

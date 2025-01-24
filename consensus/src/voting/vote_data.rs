@@ -1,8 +1,11 @@
 use std::sync::Arc;
-use utils::{rx, ArcKey};
-use crate::{Committee, ConfigInterface, Vote, VoteRef, VoteRefs, VoteRefsByIssuer};
-use crate::consensus::ConsensusRound;
-use crate::errors::Error;
+
+use utils::{ArcKey, rx};
+
+use crate::{
+    Committee, ConfigInterface, Vote, VoteRef, VoteRefs, VoteRefsByIssuer,
+    consensus::ConsensusRound, errors::Error,
+};
 
 pub struct VoteData<T: ConfigInterface> {
     pub(crate) config: Arc<T>,
@@ -52,7 +55,7 @@ impl<T: ConfigInterface> VoteData<T> {
     pub(crate) fn build(mut self) -> Result<Arc<Self>, Error> {
         // abort if the issuer is not a member of the committee
         let Some(committee_member) = self.committee.member(&self.issuer).cloned() else {
-            return Ok(Arc::new(self))
+            return Ok(Arc::new(self));
         };
 
         // set the issuer online if they are not already
@@ -61,7 +64,9 @@ impl<T: ConfigInterface> VoteData<T> {
         }
 
         // determine the acceptance threshold
-        let referenced_round_weight = self.committee.referenced_round_weight(&self.votes_by_issuer)?;
+        let referenced_round_weight = self
+            .committee
+            .referenced_round_weight(&self.votes_by_issuer)?;
         let acceptance_threshold = self.committee.acceptance_threshold();
 
         // abort if we have already voted and are below the acceptance threshold
@@ -75,8 +80,10 @@ impl<T: ConfigInterface> VoteData<T> {
 
         // determine the target vote
         let mut consensus_round = ConsensusRound::new(self.committee.clone());
-        let latest_accepted_milestone = consensus_round.latest_accepted_milestone((&self.votes_by_issuer.upgrade()?).into())?;
-        self.target = VoteRef::from(&consensus_round.heaviest_descendant(&latest_accepted_milestone));
+        let latest_accepted_milestone =
+            consensus_round.latest_accepted_milestone((&self.votes_by_issuer.upgrade()?).into())?;
+        self.target =
+            VoteRef::from(&consensus_round.heaviest_descendant(&latest_accepted_milestone));
 
         // advance the round if the acceptance threshold is now met
         if referenced_round_weight + committee_member.weight() >= acceptance_threshold {
@@ -85,7 +92,10 @@ impl<T: ConfigInterface> VoteData<T> {
         }
 
         Ok(Arc::new_cyclic(|me| {
-            self.votes_by_issuer.insert(self.issuer.clone(), VoteRefs::from_iter([VoteRef::new(me.clone())]));
+            self.votes_by_issuer.insert(
+                self.issuer.clone(),
+                VoteRefs::from_iter([VoteRef::new(me.clone())]),
+            );
             self
         }))
     }

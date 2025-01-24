@@ -1,5 +1,8 @@
-use std::collections::HashSet;
-use std::ops::{Deref, DerefMut};
+use std::{
+    collections::HashSet,
+    ops::{Deref, DerefMut},
+};
+
 use crate::{ConfigInterface, VoteRef, Votes};
 
 #[derive(Clone, Default)]
@@ -12,7 +15,7 @@ impl<C: ConfigInterface> From<&Votes<C>> for VoteRefs<C> {
 }
 
 impl<C: ConfigInterface> FromIterator<VoteRef<C>> for VoteRefs<C> {
-    fn from_iter<I: IntoIterator<Item=VoteRef<C>>>(iter: I) -> Self {
+    fn from_iter<I: IntoIterator<Item = VoteRef<C>>>(iter: I) -> Self {
         Self(iter.into_iter().collect())
     }
 }

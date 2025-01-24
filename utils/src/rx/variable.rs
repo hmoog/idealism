@@ -1,7 +1,10 @@
 use std::sync::{Mutex, MutexGuard};
-use crate::rx::callback::{Callback, Callbacks};
-use crate::rx::Event;
-use crate::rx::subscription::Subscription;
+
+use crate::rx::{
+    Event,
+    callback::{Callback, Callbacks},
+    subscription::Subscription,
+};
 
 pub struct Variable<T> {
     value: Mutex<Option<T>>,
@@ -36,7 +39,10 @@ impl<T> Variable<T> {
         self.compute_if_none(|| self.process_update(None, Some(default())))
     }
 
-    pub fn subscribe(&self, mut callback: impl Callback<(Option<T>, Option<T>)>) -> Subscription<Callbacks<(Option<T>, Option<T>)>> {
+    pub fn subscribe(
+        &self,
+        mut callback: impl Callback<(Option<T>, Option<T>)>,
+    ) -> Subscription<Callbacks<(Option<T>, Option<T>)>> {
         let _lock = self.compute_if_some(|current_value| {
             let update = (None, Some(current_value));
             callback(&update);
@@ -48,7 +54,11 @@ impl<T> Variable<T> {
 
     fn compute<F: FnOnce(Option<T>) -> Option<T>>(&self, compute: F) -> MutexGuard<Option<T>> {
         let mut value = self.get();
-        *value = compute(if value.is_none() { None } else { Some(value.take().unwrap()) });
+        *value = compute(if value.is_none() {
+            None
+        } else {
+            Some(value.take().unwrap())
+        });
         value
     }
 
