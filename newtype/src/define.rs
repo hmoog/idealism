@@ -1,7 +1,7 @@
 #[macro_export]
 macro_rules! define {
     ($wrapper:ident, $inner:ty $(, $generics:ident $(: $bounds:path)? )*) => {
-        pub struct $wrapper<$($generics $(: $bounds)?),*>(pub $inner);
+        pub struct $wrapper<$($generics $(: $bounds)?),*>($inner);
 
         impl<$($generics $(: $bounds)?),*> $wrapper<$($generics),*> {
             pub fn new(inner: $inner) -> Self {
@@ -35,7 +35,7 @@ macro_rules! define {
         }
 
         // Implement Eq for the wrapper type if it implements Ord
-        impl<$($generics $(: $bounds)?),*> Eq for $wrapper<$($generics),*> where $wrapper<$($generics),*>: Ord {}
+        impl<$($generics $(: $bounds)?),*> Eq for $wrapper<$($generics),*> where $wrapper<$($generics),*>: PartialEq {}
 
         // Implement Clone for the wrapper type if the inner type is Clone
         impl<$($generics $(: $bounds)?),*> Clone for $wrapper<$($generics),*>

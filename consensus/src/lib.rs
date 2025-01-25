@@ -15,8 +15,9 @@ pub use crate::{
     },
 };
 
-mod consensus;
-mod errors;
+pub(crate) mod consensus;
+
+pub(crate) mod errors;
 
 pub(crate) mod bft_committee {
     pub(crate) mod committee;

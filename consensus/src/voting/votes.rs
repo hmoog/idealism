@@ -1,7 +1,9 @@
 use std::{
     collections::HashMap,
 };
+
 use newtype::define_hashset;
+
 use crate::{ConfigInterface, Vote, VoteRefs, errors::Error};
 
 define_hashset!(Votes, Vote<C>, C: ConfigInterface);
@@ -27,7 +29,7 @@ impl<C: ConfigInterface> Votes<C> {
 impl<C: ConfigInterface> TryFrom<VoteRefs<C>> for Votes<C> {
     type Error = Error;
     fn try_from(vote_refs: VoteRefs<C>) -> Result<Self, Self::Error> {
-        vote_refs.0.into_iter().map(Vote::try_from).collect()
+        vote_refs.into_inner().into_iter().map(Vote::try_from).collect()
     }
 }
 

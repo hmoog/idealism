@@ -1,56 +1,20 @@
-use std::{
-    collections::HashMap,
-    ops::{Deref, DerefMut},
-};
-
+use newtype::define_hashmap;
 use utils::ArcKey;
 
 use crate::{ConfigInterface, VoteRefs, VotesByIssuer, errors::Error};
 
-pub struct VoteRefsByIssuer<ID: ConfigInterface>(
-    HashMap<ArcKey<ID::CommitteeMemberID>, VoteRefs<ID>>,
-);
+define_hashmap!(VoteRefsByIssuer, ArcKey<C::CommitteeMemberID>, VoteRefs<C>, C: ConfigInterface);
 
-impl<T: ConfigInterface> VoteRefsByIssuer<T> {
-    pub fn fetch(&mut self, issuer: &ArcKey<T::CommitteeMemberID>) -> &mut VoteRefs<T> {
+impl<C: ConfigInterface> VoteRefsByIssuer<C> {
+    pub fn fetch(&mut self, issuer: &ArcKey<C::CommitteeMemberID>) -> &mut VoteRefs<C> {
         self.0.entry(issuer.clone()).or_default()
     }
 
-    pub fn upgrade(&self) -> Result<VotesByIssuer<T>, Error> {
+    pub fn upgrade(&self) -> Result<VotesByIssuer<C>, Error> {
         let mut votes_by_issuer = VotesByIssuer::default();
         for (k, v) in self.0.iter() {
             votes_by_issuer.insert(k.clone(), v.try_into()?);
         }
         Ok(votes_by_issuer)
-    }
-}
-
-impl<T: ConfigInterface> Default for VoteRefsByIssuer<T> {
-    fn default() -> Self {
-        Self(HashMap::default())
-    }
-}
-
-impl<T: ConfigInterface> FromIterator<(ArcKey<T::CommitteeMemberID>, VoteRefs<T>)>
-    for VoteRefsByIssuer<T>
-{
-    fn from_iter<I: IntoIterator<Item = (ArcKey<T::CommitteeMemberID>, VoteRefs<T>)>>(
-        iter: I,
-    ) -> Self {
-        Self(iter.into_iter().collect())
-    }
-}
-
-impl<T: ConfigInterface> Deref for VoteRefsByIssuer<T> {
-    type Target = HashMap<ArcKey<T::CommitteeMemberID>, VoteRefs<T>>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl<T: ConfigInterface> DerefMut for VoteRefsByIssuer<T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
     }
 }
