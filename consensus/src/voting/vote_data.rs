@@ -2,10 +2,7 @@ use std::sync::Arc;
 
 use utils::{ArcKey, rx};
 
-use crate::{
-    Committee, ConfigInterface, Vote, VoteRef, VoteRefs, VoteRefsByIssuer,
-    consensus::ConsensusRound, errors::Error,
-};
+use crate::{Committee, ConfigInterface, Vote, VoteRef, VoteRefs, VoteRefsByIssuer, consensus::ConsensusRound, errors::Error, VotesByIssuer};
 
 pub struct VoteData<T: ConfigInterface> {
     pub(crate) config: Arc<T>,
@@ -81,7 +78,7 @@ impl<T: ConfigInterface> VoteData<T> {
         // determine the target vote
         let mut consensus_round = ConsensusRound::new(self.committee.clone());
         let latest_accepted_milestone =
-            consensus_round.latest_accepted_milestone((&self.votes_by_issuer.upgrade()?).into())?;
+            consensus_round.latest_accepted_milestone(VotesByIssuer::try_from(&self.votes_by_issuer)?.into())?;
         self.target =
             VoteRef::from(&consensus_round.heaviest_descendant(&latest_accepted_milestone));
 

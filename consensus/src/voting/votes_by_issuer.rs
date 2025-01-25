@@ -1,13 +1,10 @@
-use std::{
-    collections::HashMap,
-    ops::{Deref, DerefMut},
-};
-
+use newtype::define_hashmap;
 use utils::ArcKey;
 
 use crate::{ConfigInterface, VoteRefsByIssuer, Votes};
+use crate::errors::Error;
 
-pub struct VotesByIssuer<ID: ConfigInterface>(HashMap<ArcKey<ID::CommitteeMemberID>, Votes<ID>>);
+define_hashmap!(VotesByIssuer, ArcKey<ID::CommitteeMemberID>, Votes<ID>, ID: ConfigInterface);
 
 impl<T: ConfigInterface> VotesByIssuer<T> {
     pub fn fetch(&mut self, issuer: &ArcKey<T::CommitteeMemberID>) -> &mut Votes<T> {
@@ -39,32 +36,23 @@ impl<T: ConfigInterface> VotesByIssuer<T> {
     }
 }
 
-impl<T: ConfigInterface> Default for VotesByIssuer<T> {
-    fn default() -> Self {
-        Self(HashMap::new())
+impl<C: ConfigInterface> TryFrom<VoteRefsByIssuer<C>> for VotesByIssuer<C> {
+    type Error = Error;
+    fn try_from(vote_refs_by_issuer: VoteRefsByIssuer<C>) -> Result<VotesByIssuer<C>, Self::Error> {
+        vote_refs_by_issuer
+            .into_inner()
+            .into_iter()
+            .map(|(k, v)| Votes::try_from(v).map(|v| (k, v)))
+            .collect()
     }
 }
 
-impl<T: ConfigInterface> FromIterator<(ArcKey<T::CommitteeMemberID>, Votes<T>)>
-    for VotesByIssuer<T>
-{
-    fn from_iter<I: IntoIterator<Item = (ArcKey<T::CommitteeMemberID>, Votes<T>)>>(
-        iter: I,
-    ) -> Self {
-        Self(iter.into_iter().collect())
-    }
-}
-
-impl<T: ConfigInterface> Deref for VotesByIssuer<T> {
-    type Target = HashMap<ArcKey<T::CommitteeMemberID>, Votes<T>>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl<T: ConfigInterface> DerefMut for VotesByIssuer<T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+impl<C: ConfigInterface> TryFrom<&VoteRefsByIssuer<C>> for VotesByIssuer<C> {
+    type Error = Error;
+    fn try_from(vote_refs_by_issuer: &VoteRefsByIssuer<C>) -> Result<VotesByIssuer<C>, Self::Error> {
+        vote_refs_by_issuer
+            .into_iter()
+            .map(|(k, v)| Votes::try_from(v).map(|v| (k.clone(), v)))
+            .collect()
     }
 }

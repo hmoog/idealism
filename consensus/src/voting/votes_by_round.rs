@@ -35,6 +35,21 @@ impl<T: ConfigInterface> Default for VotesByRound<T> {
     }
 }
 
+impl<T: ConfigInterface> From<VotesByIssuer<T>> for VotesByRound<T> {
+    fn from(votes_by_issuer: VotesByIssuer<T>) -> VotesByRound<T> {
+        votes_by_issuer.into_inner().into_iter().fold(
+            VotesByRound::default(),
+            |mut votes_by_round, (issuer, votes)| {
+                votes_by_round
+                    .fetch(votes.iter().next().map(|v| v.round()).unwrap_or(0))
+                    .fetch(&issuer)
+                    .extend(votes);
+                votes_by_round
+            },
+        )
+    }
+}
+
 impl<T: ConfigInterface> From<&VotesByIssuer<T>> for VotesByRound<T> {
     fn from(votes_by_issuer: &VotesByIssuer<T>) -> VotesByRound<T> {
         votes_by_issuer.iter().fold(

@@ -4,51 +4,25 @@ use std::{
     sync::Arc,
 };
 
-use newtype::define;
+use newtype;
 use utils::{ArcKey, rx};
 
 use crate::{
     ConfigInterface, VoteData, VoteRef, VoteRefs, VotesByIssuer,
-    errors::{Error, Error::ReferencedVoteEvicted},
+    errors::Error,
 };
 
-define!(Vote, Arc<VoteData<T>>, T: ConfigInterface);
+newtype::define!(Vote, Arc<VoteData<Config>>, Config: ConfigInterface);
 
-impl<ID: ConfigInterface> Vote<ID> {
-    pub fn new_genesis(config: ID) -> Vote<ID> {
-        Vote(Arc::new_cyclic(|me| {
-            let committee = config.select_committee(None);
-
-            VoteData {
-                accepted: rx::Signal::new().init(true),
-                cumulative_slot_weight: 0,
-                round: 0,
-                leader_weight: 0,
-                issuer: ArcKey::new(ID::CommitteeMemberID::default()),
-                votes_by_issuer: committee
-                    .iter()
-                    .map(|member| {
-                        (
-                            member.key().clone(),
-                            VoteRefs::from_iter([VoteRef::new(me.clone())]),
-                        )
-                    })
-                    .collect(),
-                target: VoteRef::new(me.clone()),
-                config: Arc::new(config),
-                committee,
-            }
-        }))
-    }
-
-    pub fn aggregate(
-        issuing_identity: &ArcKey<ID::CommitteeMemberID>,
-        votes: Vec<&Vote<ID>>,
-    ) -> Result<Vote<ID>, Error> {
+impl<Config: ConfigInterface> Vote<Config> {
+    pub fn cast(
+        issuing_identity: &ArcKey<Config::CommitteeMemberID>,
+        votes: Vec<&Vote<Config>>,
+    ) -> Result<Vote<Config>, Error> {
         let mut heaviest_vote = *votes.first().ok_or(Error::VotesMustNotBeEmpty)?;
-        let mut votes_by_issuer: VotesByIssuer<ID> = VotesByIssuer::default();
+        let mut votes_by_issuer: VotesByIssuer<Config> = VotesByIssuer::default();
         for vote in votes {
-            votes_by_issuer.collect_from(&vote.votes_by_issuer().upgrade()?);
+            votes_by_issuer.collect_from(&vote.votes_by_issuer().try_into()?);
 
             if vote > heaviest_vote {
                 heaviest_vote = vote;
@@ -78,29 +52,49 @@ impl<ID: ConfigInterface> Vote<ID> {
     }
 }
 
-impl<ID: ConfigInterface> TryFrom<VoteRef<ID>> for Vote<ID> {
-    type Error = Error;
+impl<Config: ConfigInterface> From<Config> for Vote<Config> {
+    fn from(config: Config) -> Self {
+        Self(Arc::new_cyclic(|me| {
+            let committee = config.select_committee(None);
 
-    fn try_from(vote_ref: VoteRef<ID>) -> Result<Self, Self::Error> {
-        vote_ref
-            .upgrade()
-            .map(Vote::new)
-            .ok_or(ReferencedVoteEvicted)
+            VoteData {
+                accepted: rx::Signal::new().init(true),
+                cumulative_slot_weight: 0,
+                round: 0,
+                leader_weight: 0,
+                issuer: ArcKey::new(Config::CommitteeMemberID::default()),
+                votes_by_issuer: committee
+                    .iter()
+                    .map(|member| {
+                        (
+                            member.key().clone(),
+                            VoteRefs::from_iter([VoteRef::new(me.clone())]),
+                        )
+                    })
+                    .collect(),
+                target: VoteRef::new(me.clone()),
+                config: Arc::new(config),
+                committee,
+            }
+        }))
     }
 }
 
-impl<ID: ConfigInterface> TryFrom<&VoteRef<ID>> for Vote<ID> {
+impl<Config: ConfigInterface> TryFrom<VoteRef<Config>> for Vote<Config> {
     type Error = Error;
-
-    fn try_from(vote_ref: &VoteRef<ID>) -> Result<Self, Self::Error> {
-        vote_ref
-            .upgrade()
-            .map(Vote::new)
-            .ok_or(ReferencedVoteEvicted)
+    fn try_from(vote_ref: VoteRef<Config>) -> Result<Self, Self::Error> {
+        vote_ref.upgrade().map(Vote::new).ok_or(Error::ReferencedVoteEvicted)
     }
 }
 
-impl<ID: ConfigInterface> Ord for Vote<ID> {
+impl<Config: ConfigInterface> TryFrom<&VoteRef<Config>> for Vote<Config> {
+    type Error = Error;
+    fn try_from(vote_ref: &VoteRef<Config>) -> Result<Self, Self::Error> {
+        vote_ref.upgrade().map(Vote::new).ok_or(Error::ReferencedVoteEvicted)
+    }
+}
+
+impl<Config: ConfigInterface> Ord for Vote<Config> {
     fn cmp(&self, other: &Self) -> Ordering {
         let self_weight = (
             self.0.cumulative_slot_weight,
@@ -117,7 +111,7 @@ impl<ID: ConfigInterface> Ord for Vote<ID> {
     }
 }
 
-impl<T: ConfigInterface> Hash for Vote<T> {
+impl<Config: ConfigInterface> Hash for Vote<Config> {
     fn hash<H: Hasher>(&self, hasher: &mut H) {
         Arc::as_ptr(&self.0).hash(hasher)
     }
