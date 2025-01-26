@@ -9,7 +9,7 @@ pub use crate::{
         leader_rotation::LeaderRotation,
     },
     voting::{
-        vote::Vote, vote_data::VoteData, vote_ref::VoteRef, vote_refs::VoteRefs,
+        issuer::Issuer, vote::Vote, vote_data::VoteData, vote_ref::VoteRef, vote_refs::VoteRefs,
         vote_refs_by_issuer::VoteRefsByIssuer, votes::Votes, votes_by_issuer::VotesByIssuer,
         votes_by_round::VotesByRound,
     },
@@ -34,6 +34,7 @@ pub(crate) mod configuration {
 }
 
 pub(crate) mod voting {
+    pub(crate) mod issuer;
     pub(crate) mod vote;
     pub(crate) mod vote_data;
     pub(crate) mod vote_ref;
@@ -52,16 +53,16 @@ mod test {
     fn test_consensus() -> Result<(), Error> {
         let genesis = Vote::from(Config::new());
 
-        let members = genesis.committee().members();
+        let members = genesis.committee.members();
 
         let member1_vote_1_1 = Vote::cast(members[0].key(), vec![&genesis])?;
         let member2_vote_1_1 = Vote::cast(members[1].key(), vec![&genesis])?;
         let member3_vote_1_1 = Vote::cast(members[2].key(), vec![&genesis])?;
         let member4_vote_1_1 = Vote::cast(members[3].key(), vec![&genesis])?;
-        assert!(member1_vote_1_1.target().points_to(&genesis));
-        assert!(member2_vote_1_1.target().points_to(&genesis));
-        assert!(member3_vote_1_1.target().points_to(&genesis));
-        assert!(member4_vote_1_1.target().points_to(&genesis));
+        assert!(member1_vote_1_1.target.points_to(&genesis));
+        assert!(member2_vote_1_1.target.points_to(&genesis));
+        assert!(member3_vote_1_1.target.points_to(&genesis));
+        assert!(member4_vote_1_1.target.points_to(&genesis));
 
         let a2 = Vote::cast(members[0].key(), vec![
             &member1_vote_1_1,
@@ -79,9 +80,9 @@ mod test {
             &member3_vote_1_1,
             &member4_vote_1_1,
         ])?;
-        assert!(a2.target().points_to(&member3_vote_1_1));
-        assert!(b2.target().points_to(&member3_vote_1_1));
-        assert!(c2.target().points_to(&member4_vote_1_1));
+        assert!(a2.target.points_to(&member3_vote_1_1));
+        assert!(b2.target.points_to(&member3_vote_1_1));
+        assert!(c2.target.points_to(&member4_vote_1_1));
 
         Ok(())
     }

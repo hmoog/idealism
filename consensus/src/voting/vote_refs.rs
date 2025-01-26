@@ -1,4 +1,5 @@
 use newtype::define_hashset;
+
 use crate::{ConfigInterface, VoteRef, Votes};
 
 define_hashset!(VoteRefs, VoteRef<C>, C: ConfigInterface);

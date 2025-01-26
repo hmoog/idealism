@@ -9,10 +9,8 @@ pub struct VotesByRound<T: ConfigInterface> {
 
 impl<T: ConfigInterface> VotesByRound<T> {
     pub fn insert_votes_by_issuer(&mut self, round: u64, votes_by_issuer: VotesByIssuer<T>) {
-        for (issuer, votes) in votes_by_issuer.iter() {
-            self.fetch(round)
-                .fetch(issuer)
-                .extend(votes.iter().map(Vote::clone));
+        for (issuer, votes) in votes_by_issuer {
+            self.fetch(round).entry(issuer).or_default().extend(votes);
         }
     }
 
@@ -41,7 +39,7 @@ impl<T: ConfigInterface> From<VotesByIssuer<T>> for VotesByRound<T> {
             VotesByRound::default(),
             |mut votes_by_round, (issuer, votes)| {
                 votes_by_round
-                    .fetch(votes.iter().next().map(|v| v.round()).unwrap_or(0))
+                    .fetch(votes.iter().next().map(|v| v.round).unwrap_or(0))
                     .fetch(&issuer)
                     .extend(votes);
                 votes_by_round
@@ -56,7 +54,7 @@ impl<T: ConfigInterface> From<&VotesByIssuer<T>> for VotesByRound<T> {
             VotesByRound::default(),
             |mut votes_by_round, (issuer, votes)| {
                 votes_by_round
-                    .fetch(votes.iter().next().map(|v| v.round()).unwrap_or(0))
+                    .fetch(votes.iter().next().map(|v| v.round).unwrap_or(0))
                     .fetch(issuer)
                     .extend(votes.iter().map(Vote::clone));
                 votes_by_round

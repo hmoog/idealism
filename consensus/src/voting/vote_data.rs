@@ -1,63 +1,39 @@
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
 
-use utils::{ArcKey, rx};
+use utils::ArcKey;
 
-use crate::{Committee, ConfigInterface, Vote, VoteRef, VoteRefs, VoteRefsByIssuer, consensus::ConsensusRound, errors::Error, VotesByIssuer};
+use crate::{
+    Committee, ConfigInterface, Issuer, Vote, VoteRef, VoteRefs, VoteRefsByIssuer, Votes,
+    VotesByIssuer, consensus::ConsensusRound, errors::Error,
+};
 
 pub struct VoteData<T: ConfigInterface> {
-    pub(crate) config: Arc<T>,
-    pub(crate) issuer: ArcKey<T::CommitteeMemberID>,
-    pub(crate) accepted: rx::Signal<bool>,
-    pub(crate) cumulative_slot_weight: u64,
-    pub(crate) round: u64,
-    pub(crate) leader_weight: u64,
-    pub(crate) committee: Committee<T>,
-    pub(crate) votes_by_issuer: VoteRefsByIssuer<T>,
-    pub(crate) target: VoteRef<T>,
+    pub config: Arc<T>,
+    pub issuer: Issuer<T::CommitteeMemberID>,
+    pub accepted: bool,
+    pub cumulative_slot_weight: u64,
+    pub round: u64,
+    pub leader_weight: u64,
+    pub committee: Committee<T>,
+    pub votes_by_issuer: VoteRefsByIssuer<T>,
+    pub target: VoteRef<T>,
 }
 
 impl<T: ConfigInterface> VoteData<T> {
-    pub fn issuer(&self) -> &ArcKey<T::CommitteeMemberID> {
-        &self.issuer
-    }
+    pub(crate) fn build(
+        mut self,
+        issuer: ArcKey<T::CommitteeMemberID>,
+    ) -> Result<Arc<Self>, Error> {
+        self.issuer = Issuer::User(issuer.clone());
 
-    pub fn committee(&self) -> &Committee<T> {
-        &self.committee
-    }
-
-    pub fn votes_by_issuer(&self) -> &VoteRefsByIssuer<T> {
-        &self.votes_by_issuer
-    }
-
-    pub fn cumulative_slot_weight(&self) -> u64 {
-        self.cumulative_slot_weight
-    }
-
-    pub fn round(&self) -> u64 {
-        self.round
-    }
-
-    pub fn leader_weight(&self) -> u64 {
-        self.leader_weight
-    }
-
-    pub fn is_accepted(&self) -> bool {
-        self.accepted.get().unwrap_or(false)
-    }
-
-    pub fn target(&self) -> &VoteRef<T> {
-        &self.target
-    }
-
-    pub(crate) fn build(mut self) -> Result<Arc<Self>, Error> {
         // abort if the issuer is not a member of the committee
-        let Some(committee_member) = self.committee.member(&self.issuer).cloned() else {
+        let Some(committee_member) = self.committee.member(&issuer).cloned() else {
             return Ok(Arc::new(self));
         };
 
         // set the issuer online if they are not already
         if !committee_member.is_online() {
-            self.committee = self.committee.set_online(&self.issuer, true);
+            self.committee = self.committee.set_online(&issuer, true);
         }
 
         // determine the acceptance threshold
@@ -67,18 +43,18 @@ impl<T: ConfigInterface> VoteData<T> {
         let acceptance_threshold = self.committee.acceptance_threshold();
 
         // abort if we have already voted and are below the acceptance threshold
-        let own_votes = self.votes_by_issuer.fetch(&self.issuer);
+        let own_votes = self.votes_by_issuer.entry(issuer.clone()).or_default();
         if let Some(own_vote) = own_votes.iter().next() {
             let vote: Vote<T> = own_vote.try_into()?;
-            if vote.round() == self.round && referenced_round_weight < acceptance_threshold {
+            if vote.round == self.round && referenced_round_weight < acceptance_threshold {
                 return Ok(Arc::new(self));
             }
         }
 
         // determine the target vote
         let mut consensus_round = ConsensusRound::new(self.committee.clone());
-        let latest_accepted_milestone =
-            consensus_round.latest_accepted_milestone(VotesByIssuer::try_from(&self.votes_by_issuer)?.into())?;
+        let latest_accepted_milestone = consensus_round
+            .latest_accepted_milestone(VotesByIssuer::try_from(&self.votes_by_issuer)?.into())?;
         self.target =
             VoteRef::from(&consensus_round.heaviest_descendant(&latest_accepted_milestone));
 
@@ -89,11 +65,58 @@ impl<T: ConfigInterface> VoteData<T> {
         }
 
         Ok(Arc::new_cyclic(|me| {
-            self.votes_by_issuer.insert(
-                self.issuer.clone(),
-                VoteRefs::from_iter([VoteRef::new(me.clone())]),
-            );
+            self.votes_by_issuer
+                .insert(issuer, VoteRefs::from_iter([VoteRef::new(me.clone())]));
             self
         }))
+    }
+}
+
+impl<Config: ConfigInterface> TryFrom<Votes<Config>> for VoteData<Config> {
+    type Error = Error;
+    fn try_from(votes: Votes<Config>) -> Result<VoteData<Config>, Self::Error> {
+        let mut heaviest_vote = votes.iter().next().expect("votes mst not be empty").clone();
+        let mut votes_by_issuer: VotesByIssuer<Config> = VotesByIssuer::default();
+        for vote in votes {
+            votes_by_issuer.collect_from(&VotesByIssuer::try_from(&vote.votes_by_issuer)?);
+
+            if vote > heaviest_vote {
+                heaviest_vote = vote;
+            }
+        }
+        let committee = heaviest_vote.committee.clone();
+
+        // for all online committee members (check if they are still online and retain
+        // only their votes)
+
+        votes_by_issuer.retain(|id, _| committee.is_member_online(id));
+
+        Ok(VoteData {
+            config: heaviest_vote.config.clone(),
+            accepted: false,
+            cumulative_slot_weight: heaviest_vote.cumulative_slot_weight,
+            round: heaviest_vote.round,
+            leader_weight: heaviest_vote.leader_weight,
+            issuer: Issuer::System,
+            committee,
+            votes_by_issuer: votes_by_issuer.downgrade(),
+            target: heaviest_vote.target.clone(),
+        })
+    }
+}
+
+impl<Config: ConfigInterface> From<Config> for VoteData<Config> {
+    fn from(config: Config) -> Self {
+        Self {
+            cumulative_slot_weight: 0,
+            round: 0,
+            leader_weight: 0,
+            issuer: Issuer::System,
+            votes_by_issuer: VoteRefsByIssuer::default(),
+            target: VoteRef::new(Weak::new()),
+            committee: config.select_committee(None),
+            config: Arc::new(config),
+            accepted: true,
+        }
     }
 }

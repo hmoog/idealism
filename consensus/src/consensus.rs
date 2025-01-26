@@ -76,14 +76,13 @@ impl<ID: ConfigInterface> ConsensusRound<ID> {
 
         for (issuer, votes) in votes_of_round.iter() {
             for vote in votes.iter() {
-                let target = vote.target().try_into()?;
+                let target = Vote::try_from(&vote.target)?;
 
-                if vote.is_accepted() {
+                if vote.accepted {
                     return Ok(LatestAcceptedMilestoneFound(vote.clone()));
                 }
 
-                let updated_weight =
-                    self.add_weight(&target, self.committee.member_weight(vote.issuer()));
+                let updated_weight = self.add_weight(&target, self.committee.member_weight(issuer));
                 match updated_weight.cmp(&heaviest_weight) {
                     Ordering::Greater => {
                         heaviest_vote = Some(target.clone());
@@ -95,7 +94,10 @@ impl<ID: ConfigInterface> ConsensusRound<ID> {
                     Ordering::Less => continue,
                 }
 
-                targets.fetch(issuer).insert(target.clone());
+                targets
+                    .entry(issuer.clone())
+                    .or_default()
+                    .insert(target.clone());
                 self.children
                     .entry(target)
                     .or_default()

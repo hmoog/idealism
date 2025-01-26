@@ -19,7 +19,7 @@ pub fn fixed_committee(
     vote: Option<&Vote<Config>>,
 ) -> Committee<Config> {
     match vote {
-        Some(vote) => vote.committee().clone(),
+        Some(vote) => vote.committee.clone(),
         None => (*committee).clone(),
     }
 }

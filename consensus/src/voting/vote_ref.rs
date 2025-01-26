@@ -2,7 +2,9 @@ use std::{
     hash::{Hash, Hasher},
     sync::{Arc, Weak},
 };
+
 use newtype::define;
+
 use crate::{ConfigInterface, Vote, VoteData};
 
 define!(VoteRef, Weak<VoteData<T>>, T: ConfigInterface);

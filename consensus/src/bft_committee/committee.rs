@@ -25,9 +25,9 @@ impl<T: ConfigInterface> Committee<T> {
             if let Some(member) = self.0.members_by_id.get(issuer) {
                 if let Some(vote_ref) = votes.iter().next() {
                     let vote = Vote::try_from(vote_ref)?;
-                    match vote.round().cmp(&latest_round) {
+                    match vote.round.cmp(&latest_round) {
                         Ordering::Greater => {
-                            latest_round = vote.round();
+                            latest_round = vote.round;
                             referenced_round_weight = member.weight();
                         }
                         Ordering::Equal => {
