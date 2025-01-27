@@ -49,7 +49,7 @@ impl<ID: ConfigInterface> ConsensusRound<ID> {
     pub(crate) fn heaviest_descendant(&self, vote: &Vote<ID>) -> Vote<ID> {
         let mut heaviest_descendant = vote.clone();
         while let Some(children) = self.children.get(&heaviest_descendant) {
-            match children.heaviest(&self.weights) {
+            match self.heaviest_child(children) {
                 Some(heaviest_child) => heaviest_descendant = heaviest_child,
                 None => break,
             }
@@ -109,6 +109,22 @@ impl<ID: ConfigInterface> ConsensusRound<ID> {
             true => Ok(LatestAcceptedMilestoneFound(heaviest_vote.unwrap())),
             false => Ok(PreviousRoundTargets(targets)),
         }
+    }
+
+    fn heaviest_child(&self, votes: &Votes<ID>) -> Option<Vote<ID>> {
+        votes.into_iter()
+            .map(|candidate_weak| {
+                (
+                    candidate_weak.clone(),
+                    self.weights.get(candidate_weak).unwrap_or(&0),
+                )
+            })
+            .max_by(|(candidate1, weight1), (candidate2, weight2)| {
+                weight1
+                    .cmp(weight2)
+                    .then_with(|| candidate1.cmp(candidate2))
+            })
+            .map(|(candidate, _)| candidate)
     }
 }
 

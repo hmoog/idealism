@@ -19,11 +19,6 @@ pub struct Votes<Config: ConfigInterface> {
 }
 
 impl<Config: ConfigInterface> Votes<Config> {
-    /// Returns a reference to the current maximum vote, if one exists.
-    pub fn max(&self) -> &Option<Vote<Config>> {
-        &self.max
-    }
-
     /// Inserts a new vote into the collection.
     ///
     /// Updates the maximum vote if the new vote is greater than the current
@@ -46,31 +41,9 @@ impl<Config: ConfigInterface> Votes<Config> {
         self.elements.clear();
     }
 
-    /// Finds the vote with the highest weight according to the provided weight
-    /// map.
-    ///
-    /// In case of equal weights, compares the votes themselves to break the
-    /// tie.
-    ///
-    /// # Parameters
-    /// * `weights`: A hashmap mapping votes to their weights
-    ///
-    /// # Returns
-    /// The vote with the highest weight, or None if the collection is empty
-    pub fn heaviest(&self, weights: &HashMap<Vote<Config>, u64>) -> Option<Vote<Config>> {
-        self.into_iter()
-            .map(|candidate_weak| {
-                (
-                    candidate_weak.clone(),
-                    weights.get(candidate_weak).unwrap_or(&0),
-                )
-            })
-            .max_by(|(candidate1, weight1), (candidate2, weight2)| {
-                weight1
-                    .cmp(weight2)
-                    .then_with(|| candidate1.cmp(candidate2))
-            })
-            .map(|(candidate, _)| candidate)
+    /// Returns a reference to the current maximum vote, if one exists.
+    pub fn max(&self) -> &Option<Vote<Config>> {
+        &self.max
     }
 }
 
