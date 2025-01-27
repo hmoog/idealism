@@ -112,7 +112,8 @@ impl<ID: ConfigInterface> ConsensusRound<ID> {
     }
 
     fn heaviest_child(&self, votes: &Votes<ID>) -> Option<Vote<ID>> {
-        votes.into_iter()
+        votes
+            .into_iter()
             .map(|candidate_weak| {
                 (
                     candidate_weak.clone(),

@@ -18,7 +18,7 @@ impl<T: ConfigInterface> VotesByIssuer<T> {
         let mut updated = false;
         for (issuer, source_votes) in source.iter() {
             let target_votes = self.entry(issuer.clone()).or_default();
-            let current_round = (&*target_votes).into_iter().next().map_or(0, |v| v.round);
+            let current_round = target_votes.round();
 
             for vote in source_votes {
                 if vote.round >= current_round {

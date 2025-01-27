@@ -72,7 +72,7 @@ impl<T: ConfigInterface> VoteData<T> {
 impl<Config: ConfigInterface> TryFrom<Votes<Config>> for VoteData<Config> {
     type Error = Error;
     fn try_from(votes: Votes<Config>) -> Result<VoteData<Config>, Self::Error> {
-        let heaviest_tip = votes.max().clone().expect("votes must not be empty");
+        let heaviest_tip = votes.heaviest().clone().expect("votes must not be empty");
         let mut votes_by_issuer = VotesByIssuer::try_from(votes)?;
 
         votes_by_issuer.retain(|id, _| heaviest_tip.committee.is_member_online(id));

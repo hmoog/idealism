@@ -1,9 +1,9 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use crate::{ConfigInterface, Vote, VoteRefs, errors::Error};
 
 /// A collection of votes that maintains both a set of all votes and tracks the
-/// maximum vote.
+/// heaviest vote.
 ///
 /// This structure provides methods for managing and querying votes, including
 /// finding the heaviest vote based on provided weights.
@@ -14,22 +14,22 @@ use crate::{ConfigInterface, Vote, VoteRefs, errors::Error};
 pub struct Votes<Config: ConfigInterface> {
     /// The set of all votes
     elements: HashSet<Vote<Config>>,
-    /// The current maximum vote, if any exists
-    max: Option<Vote<Config>>,
+    /// The current heaviest vote, if any exists
+    heaviest: Option<Vote<Config>>,
 }
 
 impl<Config: ConfigInterface> Votes<Config> {
     /// Inserts a new vote into the collection.
     ///
-    /// Updates the maximum vote if the new vote is greater than the current
-    /// maximum.
+    /// Updates the heaviest vote if the new vote is greater than the current
+    /// heaviest.
     ///
     /// # Returns
     /// * `true` if the vote was newly inserted
     /// * `false` if the vote was already present
     pub fn insert(&mut self, vote: Vote<Config>) -> bool {
-        if self.max.as_ref().map_or(true, |v| vote > *v) {
-            self.max = Some(vote.clone());
+        if self.heaviest.as_ref().map_or(true, |v| vote > *v) {
+            self.heaviest = Some(vote.clone());
         }
 
         self.elements.insert(vote)
@@ -37,13 +37,19 @@ impl<Config: ConfigInterface> Votes<Config> {
 
     /// Removes all votes from the collection.
     pub fn clear(&mut self) {
-        self.max = None;
+        self.heaviest = None;
         self.elements.clear();
     }
 
-    /// Returns a reference to the current maximum vote, if one exists.
-    pub fn max(&self) -> &Option<Vote<Config>> {
-        &self.max
+    /// Returns a reference to the current heaviest vote, if one exists.
+    pub fn heaviest(&self) -> &Option<Vote<Config>> {
+        &self.heaviest
+    }
+
+    /// Returns the round of the current heaviest vote, or `0` if no heaviest
+    /// vote exists.
+    pub fn round(&self) -> u64 {
+        self.heaviest.as_ref().map_or(0, |v| v.round)
     }
 }
 
@@ -51,13 +57,13 @@ impl<Config: ConfigInterface> Default for Votes<Config> {
     fn default() -> Self {
         Self {
             elements: HashSet::new(),
-            max: None,
+            heaviest: None,
         }
     }
 }
 
-impl<Config: ConfigInterface, U: Into<Vote<Config>>> FromIterator<U> for Votes<Config> {
-    fn from_iter<I: IntoIterator<Item = U>>(iter: I) -> Self {
+impl<Config: ConfigInterface, I: Into<Vote<Config>>> FromIterator<I> for Votes<Config> {
+    fn from_iter<T: IntoIterator<Item = I>>(iter: T) -> Self {
         let mut result = Self::default();
         result.extend(iter.into_iter().map(Into::into));
         result

@@ -39,7 +39,7 @@ impl<T: ConfigInterface> From<VotesByIssuer<T>> for VotesByRound<T> {
             VotesByRound::default(),
             |mut votes_by_round, (issuer, votes)| {
                 votes_by_round
-                    .fetch((&votes).into_iter().next().map(|v| v.round).unwrap_or(0))
+                    .fetch(votes.round())
                     .fetch(&issuer)
                     .extend(votes);
                 votes_by_round
@@ -54,7 +54,7 @@ impl<T: ConfigInterface> From<&VotesByIssuer<T>> for VotesByRound<T> {
             VotesByRound::default(),
             |mut votes_by_round, (issuer, votes)| {
                 votes_by_round
-                    .fetch(votes.into_iter().next().map(|v| v.round).unwrap_or(0))
+                    .fetch(votes.round())
                     .fetch(issuer)
                     .extend(votes.into_iter().map(Vote::clone));
                 votes_by_round
