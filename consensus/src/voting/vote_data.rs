@@ -78,14 +78,14 @@ impl<Config: ConfigInterface> TryFrom<Votes<Config>> for VoteData<Config> {
         votes_by_issuer.retain(|id, _| heaviest_tip.committee.is_member_online(id));
 
         Ok(VoteData {
+            issuer: Issuer::System,
+            votes_by_issuer: votes_by_issuer.downgrade(),
+            committee: heaviest_tip.committee.clone(),
             config: heaviest_tip.config.clone(),
+            target: heaviest_tip.target.clone(),
             cumulative_slot_weight: heaviest_tip.cumulative_slot_weight,
             round: heaviest_tip.round,
             leader_weight: heaviest_tip.leader_weight,
-            committee: heaviest_tip.committee.clone(),
-            target: heaviest_tip.target.clone(),
-            votes_by_issuer: votes_by_issuer.downgrade(),
-            issuer: Issuer::System,
             accepted: false,
         })
     }
@@ -94,14 +94,14 @@ impl<Config: ConfigInterface> TryFrom<Votes<Config>> for VoteData<Config> {
 impl<Config: ConfigInterface> From<Config> for VoteData<Config> {
     fn from(config: Config) -> Self {
         Self {
+            issuer: Issuer::System,
+            votes_by_issuer: VoteRefsByIssuer::default(),
+            committee: config.select_committee(None),
+            config: Arc::new(config),
+            target: VoteRef::new(Weak::new()),
             cumulative_slot_weight: 0,
             round: 0,
             leader_weight: 0,
-            issuer: Issuer::System,
-            votes_by_issuer: VoteRefsByIssuer::default(),
-            target: VoteRef::new(Weak::new()),
-            committee: config.select_committee(None),
-            config: Arc::new(config),
             accepted: true,
         }
     }

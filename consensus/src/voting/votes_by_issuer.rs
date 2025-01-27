@@ -6,32 +6,8 @@ use crate::{ConfigInterface, VoteRefsByIssuer, Votes, errors::Error};
 define_hashmap!(VotesByIssuer, ArcKey<ID::CommitteeMemberID>, Votes<ID>, ID: ConfigInterface);
 
 impl<T: ConfigInterface> VotesByIssuer<T> {
-    pub fn fetch(&mut self, issuer: &ArcKey<T::CommitteeMemberID>) -> &mut Votes<T> {
-        self.0.entry(issuer.clone()).or_default()
-    }
-
     pub fn downgrade(&self) -> VoteRefsByIssuer<T> {
         self.0.iter().map(|(k, v)| (k.clone(), v.into())).collect()
-    }
-
-    pub(crate) fn collect_from(&mut self, source: &VotesByIssuer<T>) -> bool {
-        let mut updated = false;
-        for (issuer, source_votes) in source.iter() {
-            let target_votes = self.entry(issuer.clone()).or_default();
-            let current_round = target_votes.round();
-
-            for vote in source_votes {
-                if vote.round >= current_round {
-                    if vote.round > current_round {
-                        target_votes.clear();
-                    }
-
-                    updated = target_votes.insert(vote.clone()) || updated;
-                }
-            }
-        }
-
-        updated
     }
 }
 
@@ -39,9 +15,12 @@ impl<C: ConfigInterface> TryFrom<Votes<C>> for VotesByIssuer<C> {
     type Error = Error;
     fn try_from(votes: Votes<C>) -> Result<VotesByIssuer<C>, Self::Error> {
         let mut votes_by_issuer: VotesByIssuer<C> = VotesByIssuer::default();
-        for vote in votes {
-            votes_by_issuer.collect_from(&VotesByIssuer::try_from(&vote.votes_by_issuer)?);
-        }
+        votes_by_issuer.extend(
+            votes
+                .into_iter()
+                .map(|v| VotesByIssuer::try_from(&v.votes_by_issuer))
+                .collect::<Result<Vec<_>, _>>()?,
+        );
         Ok(votes_by_issuer)
     }
 }
@@ -63,5 +42,25 @@ impl<C: ConfigInterface> TryFrom<&VoteRefsByIssuer<C>> for VotesByIssuer<C> {
         src.into_iter()
             .map(|(k, v)| Votes::try_from(v).map(|v| (k.clone(), v)))
             .collect()
+    }
+}
+
+impl<Config: ConfigInterface> Extend<VotesByIssuer<Config>> for VotesByIssuer<Config> {
+    fn extend<T: IntoIterator<Item = VotesByIssuer<Config>>>(&mut self, iter: T) {
+        for src in iter {
+            for (issuer, src_votes) in src {
+                let target_votes = self.entry(issuer).or_default();
+                let current_round = target_votes.round();
+                let source_round = src_votes.round();
+
+                if source_round > current_round {
+                    target_votes.clear();
+                }
+
+                if source_round >= current_round {
+                    target_votes.extend(src_votes);
+                }
+            }
+        }
     }
 }
