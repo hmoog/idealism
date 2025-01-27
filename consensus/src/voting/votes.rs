@@ -1,33 +1,62 @@
 use std::collections::{HashMap, HashSet};
-
 use crate::{ConfigInterface, Vote, VoteRefs, errors::Error};
 
+/// A collection of votes that maintains both a set of all votes and tracks the maximum vote.
+///
+/// This structure provides methods for managing and querying votes, including finding the
+/// heaviest vote based on provided weights.
+///
+/// # Type Parameters
+/// * `Config`: A type that implements `ConfigInterface` which defines the configuration
+///            for the voting system.
 pub struct Votes<Config: ConfigInterface> {
+    /// The set of all votes
     elements: HashSet<Vote<Config>>,
+    /// The current maximum vote, if any exists
     max: Option<Vote<Config>>,
 }
 
 impl<Config: ConfigInterface> Votes<Config> {
+    /// Returns a reference to the current maximum vote, if one exists.
     pub fn max(&self) -> &Option<Vote<Config>> {
         &self.max
     }
 
+    /// Inserts a new vote into the collection.
+    ///
+    /// Updates the maximum vote if the new vote is greater than the current maximum.
+    ///
+    /// # Returns
+    /// * `true` if the vote was newly inserted
+    /// * `false` if the vote was already present
     pub fn insert(&mut self, vote: Vote<Config>) -> bool {
         if self.max.as_ref().map_or(true, |v| vote > *v) {
             self.max = Some(vote.clone());
         }
 
-        self.elements.insert(vote.clone())
+        self.elements.insert(vote)
     }
 
+    /// Removes all votes from the collection.
     pub fn clear(&mut self) {
+        self.max = None; // Also clear the max vote
         self.elements.clear();
     }
 
+    /// Returns an iterator over all votes in the collection.
     pub fn iter(&self) -> std::collections::hash_set::Iter<Vote<Config>> {
         self.elements.iter()
     }
 
+    /// Finds the vote with the highest weight according to the provided weight map.
+    ///
+    /// In case of equal weights, compares the votes themselves to break the tie.
+    ///
+    /// # Parameters
+    /// * `weights`: A hashmap mapping votes to their weights
+    ///
+    /// # Returns
+    /// The vote with the highest weight, or None if the collection is empty
     pub fn heaviest(&self, weights: &HashMap<Vote<Config>, u64>) -> Option<Vote<Config>> {
         self.iter()
             .map(|candidate_weak| {
@@ -45,38 +74,34 @@ impl<Config: ConfigInterface> Votes<Config> {
     }
 }
 
-impl<Config: ConfigInterface, U: Into<Vote<Config>>> FromIterator<U> for Votes<Config> {
-    fn from_iter<I: IntoIterator<Item = U>>(iter: I) -> Self {
+impl<Config: ConfigInterface> Default for Votes<Config> {
+    fn default() -> Self {
         Self {
-            elements: iter.into_iter().map(Into::into).collect(),
+            elements: HashSet::new(),
             max: None,
         }
     }
 }
 
-impl<C: ConfigInterface> TryFrom<VoteRefs<C>> for Votes<C> {
-    type Error = Error;
-    fn try_from(vote_refs: VoteRefs<C>) -> Result<Self, Self::Error> {
-        vote_refs
-            .into_inner()
-            .into_iter()
-            .map(Vote::try_from)
-            .collect()
+impl<Config: ConfigInterface, U: Into<Vote<Config>>> FromIterator<U> for Votes<Config> {
+    fn from_iter<I: IntoIterator<Item = U>>(iter: I) -> Self {
+        let mut result = Self::default();
+        result.extend(iter.into_iter().map(Into::into));
+        result
     }
 }
 
-impl<C: ConfigInterface> TryFrom<&VoteRefs<C>> for Votes<C> {
+impl<Config: ConfigInterface> TryFrom<VoteRefs<Config>> for Votes<Config> {
     type Error = Error;
-    fn try_from(vote_refs: &VoteRefs<C>) -> Result<Self, Self::Error> {
+    fn try_from(vote_refs: VoteRefs<Config>) -> Result<Self, Self::Error> {
+        vote_refs.into_inner().into_iter().map(Vote::try_from).collect()
+    }
+}
+
+impl<Config: ConfigInterface> TryFrom<&VoteRefs<Config>> for Votes<Config> {
+    type Error = Error;
+    fn try_from(vote_refs: &VoteRefs<Config>) -> Result<Self, Self::Error> {
         vote_refs.iter().map(Vote::try_from).collect()
-    }
-}
-
-impl<Config: ConfigInterface> Extend<Vote<Config>> for Votes<Config> {
-    fn extend<T: IntoIterator<Item = Vote<Config>>>(&mut self, iter: T) {
-        iter.into_iter().for_each(|v| {
-            self.insert(v);
-        });
     }
 }
 
@@ -98,20 +123,8 @@ impl<'a, Config: ConfigInterface> IntoIterator for &'a Votes<Config> {
     }
 }
 
-impl<Config: ConfigInterface> Clone for Votes<Config> {
-    fn clone(&self) -> Self {
-        Self {
-            elements: self.elements.clone(),
-            max: self.max.clone(),
-        }
-    }
-}
-
-impl<Config: ConfigInterface> Default for Votes<Config> {
-    fn default() -> Self {
-        Self {
-            elements: HashSet::new(),
-            max: None,
-        }
+impl<Config: ConfigInterface> Extend<Vote<Config>> for Votes<Config> {
+    fn extend<T: IntoIterator<Item = Vote<Config>>>(&mut self, iter: T) {
+        iter.into_iter().for_each(|v| { self.insert(v); });
     }
 }
