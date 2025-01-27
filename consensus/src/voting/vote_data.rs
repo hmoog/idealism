@@ -20,15 +20,12 @@ pub struct VoteData<T: ConfigInterface> {
 }
 
 impl<T: ConfigInterface> VoteData<T> {
-    pub(crate) fn build(
-        mut self,
-        issuer: ArcKey<T::CommitteeMemberID>,
-    ) -> Result<Arc<Self>, Error> {
+    pub(crate) fn build(mut self, issuer: ArcKey<T::CommitteeMemberID>) -> Result<Vote<T>, Error> {
         self.issuer = Issuer::User(issuer.clone());
 
         // abort if the issuer is not a member of the committee
         let Some(committee_member) = self.committee.member(&issuer).cloned() else {
-            return Ok(Arc::new(self));
+            return Ok(Vote::new(Arc::new(self)));
         };
 
         // set the issuer online if they are not already
@@ -47,7 +44,7 @@ impl<T: ConfigInterface> VoteData<T> {
         if let Some(own_vote) = own_votes.iter().next() {
             let vote: Vote<T> = own_vote.try_into()?;
             if vote.round == self.round && referenced_round_weight < acceptance_threshold {
-                return Ok(Arc::new(self));
+                return Ok(Vote::new(Arc::new(self)));
             }
         }
 
@@ -64,43 +61,32 @@ impl<T: ConfigInterface> VoteData<T> {
             self.round += 1;
         }
 
-        Ok(Arc::new_cyclic(|me| {
+        Ok(Vote::new(Arc::new_cyclic(|me| {
             self.votes_by_issuer
                 .insert(issuer, VoteRefs::from_iter([VoteRef::new(me.clone())]));
             self
-        }))
+        })))
     }
 }
 
 impl<Config: ConfigInterface> TryFrom<Votes<Config>> for VoteData<Config> {
     type Error = Error;
     fn try_from(votes: Votes<Config>) -> Result<VoteData<Config>, Self::Error> {
-        let mut heaviest_vote = votes.iter().next().expect("votes mst not be empty").clone();
-        let mut votes_by_issuer: VotesByIssuer<Config> = VotesByIssuer::default();
-        for vote in votes {
-            votes_by_issuer.collect_from(&VotesByIssuer::try_from(&vote.votes_by_issuer)?);
+        let heaviest_tip = votes.max().clone().expect("votes must not be empty");
+        let mut votes_by_issuer = VotesByIssuer::try_from(votes)?;
 
-            if vote > heaviest_vote {
-                heaviest_vote = vote;
-            }
-        }
-        let committee = heaviest_vote.committee.clone();
-
-        // for all online committee members (check if they are still online and retain
-        // only their votes)
-
-        votes_by_issuer.retain(|id, _| committee.is_member_online(id));
+        votes_by_issuer.retain(|id, _| heaviest_tip.committee.is_member_online(id));
 
         Ok(VoteData {
-            config: heaviest_vote.config.clone(),
-            accepted: false,
-            cumulative_slot_weight: heaviest_vote.cumulative_slot_weight,
-            round: heaviest_vote.round,
-            leader_weight: heaviest_vote.leader_weight,
-            issuer: Issuer::System,
-            committee,
+            config: heaviest_tip.config.clone(),
+            cumulative_slot_weight: heaviest_tip.cumulative_slot_weight,
+            round: heaviest_tip.round,
+            leader_weight: heaviest_tip.leader_weight,
+            committee: heaviest_tip.committee.clone(),
+            target: heaviest_tip.target.clone(),
             votes_by_issuer: votes_by_issuer.downgrade(),
-            target: heaviest_vote.target.clone(),
+            issuer: Issuer::System,
+            accepted: false,
         })
     }
 }

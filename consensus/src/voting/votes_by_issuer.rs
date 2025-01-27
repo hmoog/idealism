@@ -35,6 +35,17 @@ impl<T: ConfigInterface> VotesByIssuer<T> {
     }
 }
 
+impl<C: ConfigInterface> TryFrom<Votes<C>> for VotesByIssuer<C> {
+    type Error = Error;
+    fn try_from(votes: Votes<C>) -> Result<VotesByIssuer<C>, Self::Error> {
+        let mut votes_by_issuer: VotesByIssuer<C> = VotesByIssuer::default();
+        for vote in votes {
+            votes_by_issuer.collect_from(&VotesByIssuer::try_from(&vote.votes_by_issuer)?);
+        }
+        Ok(votes_by_issuer)
+    }
+}
+
 impl<C: ConfigInterface> TryFrom<VoteRefsByIssuer<C>> for VotesByIssuer<C> {
     type Error = Error;
     fn try_from(vote_refs_by_issuer: VoteRefsByIssuer<C>) -> Result<VotesByIssuer<C>, Self::Error> {

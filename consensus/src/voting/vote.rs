@@ -15,10 +15,7 @@ impl<Config: ConfigInterface> Vote<Config> {
         issuer: &ArcKey<Config::CommitteeMemberID>,
         votes: Vec<&Vote<Config>>,
     ) -> Result<Vote<Config>, Error> {
-        Ok(Vote(
-            VoteData::try_from(Votes::from_iter(votes.into_iter().cloned()))?
-                .build(issuer.clone())?,
-        ))
+        VoteData::try_from(Votes::from_iter(votes.into_iter().cloned()))?.build(issuer.clone())
     }
 }
 
