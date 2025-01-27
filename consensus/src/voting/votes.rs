@@ -42,13 +42,8 @@ impl<Config: ConfigInterface> Votes<Config> {
 
     /// Removes all votes from the collection.
     pub fn clear(&mut self) {
-        self.max = None; // Also clear the max vote
+        self.max = None;
         self.elements.clear();
-    }
-
-    /// Returns an iterator over all votes in the collection.
-    pub fn iter(&self) -> std::collections::hash_set::Iter<Vote<Config>> {
-        self.elements.iter()
     }
 
     /// Finds the vote with the highest weight according to the provided weight
@@ -63,7 +58,7 @@ impl<Config: ConfigInterface> Votes<Config> {
     /// # Returns
     /// The vote with the highest weight, or None if the collection is empty
     pub fn heaviest(&self, weights: &HashMap<Vote<Config>, u64>) -> Option<Vote<Config>> {
-        self.iter()
+        self.into_iter()
             .map(|candidate_weak| {
                 (
                     candidate_weak.clone(),

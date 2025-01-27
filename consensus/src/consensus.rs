@@ -75,7 +75,7 @@ impl<ID: ConfigInterface> ConsensusRound<ID> {
         let mut heaviest_weight = 0;
 
         for (issuer, votes) in votes_of_round.iter() {
-            for vote in votes.iter() {
+            for vote in votes {
                 let target = Vote::try_from(&vote.target)?;
 
                 if vote.accepted {

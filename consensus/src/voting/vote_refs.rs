@@ -12,6 +12,6 @@ impl<C: ConfigInterface> From<Votes<C>> for VoteRefs<C> {
 
 impl<C: ConfigInterface> From<&Votes<C>> for VoteRefs<C> {
     fn from(votes: &Votes<C>) -> VoteRefs<C> {
-        votes.iter().map(VoteRef::from).collect()
+        votes.into_iter().map(VoteRef::from).collect()
     }
 }
