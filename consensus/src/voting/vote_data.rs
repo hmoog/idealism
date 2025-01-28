@@ -74,7 +74,10 @@ impl<T: ConfigInterface> VoteData<T> {
 impl<Config: ConfigInterface> TryFrom<Votes<Config>> for VoteData<Config> {
     type Error = Error;
     fn try_from(votes: Votes<Config>) -> Result<VoteData<Config>, Self::Error> {
-        let heaviest_tip = votes.heaviest().clone().expect("votes must not be empty");
+        let heaviest_tip = votes
+            .heaviest_element()
+            .cloned()
+            .expect("votes must not be empty");
 
         Ok(VoteData {
             issuer: Issuer::Genesis,

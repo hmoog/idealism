@@ -5,7 +5,7 @@ use std::collections::{
 
 use utils::ArcKey;
 
-use crate::{ConfigInterface, Error, VoteRefsByIssuer, Votes};
+use crate::{ConfigInterface, Error, Vote, VoteRefsByIssuer, Votes};
 
 /// A collection of votes indexed by committee member ID.
 ///
@@ -24,8 +24,8 @@ impl<Config: ConfigInterface> VotesByIssuer<Config> {
     /// Ensures only the most relevant votes for the latest round are retained.
     pub fn insert_or_update(&mut self, entry: Entry<Config>) {
         let target_votes = self.fetch(entry.0);
-        let current_round = target_votes.round();
-        let new_round = entry.1.round();
+        let current_round = target_votes.heaviest_element().map_or(0, |v| v.round);
+        let new_round = entry.1.heaviest_element().map_or(0, |v| v.round);
 
         if new_round > current_round {
             target_votes.clear();
@@ -66,22 +66,42 @@ impl<Config: ConfigInterface> TryFrom<Votes<Config>> for VotesByIssuer<Config> {
 impl<Config: ConfigInterface> TryFrom<VoteRefsByIssuer<Config>> for VotesByIssuer<Config> {
     type Error = Error;
     fn try_from(
-        vote_refs_by_issuer: VoteRefsByIssuer<Config>,
+        src: VoteRefsByIssuer<Config>,
     ) -> Result<VotesByIssuer<Config>, Self::Error> {
-        vote_refs_by_issuer
-            .into_inner()
-            .into_iter()
-            .map(|(k, v)| Votes::try_from(v).map(|v| (k, v)))
-            .collect()
+        Ok(VotesByIssuer {
+            elements: src
+                .into_iter()
+                .map(|(issuer, vote_refs)| {
+                    Ok((
+                        issuer,
+                        vote_refs
+                            .into_iter()
+                            .map(Vote::try_from)
+                            .collect::<Result<_, _>>()?,
+                    ))
+                })
+                .collect::<Result<_, _>>()?,
+        })
     }
 }
 
 impl<Config: ConfigInterface> TryFrom<&VoteRefsByIssuer<Config>> for VotesByIssuer<Config> {
     type Error = Error;
     fn try_from(src: &VoteRefsByIssuer<Config>) -> Result<VotesByIssuer<Config>, Self::Error> {
-        src.into_iter()
-            .map(|(k, v)| Votes::try_from(v).map(|v| (k.clone(), v)))
-            .collect()
+        Ok(VotesByIssuer {
+            elements: src
+                .into_iter()
+                .map(|(issuer, vote_refs)| {
+                    Ok((
+                        issuer.clone(),
+                        vote_refs
+                            .into_iter()
+                            .map(Vote::try_from)
+                            .collect::<Result<_, _>>()?,
+                    ))
+                })
+                .collect::<Result<_, _>>()?,
+        })
     }
 }
 
