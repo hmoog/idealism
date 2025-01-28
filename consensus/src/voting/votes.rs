@@ -2,15 +2,14 @@ use std::collections::HashSet;
 
 use crate::{ConfigInterface, Error, Vote, VoteRefs};
 
-/// A collection of votes that maintains both a set of all votes and tracks the
-/// heaviest vote.
+/// A collection of votes that maintains both a set of all votes and tracks the heaviest vote.
 ///
-/// This structure provides methods for managing and querying votes, including
-/// finding the heaviest vote based on provided weights.
+/// This structure provides methods for managing and querying votes, including finding the heaviest
+/// vote.
 ///
 /// # Type Parameters
-/// * `Config`: A type that implements `ConfigInterface` which defines the
-///   configuration for the voting system.
+/// * `Config`: A type that implements `ConfigInterface` which defines the configuration for the
+///   voting system.
 pub struct Votes<Config: ConfigInterface> {
     /// The set of all votes
     elements: HashSet<Vote<Config>>,
@@ -21,8 +20,7 @@ pub struct Votes<Config: ConfigInterface> {
 impl<Config: ConfigInterface> Votes<Config> {
     /// Inserts a new vote into the collection.
     ///
-    /// Updates the heaviest vote if the new vote is greater than the current
-    /// heaviest.
+    /// Updates the heaviest vote if the new vote is greater than the current heaviest.
     ///
     /// # Returns
     /// * `true` if the vote was newly inserted
@@ -46,8 +44,7 @@ impl<Config: ConfigInterface> Votes<Config> {
         &self.heaviest
     }
 
-    /// Returns the round of the current heaviest vote, or `0` if no heaviest
-    /// vote exists.
+    /// Returns the round of the current heaviest vote, or `0` if no heaviest vote exists.
     pub fn round(&self) -> u64 {
         self.heaviest.as_ref().map_or(0, |v| v.round)
     }
