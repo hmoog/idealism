@@ -10,7 +10,6 @@ use crate::{
 pub struct VoteData<T: ConfigInterface> {
     pub config: Arc<T>,
     pub issuer: Issuer<T::CommitteeMemberID>,
-    pub accepted: bool,
     pub cumulative_slot_weight: u64,
     pub round: u64,
     pub leader_weight: u64,
@@ -78,7 +77,7 @@ impl<Config: ConfigInterface> TryFrom<Votes<Config>> for VoteData<Config> {
         let heaviest_tip = votes.heaviest().clone().expect("votes must not be empty");
 
         Ok(VoteData {
-            issuer: Issuer::System,
+            issuer: Issuer::Genesis,
             votes_by_issuer: VotesByIssuer::try_from(votes)?.into(),
             committee: heaviest_tip.committee.clone(),
             config: heaviest_tip.config.clone(),
@@ -86,7 +85,6 @@ impl<Config: ConfigInterface> TryFrom<Votes<Config>> for VoteData<Config> {
             cumulative_slot_weight: heaviest_tip.cumulative_slot_weight,
             round: heaviest_tip.round,
             leader_weight: heaviest_tip.leader_weight,
-            accepted: false,
         })
     }
 }
@@ -94,7 +92,7 @@ impl<Config: ConfigInterface> TryFrom<Votes<Config>> for VoteData<Config> {
 impl<Config: ConfigInterface> From<Config> for VoteData<Config> {
     fn from(config: Config) -> Self {
         Self {
-            issuer: Issuer::System,
+            issuer: Issuer::Genesis,
             votes_by_issuer: VoteRefsByIssuer::default(),
             committee: config.select_committee(None),
             config: Arc::new(config),
@@ -102,7 +100,6 @@ impl<Config: ConfigInterface> From<Config> for VoteData<Config> {
             cumulative_slot_weight: 0,
             round: 0,
             leader_weight: 0,
-            accepted: true,
         }
     }
 }

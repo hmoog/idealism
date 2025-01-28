@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    Committee, ConfigInterface, Vote, Votes, VotesByIssuer, VotesByRound,
+    Committee, ConfigInterface, Issuer, Vote, Votes, VotesByIssuer, VotesByRound,
     consensus::WalkResult::{LatestAcceptedMilestoneFound, PreviousRoundTargets},
     errors::Error,
 };
@@ -77,8 +77,7 @@ impl<ID: ConfigInterface> ConsensusRound<ID> {
         for (issuer, votes) in votes_of_round {
             for vote in votes {
                 let target = Vote::try_from(&vote.target)?;
-
-                if vote.accepted {
+                if let Issuer::Genesis = vote.issuer {
                     return Ok(LatestAcceptedMilestoneFound(vote.clone()));
                 }
 
