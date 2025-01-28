@@ -46,6 +46,11 @@ pub(crate) mod voting {
     pub(crate) mod votes_by_round;
 }
 
+pub(crate) mod utils {
+    pub(crate) mod set;
+    pub(crate) mod set_element;
+}
+
 #[cfg(test)]
 mod test {
     use crate::{Config, Vote, errors::Error};
