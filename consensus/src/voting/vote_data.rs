@@ -3,8 +3,8 @@ use std::sync::{Arc, Weak};
 use utils::ArcKey;
 
 use crate::{
-    Committee, ConfigInterface, Issuer, Vote, VoteRef, VoteRefs, VoteRefsByIssuer, Votes,
-    VotesByIssuer, consensus::ConsensusRound, errors::Error,
+    Committee, ConfigInterface, Error, Issuer, Vote, VoteRef, VoteRefs, VoteRefsByIssuer, Votes,
+    VotesByIssuer, consensus::ConsensusRound,
 };
 
 pub struct VoteData<T: ConfigInterface> {

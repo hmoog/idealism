@@ -1,74 +1,27 @@
 use std::collections::{
     HashMap,
-    hash_map::{IntoIter, Iter, IterMut},
+    hash_map::{IntoIter, Iter},
 };
 
 use utils::ArcKey;
 
 use crate::{ConfigInterface, Error, VoteRefsByIssuer, Votes};
 
-#[derive(Default)]
-pub struct VotesByIssuer<Config: ConfigInterface>(
-    HashMap<ArcKey<Config::CommitteeMemberID>, Votes<Config>>,
-);
+pub struct VotesByIssuer<Config: ConfigInterface> {
+    elements: HashMap<ArcKey<Config::CommitteeMemberID>, Votes<Config>>,
+}
 
 impl<Config: ConfigInterface> VotesByIssuer<Config> {
     pub fn fetch(&mut self, key: ArcKey<Config::CommitteeMemberID>) -> &mut Votes<Config> {
-        self.0.entry(key).or_default()
+        self.elements.entry(key).or_default()
     }
 }
 
-// Implement FromIterator for collections of tuples
-impl<Config: ConfigInterface> FromIterator<(ArcKey<Config::CommitteeMemberID>, Votes<Config>)>
-    for VotesByIssuer<Config>
-{
-    fn from_iter<I: IntoIterator<Item = (ArcKey<Config::CommitteeMemberID>, Votes<Config>)>>(
-        iter: I,
-    ) -> Self {
-        Self(iter.into_iter().collect())
-    }
-}
-
-// Implement FromIterator for borrowed tuples
-impl<'a, Config: ConfigInterface>
-    FromIterator<(&'a ArcKey<Config::CommitteeMemberID>, &'a Votes<Config>)>
-    for VotesByIssuer<Config>
-{
-    fn from_iter<
-        I: IntoIterator<Item = (&'a ArcKey<Config::CommitteeMemberID>, &'a Votes<Config>)>,
-    >(
-        iter: I,
-    ) -> Self {
-        iter.into_iter()
-            .map(|(k, v)| (k.clone(), v.clone()))
-            .collect()
-    }
-}
-
-impl<Config: ConfigInterface> IntoIterator for VotesByIssuer<Config> {
-    type Item = (ArcKey<Config::CommitteeMemberID>, Votes<Config>);
-    type IntoIter = IntoIter<ArcKey<Config::CommitteeMemberID>, Votes<Config>>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
-    }
-}
-
-impl<'a, Config: ConfigInterface> IntoIterator for &'a VotesByIssuer<Config> {
-    type Item = (&'a ArcKey<Config::CommitteeMemberID>, &'a Votes<Config>);
-    type IntoIter = Iter<'a, ArcKey<Config::CommitteeMemberID>, Votes<Config>>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.iter()
-    }
-}
-
-impl<'a, Config: ConfigInterface> IntoIterator for &'a mut VotesByIssuer<Config> {
-    type Item = (&'a ArcKey<Config::CommitteeMemberID>, &'a mut Votes<Config>);
-    type IntoIter = IterMut<'a, ArcKey<Config::CommitteeMemberID>, Votes<Config>>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.iter_mut()
+impl<Config: ConfigInterface> Default for VotesByIssuer<Config> {
+    fn default() -> Self {
+        Self {
+            elements: HashMap::new(),
+        }
     }
 }
 
@@ -108,6 +61,40 @@ impl<Config: ConfigInterface> TryFrom<&VoteRefsByIssuer<Config>> for VotesByIssu
     }
 }
 
+impl<C: ConfigInterface> FromIterator<Entry<C>> for VotesByIssuer<C> {
+    fn from_iter<I: IntoIterator<Item = Entry<C>>>(iter: I) -> Self {
+        Self {
+            elements: iter.into_iter().collect(),
+        }
+    }
+}
+
+impl<'a, Config: ConfigInterface> FromIterator<EntryRef<'a, Config>> for VotesByIssuer<Config> {
+    fn from_iter<I: IntoIterator<Item = EntryRef<'a, Config>>>(iter: I) -> Self {
+        iter.into_iter()
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect()
+    }
+}
+
+impl<Config: ConfigInterface> IntoIterator for VotesByIssuer<Config> {
+    type Item = Entry<Config>;
+    type IntoIter = IntoIter<ArcKey<Config::CommitteeMemberID>, Votes<Config>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.elements.into_iter()
+    }
+}
+
+impl<'a, Config: ConfigInterface> IntoIterator for &'a VotesByIssuer<Config> {
+    type Item = EntryRef<'a, Config>;
+    type IntoIter = Iter<'a, ArcKey<Config::CommitteeMemberID>, Votes<Config>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.elements.iter()
+    }
+}
+
 impl<Config: ConfigInterface> Extend<VotesByIssuer<Config>> for VotesByIssuer<Config> {
     fn extend<T: IntoIterator<Item = VotesByIssuer<Config>>>(&mut self, iter: T) {
         for src in iter {
@@ -127,3 +114,13 @@ impl<Config: ConfigInterface> Extend<VotesByIssuer<Config>> for VotesByIssuer<Co
         }
     }
 }
+
+type Entry<Config> = (
+    ArcKey<<Config as ConfigInterface>::CommitteeMemberID>,
+    Votes<Config>,
+);
+
+type EntryRef<'a, Config> = (
+    &'a ArcKey<<Config as ConfigInterface>::CommitteeMemberID>,
+    &'a Votes<Config>,
+);
