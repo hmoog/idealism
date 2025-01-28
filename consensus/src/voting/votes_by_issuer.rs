@@ -65,9 +65,7 @@ impl<Config: ConfigInterface> TryFrom<Votes<Config>> for VotesByIssuer<Config> {
 
 impl<Config: ConfigInterface> TryFrom<VoteRefsByIssuer<Config>> for VotesByIssuer<Config> {
     type Error = Error;
-    fn try_from(
-        src: VoteRefsByIssuer<Config>,
-    ) -> Result<VotesByIssuer<Config>, Self::Error> {
+    fn try_from(src: VoteRefsByIssuer<Config>) -> Result<VotesByIssuer<Config>, Self::Error> {
         Ok(VotesByIssuer {
             elements: src
                 .into_iter()
@@ -95,7 +93,7 @@ impl<Config: ConfigInterface> TryFrom<&VoteRefsByIssuer<Config>> for VotesByIssu
                     Ok((
                         issuer.clone(),
                         vote_refs
-                            .into_iter()
+                            .iter()
                             .map(Vote::try_from)
                             .collect::<Result<_, _>>()?,
                     ))
