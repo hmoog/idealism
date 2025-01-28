@@ -74,7 +74,7 @@ impl<ID: ConfigInterface> ConsensusRound<ID> {
         let mut heaviest_vote = None;
         let mut heaviest_weight = 0;
 
-        for (issuer, votes) in votes_of_round.iter() {
+        for (issuer, votes) in votes_of_round {
             for vote in votes {
                 let target = Vote::try_from(&vote.target)?;
 
@@ -94,10 +94,7 @@ impl<ID: ConfigInterface> ConsensusRound<ID> {
                     Ordering::Less => continue,
                 }
 
-                targets
-                    .entry(issuer.clone())
-                    .or_default()
-                    .insert(target.clone());
+                targets.fetch(issuer.clone()).insert(target.clone());
                 self.children
                     .entry(target)
                     .or_default()

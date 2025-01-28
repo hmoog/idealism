@@ -21,6 +21,9 @@ pub struct VoteData<T: ConfigInterface> {
 
 impl<T: ConfigInterface> VoteData<T> {
     pub(crate) fn build(mut self, issuer: ArcKey<T::CommitteeMemberID>) -> Result<Vote<T>, Error> {
+        // TODO: HANDLE FROM CONFIG:
+        // votes_by_issuer.retain(|id, _| heaviest_tip.committee.is_member_online(id));
+
         self.issuer = Issuer::User(issuer.clone());
 
         // abort if the issuer is not a member of the committee
@@ -73,13 +76,10 @@ impl<Config: ConfigInterface> TryFrom<Votes<Config>> for VoteData<Config> {
     type Error = Error;
     fn try_from(votes: Votes<Config>) -> Result<VoteData<Config>, Self::Error> {
         let heaviest_tip = votes.heaviest().clone().expect("votes must not be empty");
-        let mut votes_by_issuer = VotesByIssuer::try_from(votes)?;
-
-        votes_by_issuer.retain(|id, _| heaviest_tip.committee.is_member_online(id));
 
         Ok(VoteData {
             issuer: Issuer::System,
-            votes_by_issuer: votes_by_issuer.downgrade(),
+            votes_by_issuer: VotesByIssuer::try_from(votes)?.into(),
             committee: heaviest_tip.committee.clone(),
             config: heaviest_tip.config.clone(),
             target: heaviest_tip.target.clone(),

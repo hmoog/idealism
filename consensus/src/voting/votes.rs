@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::{ConfigInterface, Vote, VoteRefs, errors::Error};
+use crate::{ConfigInterface, Error, Vote, VoteRefs};
 
 /// A collection of votes that maintains both a set of all votes and tracks the
 /// heaviest vote.
@@ -62,14 +62,6 @@ impl<Config: ConfigInterface> Default for Votes<Config> {
     }
 }
 
-impl<Config: ConfigInterface, I: Into<Vote<Config>>> FromIterator<I> for Votes<Config> {
-    fn from_iter<T: IntoIterator<Item = I>>(iter: T) -> Self {
-        let mut result = Self::default();
-        result.extend(iter.into_iter().map(Into::into));
-        result
-    }
-}
-
 impl<Config: ConfigInterface> TryFrom<VoteRefs<Config>> for Votes<Config> {
     type Error = Error;
     fn try_from(vote_refs: VoteRefs<Config>) -> Result<Self, Self::Error> {
@@ -85,6 +77,14 @@ impl<Config: ConfigInterface> TryFrom<&VoteRefs<Config>> for Votes<Config> {
     type Error = Error;
     fn try_from(vote_refs: &VoteRefs<Config>) -> Result<Self, Self::Error> {
         vote_refs.iter().map(Vote::try_from).collect()
+    }
+}
+
+impl<Config: ConfigInterface, I: Into<Vote<Config>>> FromIterator<I> for Votes<Config> {
+    fn from_iter<T: IntoIterator<Item = I>>(iter: T) -> Self {
+        let mut result = Self::default();
+        result.extend(iter.into_iter().map(Into::into));
+        result
     }
 }
 
@@ -111,5 +111,14 @@ impl<Config: ConfigInterface> Extend<Vote<Config>> for Votes<Config> {
         iter.into_iter().for_each(|v| {
             self.insert(v);
         });
+    }
+}
+
+impl<Config: ConfigInterface> Clone for Votes<Config> {
+    fn clone(&self) -> Self {
+        Self {
+            elements: self.elements.clone(),
+            heaviest: self.heaviest.clone(),
+        }
     }
 }

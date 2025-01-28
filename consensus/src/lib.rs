@@ -8,6 +8,7 @@ pub use crate::{
         committee_selection::CommitteeSelection, config::Config, config_interface::ConfigInterface,
         leader_rotation::LeaderRotation,
     },
+    errors::Error,
     voting::{
         issuer::Issuer, vote::Vote, vote_data::VoteData, vote_ref::VoteRef, vote_refs::VoteRefs,
         vote_refs_by_issuer::VoteRefsByIssuer, votes::Votes, votes_by_issuer::VotesByIssuer,
