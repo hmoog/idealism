@@ -1,4 +1,4 @@
 [workspace]
 resolver = "2"
 
-members = ["blockdag", "consensus", "newtype", "utils"]
+members = ["blockdag", "consensus", "newtype", "newtypev1", "utils"]

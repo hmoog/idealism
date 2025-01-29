@@ -1,3 +1,9 @@
 mod define;
 mod define_hashmap;
 mod define_hashset;
+mod define_transparent;
+mod delegate;
+mod delegate_default;
+mod delegate_extend;
+mod delegate_from_iterator;
+mod delegate_into_iterator;

@@ -1,3 +1,12 @@
-use crate::{Vote, utils::set::Set};
+use newtypev1::{CloneInner, DefaultInner, DerefInner, FromIteratorInner, IntoIteratorInner};
 
-pub type Votes<C> = Set<Vote<C>>;
+use crate::{ConfigInterface, Vote, utils::set::Set};
+
+#[derive(IntoIteratorInner, FromIteratorInner, DefaultInner, DerefInner, CloneInner)]
+pub struct Votes<Config: ConfigInterface>(Set<Vote<Config>>);
+
+impl<Config: ConfigInterface> Votes<Config> {
+    pub fn round(&self) -> u64 {
+        self.heaviest_element().map_or(0, |v| v.round)
+    }
+}

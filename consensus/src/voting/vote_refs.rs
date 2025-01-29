@@ -1,5 +1,8 @@
 use std::collections::HashSet;
 
-use crate::VoteRef;
+use newtypev1::{CloneInner, DefaultInner, DerefInner, FromIteratorInner, IntoIteratorInner};
 
-pub type VoteRefs<C> = HashSet<VoteRef<C>>;
+use crate::{ConfigInterface, VoteRef};
+
+#[derive(IntoIteratorInner, FromIteratorInner, DefaultInner, DerefInner, CloneInner)]
+pub struct VoteRefs<Config: ConfigInterface>(HashSet<VoteRef<Config>>);

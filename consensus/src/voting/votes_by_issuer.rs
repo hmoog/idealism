@@ -24,8 +24,8 @@ impl<Config: ConfigInterface> VotesByIssuer<Config> {
     /// Ensures only the most relevant votes for the latest round are retained.
     pub fn insert_or_update(&mut self, entry: Entry<Config>) {
         let target_votes = self.fetch(entry.0);
-        let current_round = target_votes.heaviest_element().map_or(0, |v| v.round);
-        let new_round = entry.1.heaviest_element().map_or(0, |v| v.round);
+        let current_round = target_votes.round();
+        let new_round = entry.1.round();
 
         if new_round > current_round {
             target_votes.clear();
