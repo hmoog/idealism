@@ -1,4 +1,4 @@
-use std::sync::{Arc, Weak};
+use std::sync::Arc;
 
 use utils::ArcKey;
 
@@ -27,7 +27,7 @@ impl<T: ConfigInterface> VoteData<T> {
 
         // abort if the issuer is not a member of the committee
         let Some(committee_member) = self.committee.member(&issuer).cloned() else {
-            return Ok(Vote::new(Arc::new(self)));
+            return Ok(Vote::from(Arc::new(self)));
         };
 
         // set the issuer online if they are not already
@@ -46,7 +46,7 @@ impl<T: ConfigInterface> VoteData<T> {
         if let Some(own_vote) = own_votes.iter().next() {
             let vote: Vote<T> = own_vote.try_into()?;
             if vote.round == self.round && referenced_round_weight < acceptance_threshold {
-                return Ok(Vote::new(Arc::new(self)));
+                return Ok(Vote::from(Arc::new(self)));
             }
         }
 
@@ -63,9 +63,9 @@ impl<T: ConfigInterface> VoteData<T> {
             self.round += 1;
         }
 
-        Ok(Vote::new(Arc::new_cyclic(|me| {
+        Ok(Vote::from(Arc::new_cyclic(|me| {
             self.votes_by_issuer
-                .insert(issuer, VoteRefs::from_iter([VoteRef::new(me.clone())]));
+                .insert(issuer, VoteRefs::from_iter([me.into()]));
             self
         })))
     }
@@ -99,7 +99,7 @@ impl<Config: ConfigInterface> From<Config> for VoteData<Config> {
             votes_by_issuer: VoteRefsByIssuer::default(),
             committee: config.select_committee(None),
             config: Arc::new(config),
-            target: VoteRef::new(Weak::new()),
+            target: VoteRef::default(),
             cumulative_slot_weight: 0,
             round: 0,
             leader_weight: 0,

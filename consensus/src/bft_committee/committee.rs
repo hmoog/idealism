@@ -21,7 +21,7 @@ impl<T: ConfigInterface> Committee<T> {
         let mut latest_round = 0;
         let mut referenced_round_weight = 0;
 
-        for (issuer, votes) in votes.iter() {
+        for (issuer, votes) in votes {
             if let Some(member) = self.0.members_by_id.get(issuer) {
                 if let Some(vote_ref) = votes.iter().next() {
                     let vote = Vote::try_from(vote_ref)?;

@@ -1,9 +1,12 @@
-use newtype::define_hashmap;
+use std::collections::HashMap;
+
+use newtype::{DefaultInner, DerefInner, FromIteratorInner, IntoIteratorInner};
 use utils::ArcKey;
 
 use crate::{ConfigInterface, VoteRef, VoteRefs, VotesByIssuer};
 
-define_hashmap!(VoteRefsByIssuer, ArcKey<C::CommitteeMemberID>, VoteRefs<C>, C: ConfigInterface);
+#[derive(IntoIteratorInner, FromIteratorInner, DerefInner, DefaultInner)]
+pub struct VoteRefsByIssuer<C: ConfigInterface>(HashMap<ArcKey<C::CommitteeMemberID>, VoteRefs<C>>);
 
 impl<C: ConfigInterface> From<VotesByIssuer<C>> for VoteRefsByIssuer<C> {
     fn from(vote: VotesByIssuer<C>) -> VoteRefsByIssuer<C> {

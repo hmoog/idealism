@@ -1,4 +1,4 @@
-use newtypev1::{CloneInner, DefaultInner, DerefInner, FromIteratorInner, IntoIteratorInner};
+use newtype::{CloneInner, DefaultInner, DerefInner, FromIteratorInner, IntoIteratorInner};
 
 use crate::{ConfigInterface, Vote, utils::set::Set};
 

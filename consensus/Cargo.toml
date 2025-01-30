@@ -6,4 +6,3 @@ edition = "2021"
 [dependencies]
 utils = { path = "../utils" }
 newtype = { path = "../newtype" }
-newtypev1 = { path = "../newtypev1" }
