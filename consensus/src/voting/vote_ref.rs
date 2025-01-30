@@ -3,11 +3,11 @@ use std::{
     sync::{Arc, Weak},
 };
 
-use newtype::{CloneInner, DefaultInner, DerefInner};
+use newtype::{Clone0, Default0, Deref0};
 
 use crate::{ConfigInterface, Vote, VoteData};
 
-#[derive(CloneInner, DerefInner, DefaultInner)]
+#[derive(Clone0, Default0, Deref0)]
 pub struct VoteRef<T: ConfigInterface>(Weak<VoteData<T>>);
 
 impl<C: ConfigInterface> VoteRef<C> {

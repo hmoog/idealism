@@ -2,7 +2,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{Data, DeriveInput, Fields, parse_macro_input};
 
-#[proc_macro_derive(CloneInner)]
+#[proc_macro_derive(Clone0)]
 pub fn delegate_clone(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = &input.ident;
@@ -42,7 +42,7 @@ pub fn delegate_clone(input: TokenStream) -> TokenStream {
     expanded.into()
 }
 
-#[proc_macro_derive(DefaultInner)]
+#[proc_macro_derive(Default0)]
 pub fn delegate_default(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = &input.ident;
@@ -82,7 +82,7 @@ pub fn delegate_default(input: TokenStream) -> TokenStream {
     expanded.into()
 }
 
-#[proc_macro_derive(DerefInner)]
+#[proc_macro_derive(Deref0)]
 pub fn delegate_deref(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = &input.ident;
@@ -120,7 +120,7 @@ pub fn delegate_deref(input: TokenStream) -> TokenStream {
     expanded.into()
 }
 
-#[proc_macro_derive(FromIteratorInner)]
+#[proc_macro_derive(FromIterator0)]
 pub fn delegate_from_iterator(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = &input.ident;
@@ -175,7 +175,7 @@ pub fn delegate_from_iterator(input: TokenStream) -> TokenStream {
     expanded.into()
 }
 
-#[proc_macro_derive(IntoIteratorInner)]
+#[proc_macro_derive(IntoIterator0)]
 pub fn delegate_into_iterator(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = &input.ident;

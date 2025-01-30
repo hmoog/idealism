@@ -4,12 +4,12 @@ use std::{
     sync::Arc,
 };
 
-use newtype::{CloneInner, DerefInner};
+use newtype::{Clone0, Deref0};
 use utils::ArcKey;
 
 use crate::{ConfigInterface, VoteData, VoteRef, VoteRefs, VoteRefsByIssuer, Votes, errors::Error};
 
-#[derive(CloneInner, DerefInner)]
+#[derive(Clone0, Deref0)]
 pub struct Vote<Config: ConfigInterface>(Arc<VoteData<Config>>);
 
 impl<Config: ConfigInterface> Vote<Config> {

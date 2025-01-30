@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
-use newtype::{DefaultInner, DerefInner, FromIteratorInner, IntoIteratorInner};
+use newtype::{Default0, Deref0, FromIterator0, IntoIterator0};
 use utils::ArcKey;
 
 use crate::{ConfigInterface, VoteRef, VoteRefs, VotesByIssuer};
 
-#[derive(IntoIteratorInner, FromIteratorInner, DerefInner, DefaultInner)]
+#[derive(Default0, Deref0, FromIterator0, IntoIterator0)]
 pub struct VoteRefsByIssuer<C: ConfigInterface>(HashMap<ArcKey<C::CommitteeMemberID>, VoteRefs<C>>);
 
 impl<C: ConfigInterface> From<VotesByIssuer<C>> for VoteRefsByIssuer<C> {
