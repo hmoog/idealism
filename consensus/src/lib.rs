@@ -47,8 +47,7 @@ pub(crate) mod voting {
 }
 
 pub(crate) mod utils {
-    pub(crate) mod set;
-    pub(crate) mod set_element;
+    pub(crate) mod max_set;
 }
 
 #[cfg(test)]

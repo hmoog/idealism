@@ -1,17 +1,15 @@
-use std::collections::HashSet;
-
-use crate::utils::set_element::SetElement;
+use std::{collections::HashSet, hash::Hash};
 
 /// HashSet variant that tracks its maximum element during modifications.
 ///
 /// # Type Parameters
 /// - `E`: Element type that can be hashed, compared and cloned
-pub struct Set<E: SetElement> {
+pub struct MaxSet<E: Element> {
     elements: HashSet<E>,
     heaviest_element: Option<E>,
 }
 
-impl<E: SetElement> Set<E> {
+impl<E: Element> MaxSet<E> {
     /// Inserts an element into the set.
     ///
     /// # Returns
@@ -42,7 +40,7 @@ impl<E: SetElement> Set<E> {
     }
 }
 
-impl<E: SetElement> Default for Set<E> {
+impl<E: Element> Default for MaxSet<E> {
     fn default() -> Self {
         Self {
             elements: HashSet::new(),
@@ -51,7 +49,7 @@ impl<E: SetElement> Default for Set<E> {
     }
 }
 
-impl<E: SetElement, I: Into<E>> FromIterator<I> for Set<E> {
+impl<E: Element, I: Into<E>> FromIterator<I> for MaxSet<E> {
     fn from_iter<T: IntoIterator<Item = I>>(iter: T) -> Self {
         let mut result = Self::default();
         result.extend(iter.into_iter().map(Into::into));
@@ -59,7 +57,7 @@ impl<E: SetElement, I: Into<E>> FromIterator<I> for Set<E> {
     }
 }
 
-impl<E: SetElement, I: Into<E>> Extend<I> for Set<E> {
+impl<E: Element, I: Into<E>> Extend<I> for MaxSet<E> {
     fn extend<T: IntoIterator<Item = I>>(&mut self, iter: T) {
         iter.into_iter().for_each(|v| {
             self.insert(v.into());
@@ -67,7 +65,7 @@ impl<E: SetElement, I: Into<E>> Extend<I> for Set<E> {
     }
 }
 
-impl<E: SetElement> IntoIterator for Set<E> {
+impl<E: Element> IntoIterator for MaxSet<E> {
     type Item = E;
     type IntoIter = std::collections::hash_set::IntoIter<E>;
 
@@ -76,7 +74,7 @@ impl<E: SetElement> IntoIterator for Set<E> {
     }
 }
 
-impl<'a, E: SetElement> IntoIterator for &'a Set<E> {
+impl<'a, E: Element> IntoIterator for &'a MaxSet<E> {
     type Item = &'a E;
     type IntoIter = std::collections::hash_set::Iter<'a, E>;
 
@@ -85,7 +83,7 @@ impl<'a, E: SetElement> IntoIterator for &'a Set<E> {
     }
 }
 
-impl<E: SetElement> Clone for Set<E> {
+impl<E: Element> Clone for MaxSet<E> {
     fn clone(&self) -> Self {
         Self {
             elements: self.elements.clone(),
@@ -94,13 +92,19 @@ impl<E: SetElement> Clone for Set<E> {
     }
 }
 
+/// Trait bound for elements in [`MaxSet`] requiring equality, hashing, ordering and cloning
+/// capabilities.
+pub trait Element: Eq + Hash + Ord + Clone {}
+
+impl<T: Eq + Hash + Ord + Clone> Element for T {}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_insert_and_heaviest() {
-        let mut set = Set::default();
+        let mut set = MaxSet::default();
         assert_eq!(set.heaviest_element(), None);
 
         set.insert(1);
@@ -115,7 +119,7 @@ mod tests {
 
     #[test]
     fn test_clear() {
-        let mut set = Set::default();
+        let mut set = MaxSet::default();
         set.insert(1);
         set.insert(2);
         set.clear();
@@ -125,13 +129,13 @@ mod tests {
 
     #[test]
     fn test_from_iterator() {
-        let set: Set<i32> = vec![1, 3, 2].into_iter().collect();
+        let set: MaxSet<i32> = vec![1, 3, 2].into_iter().collect();
         assert_eq!(set.heaviest_element(), Some(&3));
     }
 
     #[test]
     fn test_extend() {
-        let mut set = Set::default();
+        let mut set = MaxSet::default();
         set.insert(1);
         set.extend(vec![2, 4, 3]);
         assert_eq!(set.heaviest_element(), Some(&4));
@@ -139,7 +143,7 @@ mod tests {
 
     #[test]
     fn test_duplicate_insert() {
-        let mut set = Set::default();
+        let mut set = MaxSet::default();
         assert!(set.insert(1));
         assert!(!set.insert(1));
         assert_eq!(set.heaviest_element(), Some(&1));
@@ -147,7 +151,7 @@ mod tests {
 
     #[test]
     fn test_clone() {
-        let mut set = Set::default();
+        let mut set = MaxSet::default();
         set.insert(1);
         set.insert(2);
 

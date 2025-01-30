@@ -3,7 +3,7 @@ use std::sync::Arc;
 use utils::Id;
 
 use crate::{
-    Committee, ConfigInterface, Error, Issuer, Vote, VoteRef, VoteRefs, VoteRefsByIssuer, Votes,
+    Committee, ConfigInterface, Issuer, Result, Vote, VoteRef, VoteRefs, VoteRefsByIssuer, Votes,
     VotesByIssuer, consensus::ConsensusRound,
 };
 
@@ -18,8 +18,8 @@ pub struct VoteData<T: ConfigInterface> {
     pub target: VoteRef<T>,
 }
 
-impl<T: ConfigInterface> VoteData<T> {
-    pub fn from_config(config: T) -> Self {
+impl<C: ConfigInterface> VoteData<C> {
+    pub fn from_config(config: C) -> Self {
         Self {
             issuer: Issuer::Genesis,
             votes_by_issuer: VoteRefsByIssuer::default(),
@@ -32,7 +32,7 @@ impl<T: ConfigInterface> VoteData<T> {
         }
     }
 
-    pub fn from_votes(votes: Votes<T>) -> Result<VoteData<T>, Error> {
+    pub fn from_votes(votes: Votes<C>) -> Result<VoteData<C>> {
         let heaviest_tip = votes
             .heaviest_element()
             .cloned()
@@ -50,7 +50,7 @@ impl<T: ConfigInterface> VoteData<T> {
         })
     }
 
-    pub fn finalize(mut self, issuer: Id<T::IssuerID>) -> Result<Vote<T>, Error> {
+    pub fn finalize(mut self, issuer: Id<C::IssuerID>) -> Result<Vote<C>> {
         // TODO: HANDLE FROM CONFIG:
         // votes_by_issuer.retain(|id, _| heaviest_tip.committee.is_member_online(id));
 
@@ -75,7 +75,7 @@ impl<T: ConfigInterface> VoteData<T> {
         // abort if we have already voted and are below the acceptance threshold
         let own_votes = self.votes_by_issuer.entry(issuer.clone()).or_default();
         if let Some(own_vote) = own_votes.iter().next() {
-            let vote: Vote<T> = own_vote.try_into()?;
+            let vote: Vote<C> = own_vote.try_into()?;
             if vote.round == self.round && referenced_round_weight < acceptance_threshold {
                 return Ok(Vote::from(Arc::new(self)));
             }
@@ -103,11 +103,11 @@ impl<T: ConfigInterface> VoteData<T> {
 }
 
 mod traits {
-    use crate::{ConfigInterface, Error, VoteData, Votes};
+    use crate::{ConfigInterface, Error, Result, VoteData, Votes};
 
     impl<Config: ConfigInterface> TryFrom<Votes<Config>> for VoteData<Config> {
         type Error = Error;
-        fn try_from(votes: Votes<Config>) -> Result<VoteData<Config>, Self::Error> {
+        fn try_from(votes: Votes<Config>) -> Result<VoteData<Config>> {
             Self::from_votes(votes)
         }
     }

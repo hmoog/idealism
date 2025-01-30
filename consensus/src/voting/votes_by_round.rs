@@ -1,6 +1,6 @@
 use std::{cmp::max, collections::HashMap};
 
-use crate::{ConfigInterface, Vote, VotesByIssuer};
+use crate::{ConfigInterface, VotesByIssuer};
 
 pub struct VotesByRound<T: ConfigInterface> {
     elements: HashMap<u64, VotesByIssuer<T>>,
@@ -8,8 +8,21 @@ pub struct VotesByRound<T: ConfigInterface> {
 }
 
 impl<T: ConfigInterface> VotesByRound<T> {
-    pub fn insert_votes_by_issuer(&mut self, round: u64, votes_by_issuer: VotesByIssuer<T>) {
-        for (issuer, votes) in votes_by_issuer {
+    pub fn from(src: VotesByIssuer<T>) -> VotesByRound<T> {
+        src.into_iter().fold(
+            VotesByRound::default(),
+            |mut votes_by_round, (issuer, votes)| {
+                votes_by_round
+                    .fetch(votes.round())
+                    .fetch(issuer)
+                    .extend(votes);
+                votes_by_round
+            },
+        )
+    }
+
+    pub fn extend(&mut self, round: u64, src: VotesByIssuer<T>) {
+        for (issuer, votes) in src {
             self.fetch(round).fetch(issuer).extend(votes);
         }
     }
@@ -24,41 +37,23 @@ impl<T: ConfigInterface> VotesByRound<T> {
     }
 }
 
-impl<T: ConfigInterface> Default for VotesByRound<T> {
-    fn default() -> Self {
-        Self {
-            elements: HashMap::new(),
-            max_round: 0,
+mod traits {
+    use std::collections::HashMap;
+
+    use crate::{ConfigInterface, VotesByIssuer, VotesByRound};
+
+    impl<T: ConfigInterface> Default for VotesByRound<T> {
+        fn default() -> Self {
+            Self {
+                elements: HashMap::new(),
+                max_round: 0,
+            }
         }
     }
-}
 
-impl<T: ConfigInterface> From<VotesByIssuer<T>> for VotesByRound<T> {
-    fn from(votes_by_issuer: VotesByIssuer<T>) -> VotesByRound<T> {
-        votes_by_issuer.into_iter().fold(
-            VotesByRound::default(),
-            |mut votes_by_round, (issuer, votes)| {
-                votes_by_round
-                    .fetch(votes.round())
-                    .fetch(issuer)
-                    .extend(votes);
-                votes_by_round
-            },
-        )
-    }
-}
-
-impl<T: ConfigInterface> From<&VotesByIssuer<T>> for VotesByRound<T> {
-    fn from(votes_by_issuer: &VotesByIssuer<T>) -> VotesByRound<T> {
-        votes_by_issuer.into_iter().fold(
-            VotesByRound::default(),
-            |mut votes_by_round, (issuer, votes)| {
-                votes_by_round
-                    .fetch(votes.round())
-                    .fetch(issuer.clone())
-                    .extend(votes.into_iter().map(Vote::clone));
-                votes_by_round
-            },
-        )
+    impl<T: ConfigInterface> From<VotesByIssuer<T>> for VotesByRound<T> {
+        fn from(votes_by_issuer: VotesByIssuer<T>) -> VotesByRound<T> {
+            VotesByRound::from(votes_by_issuer)
+        }
     }
 }

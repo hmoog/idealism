@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use newtype::{Default0, FromIterator0, IntoIterator0};
+use newtype::{Clone0, Default0, FromIterator0, IntoIterator0};
 use utils::Id;
 
 use crate::{ConfigInterface, Votes};
@@ -9,7 +9,7 @@ use crate::{ConfigInterface, Votes};
 ///
 /// This structure maintains votes from different committee members, ensuring proper handling of
 /// voting rounds and vote updates.
-#[derive(Default0, IntoIterator0, FromIterator0)]
+#[derive(Default0, IntoIterator0, FromIterator0, Clone0)]
 pub struct VotesByIssuer<Config: ConfigInterface>(HashMap<Id<Config::IssuerID>, Votes<Config>>);
 
 impl<Config: ConfigInterface> VotesByIssuer<Config> {

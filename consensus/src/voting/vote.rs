@@ -16,6 +16,7 @@ impl<C: ConfigInterface> Vote<C> {
     pub fn from_config(config: C) -> Self {
         Self(Arc::new_cyclic(|me| {
             let mut vote = VoteData::from(config);
+
             vote.target = me.into();
             vote.votes_by_issuer =
                 VoteRefsByIssuer::from_iter(vote.committee.iter().map(|member| {
@@ -24,6 +25,7 @@ impl<C: ConfigInterface> Vote<C> {
                         VoteRefs::from_iter([vote.target.clone()]),
                     )
                 }));
+
             vote
         }))
     }

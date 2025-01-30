@@ -15,8 +15,8 @@ pub(crate) struct ConsensusRound<ID: ConfigInterface> {
     weights: HashMap<Vote<ID>, u64>,
 }
 
-impl<ID: ConfigInterface> ConsensusRound<ID> {
-    pub(crate) fn new(committee: Committee<ID>) -> Self {
+impl<C: ConfigInterface> ConsensusRound<C> {
+    pub(crate) fn new(committee: Committee<C>) -> Self {
         Self {
             committee,
             children: HashMap::new(),
@@ -28,8 +28,8 @@ impl<ID: ConfigInterface> ConsensusRound<ID> {
     /// milestone.
     pub(crate) fn latest_accepted_milestone(
         &mut self,
-        mut votes_by_round: VotesByRound<ID>,
-    ) -> Result<Vote<ID>, Error> {
+        mut votes_by_round: VotesByRound<C>,
+    ) -> Result<Vote<C>, Error> {
         for round in (0..=votes_by_round.max_round()).rev() {
             match self.heaviest_target(votes_by_round.fetch(round))? {
                 LatestAcceptedMilestoneFound(latest_accepted_milestone) => {
@@ -37,7 +37,7 @@ impl<ID: ConfigInterface> ConsensusRound<ID> {
                 }
                 PreviousRoundTargets(previous_round_targets) => {
                     if round > 0 {
-                        votes_by_round.insert_votes_by_issuer(round - 1, previous_round_targets)
+                        votes_by_round.extend(round - 1, previous_round_targets)
                     }
                 }
             }
@@ -46,7 +46,7 @@ impl<ID: ConfigInterface> ConsensusRound<ID> {
         unreachable!("we should never reach this point in the logic as the root is always accepted")
     }
 
-    pub(crate) fn heaviest_descendant(&self, vote: &Vote<ID>) -> Vote<ID> {
+    pub(crate) fn heaviest_descendant(&self, vote: &Vote<C>) -> Vote<C> {
         let mut heaviest_descendant = vote.clone();
         while let Some(children) = self.children.get(&heaviest_descendant) {
             match self.heaviest_child(children) {
@@ -58,7 +58,7 @@ impl<ID: ConfigInterface> ConsensusRound<ID> {
         heaviest_descendant
     }
 
-    fn add_weight(&mut self, vote: &Vote<ID>, weight: u64) -> u64 {
+    fn add_weight(&mut self, vote: &Vote<C>, weight: u64) -> u64 {
         *self
             .weights
             .entry(vote.clone())
@@ -68,15 +68,15 @@ impl<ID: ConfigInterface> ConsensusRound<ID> {
 
     fn heaviest_target(
         &mut self,
-        votes_of_round: &VotesByIssuer<ID>,
-    ) -> Result<WalkResult<ID>, Error> {
+        votes_of_round: &VotesByIssuer<C>,
+    ) -> Result<WalkResult<C>, Error> {
         let mut targets = VotesByIssuer::default();
         let mut heaviest_vote = None;
         let mut heaviest_weight = 0;
 
         for (issuer, votes) in votes_of_round {
             for vote in votes {
-                let target = Vote::try_from(&vote.target)?;
+                let target = (&vote.target).try_into()?;
                 if let Issuer::Genesis = vote.issuer {
                     return Ok(LatestAcceptedMilestoneFound(vote.clone()));
                 }
@@ -107,7 +107,7 @@ impl<ID: ConfigInterface> ConsensusRound<ID> {
         }
     }
 
-    fn heaviest_child(&self, votes: &Votes<ID>) -> Option<Vote<ID>> {
+    fn heaviest_child(&self, votes: &Votes<C>) -> Option<Vote<C>> {
         votes
             .into_iter()
             .map(|candidate_weak| {
