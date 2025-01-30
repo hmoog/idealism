@@ -3,13 +3,17 @@ use std::sync::Arc;
 use newtype::{Clone0, Deref0};
 use utils::ArcKey;
 
-use crate::{ConfigInterface, Error, VoteData, VoteRefs, VoteRefsByIssuer, Votes};
+use crate::{ConfigInterface, Result, VoteData, VoteRefs, VoteRefsByIssuer, Votes};
 
 #[derive(Clone0, Deref0)]
 pub struct Vote<Config: ConfigInterface>(Arc<VoteData<Config>>);
 
-impl<Config: ConfigInterface> Vote<Config> {
-    pub fn from_config(config: Config) -> Self {
+impl<C: ConfigInterface> Vote<C> {
+    pub fn new(issuer: &ArcKey<C::IssuerID>, latest: Vec<&Vote<C>>) -> Result<Vote<C>> {
+        VoteData::try_from(Votes::from_iter(latest.into_iter().cloned()))?.finalize(issuer.clone())
+    }
+
+    pub fn from_config(config: C) -> Self {
         Self(Arc::new_cyclic(|me| {
             let mut vote = VoteData::from(config);
             vote.target = me.into();
@@ -24,11 +28,8 @@ impl<Config: ConfigInterface> Vote<Config> {
         }))
     }
 
-    pub fn issue(
-        issuer: &ArcKey<Config::IssuerID>,
-        tips: Vec<&Vote<Config>>,
-    ) -> Result<Vote<Config>, Error> {
-        VoteData::try_from(Votes::from_iter(tips.into_iter().cloned()))?.finalize(issuer.clone())
+    pub fn consensus_weights(&self) -> (u64, u64, u64) {
+        (self.cumulative_slot_weight, self.round, self.leader_weight)
     }
 }
 
@@ -71,14 +72,7 @@ mod traits {
 
     impl<Config: ConfigInterface> Ord for Vote<Config> {
         fn cmp(&self, other: &Self) -> Ordering {
-            let self_weight = (self.cumulative_slot_weight, self.round, self.leader_weight);
-            let other_weight = (
-                other.cumulative_slot_weight,
-                other.round,
-                other.leader_weight,
-            );
-
-            self_weight.cmp(&other_weight)
+            self.consensus_weights().cmp(&other.consensus_weights())
         }
     }
 
