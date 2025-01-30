@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use newtype::{Clone0, Deref0};
-use utils::ArcKey;
+use utils::Id;
 
 use crate::{ConfigInterface, Result, VoteData, VoteRefs, VoteRefsByIssuer, Votes};
 
@@ -9,7 +9,7 @@ use crate::{ConfigInterface, Result, VoteData, VoteRefs, VoteRefsByIssuer, Votes
 pub struct Vote<Config: ConfigInterface>(Arc<VoteData<Config>>);
 
 impl<C: ConfigInterface> Vote<C> {
-    pub fn new(issuer: &ArcKey<C::IssuerID>, latest: Vec<&Vote<C>>) -> Result<Vote<C>> {
+    pub fn new(issuer: &Id<C::IssuerID>, latest: Vec<&Vote<C>>) -> Result<Vote<C>> {
         VoteData::try_from(Votes::from_iter(latest.into_iter().cloned()))?.finalize(issuer.clone())
     }
 

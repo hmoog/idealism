@@ -1,9 +1,9 @@
-use utils::ArcKey;
+use utils::Id;
 
 use crate::CommitteeMemberID;
 
 pub struct CommitteeMember<T: CommitteeMemberID> {
-    id: ArcKey<T>,
+    id: Id<T>,
     index: u64,
     weight: u64,
     online: bool,
@@ -12,7 +12,7 @@ pub struct CommitteeMember<T: CommitteeMemberID> {
 impl<T: CommitteeMemberID> CommitteeMember<T> {
     pub fn new(id: T) -> Self {
         Self {
-            id: ArcKey::new(id),
+            id: Id::new(id),
             index: 0,
             weight: 1,
             online: true,
@@ -66,7 +66,7 @@ impl<T: CommitteeMemberID> CommitteeMember<T> {
         false
     }
 
-    pub(crate) fn key(&self) -> &ArcKey<T> {
+    pub(crate) fn key(&self) -> &Id<T> {
         &self.id
     }
 }

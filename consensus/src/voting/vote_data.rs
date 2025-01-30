@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use utils::ArcKey;
+use utils::Id;
 
 use crate::{
     Committee, ConfigInterface, Error, Issuer, Vote, VoteRef, VoteRefs, VoteRefsByIssuer, Votes,
@@ -50,7 +50,7 @@ impl<T: ConfigInterface> VoteData<T> {
         })
     }
 
-    pub fn finalize(mut self, issuer: ArcKey<T::IssuerID>) -> Result<Vote<T>, Error> {
+    pub fn finalize(mut self, issuer: Id<T::IssuerID>) -> Result<Vote<T>, Error> {
         // TODO: HANDLE FROM CONFIG:
         // votes_by_issuer.retain(|id, _| heaviest_tip.committee.is_member_online(id));
 

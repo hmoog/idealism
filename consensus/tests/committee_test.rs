@@ -1,5 +1,5 @@
 use consensus::{Committee, CommitteeMember, Config};
-use utils::ArcKey;
+use utils::Id;
 
 #[test]
 fn test_committee() {
@@ -11,27 +11,27 @@ fn test_committee() {
     // assert initial state
     assert_eq!(committee.total_weight(), 30);
     assert_eq!(committee.online_weight(), 10);
-    assert!(committee.is_member_online(&ArcKey::new(1)));
-    assert_eq!(committee.member_weight(&ArcKey::new(1)), 10);
-    assert!(!committee.is_member_online(&ArcKey::new(2)));
-    assert_eq!(committee.member_weight(&ArcKey::new(2)), 20);
+    assert!(committee.is_member_online(&Id::new(1)));
+    assert_eq!(committee.member_weight(&Id::new(1)), 10);
+    assert!(!committee.is_member_online(&Id::new(2)));
+    assert_eq!(committee.member_weight(&Id::new(2)), 20);
 
     // set member 2 online
-    let committee1 = committee.set_online(&ArcKey::new(2), true);
+    let committee1 = committee.set_online(&Id::new(2), true);
     assert_eq!(committee1.total_weight(), 30);
     assert_eq!(committee1.online_weight(), 30);
-    assert!(committee1.is_member_online(&ArcKey::new(1)));
-    assert_eq!(committee1.member_weight(&ArcKey::new(1)), 10);
-    assert!(committee1.is_member_online(&ArcKey::new(2)));
-    assert_eq!(committee1.member_weight(&ArcKey::new(2)), 20);
+    assert!(committee1.is_member_online(&Id::new(1)));
+    assert_eq!(committee1.member_weight(&Id::new(1)), 10);
+    assert!(committee1.is_member_online(&Id::new(2)));
+    assert_eq!(committee1.member_weight(&Id::new(2)), 20);
 
     // original committee is not changed
     assert_eq!(committee.total_weight(), 30);
     assert_eq!(committee.online_weight(), 10);
-    assert!(committee.is_member_online(&ArcKey::new(1)));
-    assert_eq!(committee.member_weight(&ArcKey::new(1)), 10);
-    assert!(!committee.is_member_online(&ArcKey::new(2)));
-    assert_eq!(committee.member_weight(&ArcKey::new(2)), 20);
+    assert!(committee.is_member_online(&Id::new(1)));
+    assert_eq!(committee.member_weight(&Id::new(1)), 10);
+    assert!(!committee.is_member_online(&Id::new(2)));
+    assert_eq!(committee.member_weight(&Id::new(2)), 20);
 
     // set member 2 online again (no change / same underlying data)
     // let committee2 = committee1.set_online(&ArcKey::new(2), true);

@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 
-use utils::ArcKey;
+use utils::Id;
 
 use crate::{CommitteeMember, ConfigInterface};
 
@@ -24,6 +24,6 @@ where
 }
 
 type CommitteeMembersByID<C> = HashMap<
-    ArcKey<<C as ConfigInterface>::IssuerID>,
+    Id<<C as ConfigInterface>::IssuerID>,
     Arc<CommitteeMember<<C as ConfigInterface>::IssuerID>>,
 >;

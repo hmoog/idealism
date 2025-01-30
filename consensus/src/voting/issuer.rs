@@ -1,15 +1,15 @@
 use std::hash::{Hash, Hasher};
 
-use utils::ArcKey;
+use utils::Id;
 
 use crate::CommitteeMemberID;
 
-pub enum Issuer<ID: CommitteeMemberID> {
+pub enum Issuer<I: CommitteeMemberID> {
     Genesis,
-    User(ArcKey<ID>),
+    User(Id<I>),
 }
 
-impl<T: CommitteeMemberID> Hash for Issuer<T> {
+impl<I: CommitteeMemberID> Hash for Issuer<I> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
             Issuer::Genesis => 0.hash(state),

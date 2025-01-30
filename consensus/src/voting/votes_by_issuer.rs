@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use newtype::{Default0, FromIterator0, IntoIterator0};
-use utils::ArcKey;
+use utils::Id;
 
 use crate::{ConfigInterface, Votes};
 
@@ -10,7 +10,7 @@ use crate::{ConfigInterface, Votes};
 /// This structure maintains votes from different committee members, ensuring proper handling of
 /// voting rounds and vote updates.
 #[derive(Default0, IntoIterator0, FromIterator0)]
-pub struct VotesByIssuer<Config: ConfigInterface>(HashMap<ArcKey<Config::IssuerID>, Votes<Config>>);
+pub struct VotesByIssuer<Config: ConfigInterface>(HashMap<Id<Config::IssuerID>, Votes<Config>>);
 
 impl<Config: ConfigInterface> VotesByIssuer<Config> {
     /// Inserts or updates votes for a committee member based on the voting round.
@@ -36,12 +36,12 @@ impl<Config: ConfigInterface> VotesByIssuer<Config> {
     /// Retrieves or creates a mutable reference to the votes for a given committee member.
     ///
     /// If no votes exist for the given key, a new empty votes collection is created.
-    pub fn fetch(&mut self, key: ArcKey<Config::IssuerID>) -> &mut Votes<Config> {
+    pub fn fetch(&mut self, key: Id<Config::IssuerID>) -> &mut Votes<Config> {
         self.0.entry(key).or_default()
     }
 }
 
-type Entry<Config> = (ArcKey<<Config as ConfigInterface>::IssuerID>, Votes<Config>);
+type Entry<Config> = (Id<<Config as ConfigInterface>::IssuerID>, Votes<Config>);
 
 mod traits {
     use super::{Entry, VotesByIssuer};
