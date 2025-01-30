@@ -1,7 +1,7 @@
 use crate::{Committee, CommitteeMemberID, Vote, VoteData};
 
 pub trait ConfigInterface: Default {
-    type CommitteeMemberID: CommitteeMemberID;
+    type IssuerID: CommitteeMemberID;
 
     fn select_committee(&self, vote: Option<&Vote<Self>>) -> Committee<Self>
     where

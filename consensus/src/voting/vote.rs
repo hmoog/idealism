@@ -25,7 +25,7 @@ impl<Config: ConfigInterface> Vote<Config> {
     }
 
     pub fn issue(
-        issuer: &ArcKey<Config::CommitteeMemberID>,
+        issuer: &ArcKey<Config::IssuerID>,
         tips: Vec<&Vote<Config>>,
     ) -> Result<Vote<Config>, Error> {
         VoteData::try_from(Votes::from_iter(tips.into_iter().cloned()))?.finalize(issuer.clone())

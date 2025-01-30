@@ -24,6 +24,6 @@ where
 }
 
 type CommitteeMembersByID<C> = HashMap<
-    ArcKey<<C as ConfigInterface>::CommitteeMemberID>,
-    Arc<CommitteeMember<<C as ConfigInterface>::CommitteeMemberID>>,
+    ArcKey<<C as ConfigInterface>::IssuerID>,
+    Arc<CommitteeMember<<C as ConfigInterface>::IssuerID>>,
 >;

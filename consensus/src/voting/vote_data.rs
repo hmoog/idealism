@@ -9,7 +9,7 @@ use crate::{
 
 pub struct VoteData<T: ConfigInterface> {
     pub config: Arc<T>,
-    pub issuer: Issuer<T::CommitteeMemberID>,
+    pub issuer: Issuer<T::IssuerID>,
     pub cumulative_slot_weight: u64,
     pub round: u64,
     pub leader_weight: u64,
@@ -50,7 +50,7 @@ impl<T: ConfigInterface> VoteData<T> {
         })
     }
 
-    pub fn finalize(mut self, issuer: ArcKey<T::CommitteeMemberID>) -> Result<Vote<T>, Error> {
+    pub fn finalize(mut self, issuer: ArcKey<T::IssuerID>) -> Result<Vote<T>, Error> {
         // TODO: HANDLE FROM CONFIG:
         // votes_by_issuer.retain(|id, _| heaviest_tip.committee.is_member_online(id));
 

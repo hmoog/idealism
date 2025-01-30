@@ -50,14 +50,11 @@ impl<T: ConfigInterface> Committee<T> {
         self.0.online_weight
     }
 
-    pub fn member(
-        &self,
-        member_id: &ArcKey<T::CommitteeMemberID>,
-    ) -> Option<&CommitteeMember<T::CommitteeMemberID>> {
+    pub fn member(&self, member_id: &ArcKey<T::IssuerID>) -> Option<&CommitteeMember<T::IssuerID>> {
         self.0.members_by_id.get(member_id).map(|member| &**member)
     }
 
-    pub fn members(&self) -> Vec<CommitteeMember<T::CommitteeMemberID>> {
+    pub fn members(&self) -> Vec<CommitteeMember<T::IssuerID>> {
         let mut values: Vec<_> = self
             .0
             .members_by_id
@@ -68,7 +65,7 @@ impl<T: ConfigInterface> Committee<T> {
         values
     }
 
-    pub fn member_weight(&self, member_id: &ArcKey<T::CommitteeMemberID>) -> u64 {
+    pub fn member_weight(&self, member_id: &ArcKey<T::IssuerID>) -> u64 {
         self.0
             .members_by_id
             .get(member_id)
@@ -76,14 +73,14 @@ impl<T: ConfigInterface> Committee<T> {
             .unwrap_or(0)
     }
 
-    pub fn is_member_online(&self, member_id: &ArcKey<T::CommitteeMemberID>) -> bool {
+    pub fn is_member_online(&self, member_id: &ArcKey<T::IssuerID>) -> bool {
         self.0
             .members_by_id
             .get(member_id)
             .map_or(false, |member| member.is_online())
     }
 
-    pub fn set_online(&self, member_id: &ArcKey<T::CommitteeMemberID>, online: bool) -> Self {
+    pub fn set_online(&self, member_id: &ArcKey<T::IssuerID>, online: bool) -> Self {
         let mut new_committee = Committee(self.0.clone());
 
         if let Some(member) = self.0.members_by_id.get(member_id) {
@@ -111,7 +108,7 @@ impl<T: ConfigInterface> Committee<T> {
         new_committee
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &CommitteeMember<T::CommitteeMemberID>> {
+    pub fn iter(&self) -> impl Iterator<Item = &CommitteeMember<T::IssuerID>> {
         self.0.members_by_id.values().map(|member| &**member)
     }
 
@@ -120,7 +117,7 @@ impl<T: ConfigInterface> Committee<T> {
     }
 }
 
-impl<C: ConfigInterface, T: IntoIterator<Item = CommitteeMember<C::CommitteeMemberID>>> From<T>
+impl<C: ConfigInterface, T: IntoIterator<Item = CommitteeMember<C::IssuerID>>> From<T>
     for Committee<C>
 {
     fn from(members: T) -> Self {

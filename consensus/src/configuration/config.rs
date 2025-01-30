@@ -24,7 +24,7 @@ impl Config {
 }
 
 impl ConfigInterface for Config {
-    type CommitteeMemberID = u64;
+    type IssuerID = u64;
 
     fn select_committee(&self, vote: Option<&Vote<Self>>) -> Committee<Self>
     where
