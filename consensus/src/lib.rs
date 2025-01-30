@@ -10,9 +10,9 @@ pub use crate::{
     },
     errors::{Error, Result},
     voting::{
-        issuer::Issuer, vote::Vote, vote_data::VoteData, vote_ref::VoteRef, vote_refs::VoteRefs,
-        vote_refs_by_issuer::VoteRefsByIssuer, votes::Votes, votes_by_issuer::VotesByIssuer,
-        votes_by_round::VotesByRound,
+        issuer::Issuer, vote::Vote, vote_builder::VoteBuilder, vote_ref::VoteRef,
+        vote_refs::VoteRefs, vote_refs_by_issuer::VoteRefsByIssuer, votes::Votes,
+        votes_by_issuer::VotesByIssuer, votes_by_round::VotesByRound,
     },
 };
 
@@ -37,7 +37,7 @@ pub(crate) mod configuration {
 pub(crate) mod voting {
     pub(crate) mod issuer;
     pub(crate) mod vote;
-    pub(crate) mod vote_data;
+    pub(crate) mod vote_builder;
     pub(crate) mod vote_ref;
     pub(crate) mod vote_refs;
     pub(crate) mod vote_refs_by_issuer;

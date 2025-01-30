@@ -2,10 +2,10 @@ use std::sync::Weak;
 
 use newtype::{Clone0, Default0, Deref0};
 
-use crate::{ConfigInterface, Vote, VoteData};
+use crate::{ConfigInterface, Vote, VoteBuilder};
 
 #[derive(Clone0, Default0, Deref0)]
-pub struct VoteRef<T: ConfigInterface>(pub(super) Weak<VoteData<T>>);
+pub struct VoteRef<T: ConfigInterface>(pub(super) Weak<VoteBuilder<T>>);
 
 impl<C: ConfigInterface> VoteRef<C> {
     pub fn points_to(&self, vote: &Vote<C>) -> bool {
@@ -20,16 +20,16 @@ mod traits {
     };
 
     use super::VoteRef;
-    use crate::{ConfigInterface, Vote, VoteData};
+    use crate::{ConfigInterface, Vote, VoteBuilder};
 
-    impl<C: ConfigInterface> From<Weak<VoteData<C>>> for VoteRef<C> {
-        fn from(weak: Weak<VoteData<C>>) -> Self {
+    impl<C: ConfigInterface> From<Weak<VoteBuilder<C>>> for VoteRef<C> {
+        fn from(weak: Weak<VoteBuilder<C>>) -> Self {
             VoteRef(weak)
         }
     }
 
-    impl<C: ConfigInterface> From<&Weak<VoteData<C>>> for VoteRef<C> {
-        fn from(weak: &Weak<VoteData<C>>) -> Self {
+    impl<C: ConfigInterface> From<&Weak<VoteBuilder<C>>> for VoteRef<C> {
+        fn from(weak: &Weak<VoteBuilder<C>>) -> Self {
             VoteRef(weak.clone())
         }
     }

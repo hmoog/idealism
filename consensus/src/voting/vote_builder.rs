@@ -7,7 +7,7 @@ use crate::{
     VotesByIssuer, consensus::ConsensusRound,
 };
 
-pub struct VoteData<T: ConfigInterface> {
+pub struct VoteBuilder<T: ConfigInterface> {
     pub config: Arc<T>,
     pub issuer: Issuer<T::IssuerID>,
     pub cumulative_slot_weight: u64,
@@ -18,27 +18,14 @@ pub struct VoteData<T: ConfigInterface> {
     pub target: VoteRef<T>,
 }
 
-impl<C: ConfigInterface> VoteData<C> {
-    pub fn from_config(config: C) -> Self {
-        Self {
-            issuer: Issuer::Genesis,
-            votes_by_issuer: VoteRefsByIssuer::default(),
-            committee: config.select_committee(None),
-            config: Arc::new(config),
-            target: VoteRef::default(),
-            cumulative_slot_weight: 0,
-            round: 0,
-            leader_weight: 0,
-        }
-    }
-
-    pub fn from_votes(votes: Votes<C>) -> Result<VoteData<C>> {
+impl<C: ConfigInterface> VoteBuilder<C> {
+    pub fn new(votes: Votes<C>) -> Result<VoteBuilder<C>> {
         let heaviest_tip = votes
             .heaviest_element()
             .cloned()
             .expect("votes must not be empty");
 
-        Ok(VoteData {
+        Ok(VoteBuilder {
             issuer: Issuer::Genesis,
             votes_by_issuer: VotesByIssuer::try_from(votes)?.into(),
             committee: heaviest_tip.committee.clone(),
@@ -50,7 +37,7 @@ impl<C: ConfigInterface> VoteData<C> {
         })
     }
 
-    pub fn finalize(mut self, issuer: Id<C::IssuerID>) -> Result<Vote<C>> {
+    pub fn build(mut self, issuer: Id<C::IssuerID>) -> Result<Vote<C>> {
         // TODO: HANDLE FROM CONFIG:
         // votes_by_issuer.retain(|id, _| heaviest_tip.committee.is_member_online(id));
 
@@ -100,21 +87,34 @@ impl<C: ConfigInterface> VoteData<C> {
             self
         })))
     }
+
+    pub fn build_genesis(config: C) -> Self {
+        Self {
+            issuer: Issuer::Genesis,
+            votes_by_issuer: VoteRefsByIssuer::default(),
+            committee: config.select_committee(None),
+            config: Arc::new(config),
+            target: VoteRef::default(),
+            cumulative_slot_weight: 0,
+            round: 0,
+            leader_weight: 0,
+        }
+    }
 }
 
 mod traits {
-    use crate::{ConfigInterface, Error, Result, VoteData, Votes};
+    use crate::{ConfigInterface, Error, Result, VoteBuilder, Votes};
 
-    impl<Config: ConfigInterface> TryFrom<Votes<Config>> for VoteData<Config> {
+    impl<Config: ConfigInterface> TryFrom<Votes<Config>> for VoteBuilder<Config> {
         type Error = Error;
-        fn try_from(votes: Votes<Config>) -> Result<VoteData<Config>> {
-            Self::from_votes(votes)
+        fn try_from(votes: Votes<Config>) -> Result<VoteBuilder<Config>> {
+            Self::new(votes)
         }
     }
 
-    impl<Config: ConfigInterface> From<Config> for VoteData<Config> {
+    impl<Config: ConfigInterface> From<Config> for VoteBuilder<Config> {
         fn from(config: Config) -> Self {
-            Self::from_config(config)
+            Self::build_genesis(config)
         }
     }
 }

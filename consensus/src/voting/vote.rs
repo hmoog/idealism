@@ -3,19 +3,19 @@ use std::sync::Arc;
 use newtype::{Clone0, Deref0};
 use utils::Id;
 
-use crate::{ConfigInterface, Result, VoteData, VoteRefs, VoteRefsByIssuer, Votes};
+use crate::{ConfigInterface, Result, VoteBuilder, VoteRefs, VoteRefsByIssuer, Votes};
 
 #[derive(Clone0, Deref0)]
-pub struct Vote<Config: ConfigInterface>(Arc<VoteData<Config>>);
+pub struct Vote<Config: ConfigInterface>(Arc<VoteBuilder<Config>>);
 
 impl<C: ConfigInterface> Vote<C> {
     pub fn new(issuer: &Id<C::IssuerID>, latest: Vec<&Vote<C>>) -> Result<Vote<C>> {
-        VoteData::try_from(Votes::from_iter(latest.into_iter().cloned()))?.finalize(issuer.clone())
+        VoteBuilder::try_from(Votes::from_iter(latest.into_iter().cloned()))?.build(issuer.clone())
     }
 
     pub fn from_config(config: C) -> Self {
         Self(Arc::new_cyclic(|me| {
-            let mut vote = VoteData::from(config);
+            let mut vote = VoteBuilder::from(config);
 
             vote.target = me.into();
             vote.votes_by_issuer =
@@ -42,10 +42,10 @@ mod traits {
         sync::Arc,
     };
 
-    use crate::{ConfigInterface, Error, Vote, VoteData, VoteRef};
+    use crate::{ConfigInterface, Error, Vote, VoteBuilder, VoteRef};
 
-    impl<Config: ConfigInterface> From<Arc<VoteData<Config>>> for Vote<Config> {
-        fn from(arc: Arc<VoteData<Config>>) -> Self {
+    impl<Config: ConfigInterface> From<Arc<VoteBuilder<Config>>> for Vote<Config> {
+        fn from(arc: Arc<VoteBuilder<Config>>) -> Self {
             Self(arc)
         }
     }

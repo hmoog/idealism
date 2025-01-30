@@ -1,5 +1,6 @@
 use crate::{
-    Committee, CommitteeMember, CommitteeSelection, ConfigInterface, LeaderRotation, Vote, VoteData,
+    Committee, CommitteeMember, CommitteeSelection, ConfigInterface, LeaderRotation, Vote,
+    VoteBuilder,
 };
 
 pub struct Config {
@@ -33,7 +34,7 @@ impl ConfigInterface for Config {
         self.committee_selection.dispatch(self, vote)
     }
 
-    fn leader_weight(&self, vote: &VoteData<Self>) -> u64
+    fn leader_weight(&self, vote: &VoteBuilder<Self>) -> u64
     where
         Self: Sized,
     {

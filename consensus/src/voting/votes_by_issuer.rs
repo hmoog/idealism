@@ -58,25 +58,6 @@ mod traits {
         }
     }
 
-    impl<Config: ConfigInterface> TryFrom<VoteRefsByIssuer<Config>> for VotesByIssuer<Config> {
-        type Error = Error;
-        fn try_from(src: VoteRefsByIssuer<Config>) -> Result<VotesByIssuer<Config>, Self::Error> {
-            Ok(VotesByIssuer(
-                src.into_iter()
-                    .map(|(issuer, vote_refs)| {
-                        Ok((
-                            issuer,
-                            vote_refs
-                                .into_iter()
-                                .map(Vote::try_from)
-                                .collect::<Result<_, _>>()?,
-                        ))
-                    })
-                    .collect::<Result<_, _>>()?,
-            ))
-        }
-    }
-
     impl<Config: ConfigInterface> TryFrom<&VoteRefsByIssuer<Config>> for VotesByIssuer<Config> {
         type Error = Error;
         fn try_from(src: &VoteRefsByIssuer<Config>) -> Result<VotesByIssuer<Config>, Self::Error> {

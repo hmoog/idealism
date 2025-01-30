@@ -1,4 +1,4 @@
-use crate::{Committee, CommitteeMemberID, Vote, VoteData};
+use crate::{Committee, CommitteeMemberID, Vote, VoteBuilder};
 
 pub trait ConfigInterface: Default {
     type IssuerID: CommitteeMemberID;
@@ -7,7 +7,7 @@ pub trait ConfigInterface: Default {
     where
         Self: Sized;
 
-    fn leader_weight(&self, vote: &VoteData<Self>) -> u64
+    fn leader_weight(&self, vote: &VoteBuilder<Self>) -> u64
     where
         Self: Sized;
 }
