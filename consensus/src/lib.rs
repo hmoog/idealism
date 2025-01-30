@@ -61,26 +61,26 @@ mod test {
 
         let members = genesis.committee.members();
 
-        let member1_vote_1_1 = Vote::cast(members[0].key(), vec![&genesis])?;
-        let member2_vote_1_1 = Vote::cast(members[1].key(), vec![&genesis])?;
-        let member3_vote_1_1 = Vote::cast(members[2].key(), vec![&genesis])?;
-        let member4_vote_1_1 = Vote::cast(members[3].key(), vec![&genesis])?;
+        let member1_vote_1_1 = Vote::issue(members[0].key(), vec![&genesis])?;
+        let member2_vote_1_1 = Vote::issue(members[1].key(), vec![&genesis])?;
+        let member3_vote_1_1 = Vote::issue(members[2].key(), vec![&genesis])?;
+        let member4_vote_1_1 = Vote::issue(members[3].key(), vec![&genesis])?;
         assert!(member1_vote_1_1.target.points_to(&genesis));
         assert!(member2_vote_1_1.target.points_to(&genesis));
         assert!(member3_vote_1_1.target.points_to(&genesis));
         assert!(member4_vote_1_1.target.points_to(&genesis));
 
-        let a2 = Vote::cast(members[0].key(), vec![
+        let a2 = Vote::issue(members[0].key(), vec![
             &member1_vote_1_1,
             &member2_vote_1_1,
             &member3_vote_1_1,
         ])?;
-        let b2 = Vote::cast(members[1].key(), vec![
+        let b2 = Vote::issue(members[1].key(), vec![
             &member1_vote_1_1,
             &member2_vote_1_1,
             &member3_vote_1_1,
         ])?;
-        let c2 = Vote::cast(members[2].key(), vec![
+        let c2 = Vote::issue(members[2].key(), vec![
             &member1_vote_1_1,
             &member2_vote_1_1,
             &member3_vote_1_1,

@@ -19,7 +19,38 @@ pub struct VoteData<T: ConfigInterface> {
 }
 
 impl<T: ConfigInterface> VoteData<T> {
-    pub(crate) fn build(mut self, issuer: ArcKey<T::CommitteeMemberID>) -> Result<Vote<T>, Error> {
+    pub fn from_config(config: T) -> Self {
+        Self {
+            issuer: Issuer::Genesis,
+            votes_by_issuer: VoteRefsByIssuer::default(),
+            committee: config.select_committee(None),
+            config: Arc::new(config),
+            target: VoteRef::default(),
+            cumulative_slot_weight: 0,
+            round: 0,
+            leader_weight: 0,
+        }
+    }
+
+    pub fn from_votes(votes: Votes<T>) -> Result<VoteData<T>, Error> {
+        let heaviest_tip = votes
+            .heaviest_element()
+            .cloned()
+            .expect("votes must not be empty");
+
+        Ok(VoteData {
+            issuer: Issuer::Genesis,
+            votes_by_issuer: VotesByIssuer::try_from(votes)?.into(),
+            committee: heaviest_tip.committee.clone(),
+            config: heaviest_tip.config.clone(),
+            target: heaviest_tip.target.clone(),
+            cumulative_slot_weight: heaviest_tip.cumulative_slot_weight,
+            round: heaviest_tip.round,
+            leader_weight: heaviest_tip.leader_weight,
+        })
+    }
+
+    pub fn finalize(mut self, issuer: ArcKey<T::CommitteeMemberID>) -> Result<Vote<T>, Error> {
         // TODO: HANDLE FROM CONFIG:
         // votes_by_issuer.retain(|id, _| heaviest_tip.committee.is_member_online(id));
 
@@ -71,38 +102,19 @@ impl<T: ConfigInterface> VoteData<T> {
     }
 }
 
-impl<Config: ConfigInterface> TryFrom<Votes<Config>> for VoteData<Config> {
-    type Error = Error;
-    fn try_from(votes: Votes<Config>) -> Result<VoteData<Config>, Self::Error> {
-        let heaviest_tip = votes
-            .heaviest_element()
-            .cloned()
-            .expect("votes must not be empty");
+mod traits {
+    use crate::{ConfigInterface, Error, VoteData, Votes};
 
-        Ok(VoteData {
-            issuer: Issuer::Genesis,
-            votes_by_issuer: VotesByIssuer::try_from(votes)?.into(),
-            committee: heaviest_tip.committee.clone(),
-            config: heaviest_tip.config.clone(),
-            target: heaviest_tip.target.clone(),
-            cumulative_slot_weight: heaviest_tip.cumulative_slot_weight,
-            round: heaviest_tip.round,
-            leader_weight: heaviest_tip.leader_weight,
-        })
+    impl<Config: ConfigInterface> TryFrom<Votes<Config>> for VoteData<Config> {
+        type Error = Error;
+        fn try_from(votes: Votes<Config>) -> Result<VoteData<Config>, Self::Error> {
+            Self::from_votes(votes)
+        }
     }
-}
 
-impl<Config: ConfigInterface> From<Config> for VoteData<Config> {
-    fn from(config: Config) -> Self {
-        Self {
-            issuer: Issuer::Genesis,
-            votes_by_issuer: VoteRefsByIssuer::default(),
-            committee: config.select_committee(None),
-            config: Arc::new(config),
-            target: VoteRef::default(),
-            cumulative_slot_weight: 0,
-            round: 0,
-            leader_weight: 0,
+    impl<Config: ConfigInterface> From<Config> for VoteData<Config> {
+        fn from(config: Config) -> Self {
+            Self::from_config(config)
         }
     }
 }

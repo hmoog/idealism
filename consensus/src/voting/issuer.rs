@@ -4,7 +4,6 @@ use utils::ArcKey;
 
 use crate::CommitteeMemberID;
 
-#[derive(Clone)]
 pub enum Issuer<ID: CommitteeMemberID> {
     Genesis,
     User(ArcKey<ID>),
@@ -33,3 +32,12 @@ impl<T: CommitteeMemberID> PartialEq for Issuer<T> {
 }
 
 impl<T: CommitteeMemberID> Eq for Issuer<T> {}
+
+impl<T: CommitteeMemberID> Clone for Issuer<T> {
+    fn clone(&self) -> Self {
+        match self {
+            Issuer::Genesis => Issuer::Genesis,
+            Issuer::User(issuer) => Issuer::User(issuer.clone()),
+        }
+    }
+}
