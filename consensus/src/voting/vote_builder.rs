@@ -3,8 +3,8 @@ use std::sync::Arc;
 use utils::Id;
 
 use crate::{
-    Committee, ConfigInterface, Issuer, Result, Vote, VoteRef, VoteRefs, VoteRefsByIssuer, Votes,
-    VotesByIssuer, consensus::ConsensusRound,
+    Committee, ConfigInterface, ConsensusView, ConsensusViewRef, Issuer, Result, Vote, VoteRefs,
+    VoteRefsByIssuer, Votes, VotesByIssuer,
 };
 
 pub struct VoteBuilder<T: ConfigInterface> {
@@ -15,7 +15,7 @@ pub struct VoteBuilder<T: ConfigInterface> {
     pub leader_weight: u64,
     pub committee: Committee<T>,
     pub votes_by_issuer: VoteRefsByIssuer<T>,
-    pub target: VoteRef<T>,
+    pub consensus_view: ConsensusViewRef<T>,
 }
 
 impl<C: ConfigInterface> VoteBuilder<C> {
@@ -30,7 +30,7 @@ impl<C: ConfigInterface> VoteBuilder<C> {
             votes_by_issuer: VotesByIssuer::try_from(votes)?.into(),
             committee: heaviest_tip.committee.clone(),
             config: heaviest_tip.config.clone(),
-            target: heaviest_tip.target.clone(),
+            consensus_view: heaviest_tip.consensus_view.clone(),
             cumulative_slot_weight: heaviest_tip.cumulative_slot_weight,
             round: heaviest_tip.round,
             leader_weight: heaviest_tip.leader_weight,
@@ -59,7 +59,8 @@ impl<C: ConfigInterface> VoteBuilder<C> {
             .referenced_round_weight(&self.votes_by_issuer)?;
         let acceptance_threshold = self.committee.acceptance_threshold();
 
-        // abort if we have already voted and are below the acceptance threshold
+        // abort if we have already voted and are below the acceptance threshold to start a new
+        // round
         let own_votes = self.votes_by_issuer.entry(issuer.clone()).or_default();
         if let Some(own_vote) = own_votes.iter().next() {
             let vote: Vote<C> = own_vote.try_into()?;
@@ -68,12 +69,7 @@ impl<C: ConfigInterface> VoteBuilder<C> {
             }
         }
 
-        // determine the target vote
-        let mut consensus_round = ConsensusRound::new(self.committee.clone());
-        let latest_accepted_milestone = consensus_round
-            .latest_accepted_milestone(VotesByIssuer::try_from(&self.votes_by_issuer)?.into())?;
-        self.target =
-            VoteRef::from(&consensus_round.heaviest_descendant(&latest_accepted_milestone));
+        self.consensus_view = ConsensusView::from_vote_builder(&self)?.into();
 
         // advance the round if the acceptance threshold is now met
         if referenced_round_weight + committee_member.weight() >= acceptance_threshold {
@@ -94,7 +90,7 @@ impl<C: ConfigInterface> VoteBuilder<C> {
             votes_by_issuer: VoteRefsByIssuer::default(),
             committee: config.select_committee(None),
             config: Arc::new(config),
-            target: VoteRef::default(),
+            consensus_view: ConsensusViewRef::default(),
             cumulative_slot_weight: 0,
             round: 0,
             leader_weight: 0,

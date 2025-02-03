@@ -39,6 +39,11 @@ impl<Config: ConfigInterface> VotesByIssuer<Config> {
     pub fn fetch(&mut self, key: Id<Config::IssuerID>) -> &mut Votes<Config> {
         self.0.entry(key).or_default()
     }
+
+    /// Checks if the collection is empty.
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
 }
 
 type Entry<Config> = (Id<<Config as ConfigInterface>::IssuerID>, Votes<Config>);

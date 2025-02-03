@@ -10,7 +10,15 @@ pub struct Config {
 
 impl Config {
     pub fn new() -> Self {
-        Self::default()
+        Self {
+            committee_selection: CommitteeSelection::FixedCommittee(Committee::from([
+                CommitteeMember::new(1),
+                CommitteeMember::new(2),
+                CommitteeMember::new(3),
+                CommitteeMember::new(4),
+            ])),
+            leader_rotation: LeaderRotation::RoundRobin,
+        }
     }
 
     pub fn with_committee_selection(mut self, committee_selection: CommitteeSelection) -> Self {
@@ -44,14 +52,6 @@ impl ConfigInterface for Config {
 
 impl Default for Config {
     fn default() -> Self {
-        Self {
-            committee_selection: CommitteeSelection::FixedCommittee(Committee::from([
-                CommitteeMember::new(1),
-                CommitteeMember::new(2),
-                CommitteeMember::new(3),
-                CommitteeMember::new(4),
-            ])),
-            leader_rotation: LeaderRotation::RoundRobin,
-        }
+        Self::new()
     }
 }

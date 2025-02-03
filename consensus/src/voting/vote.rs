@@ -17,12 +17,12 @@ impl<C: ConfigInterface> Vote<C> {
         Self(Arc::new_cyclic(|me| {
             let mut vote = VoteBuilder::from(config);
 
-            vote.target = me.into();
+            vote.consensus_view = me.into();
             vote.votes_by_issuer =
                 VoteRefsByIssuer::from_iter(vote.committee.iter().map(|member| {
                     (
                         member.key().clone(),
-                        VoteRefs::from_iter([vote.target.clone()]),
+                        VoteRefs::from_iter([vote.consensus_view.heaviest_tip.clone()]),
                     )
                 }));
 
@@ -38,6 +38,7 @@ impl<C: ConfigInterface> Vote<C> {
 mod traits {
     use std::{
         cmp::Ordering,
+        fmt::Debug,
         hash::{Hash, Hasher},
         sync::Arc,
     };
@@ -95,6 +96,12 @@ mod traits {
     impl<Config: ConfigInterface> Hash for Vote<Config> {
         fn hash<H: Hasher>(&self, hasher: &mut H) {
             Arc::as_ptr(&self.0).hash(hasher)
+        }
+    }
+
+    impl<Config: ConfigInterface> Debug for Vote<Config> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "Vote({:?}::{:?})", self.issuer, self.round)
         }
     }
 }

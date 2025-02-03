@@ -1,4 +1,5 @@
 use std::{
+    fmt::Debug,
     hash::{Hash, Hasher},
     ops::Deref,
     sync::Arc,
@@ -9,6 +10,12 @@ pub struct Id<T>(Arc<T>);
 impl<T> Id<T> {
     pub fn new(value: T) -> Self {
         Id(Arc::new(value))
+    }
+}
+
+impl<T: Debug> Debug for Id<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.0)
     }
 }
 

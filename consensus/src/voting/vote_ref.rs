@@ -15,6 +15,7 @@ impl<C: ConfigInterface> VoteRef<C> {
 
 mod traits {
     use std::{
+        fmt::Debug,
         hash::{Hash, Hasher},
         sync::{Arc, Weak},
     };
@@ -57,6 +58,16 @@ mod traits {
     impl<C: ConfigInterface> Hash for VoteRef<C> {
         fn hash<H: Hasher>(&self, hasher: &mut H) {
             self.0.as_ptr().hash(hasher)
+        }
+    }
+
+    impl<Config: ConfigInterface> Debug for VoteRef<Config> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            if let Some(builder) = self.upgrade() {
+                write!(f, "VoteRef({:?}::{:?})", builder.issuer, builder.round)
+            } else {
+                write!(f, "VoteRef(Evicted)")
+            }
         }
     }
 }
