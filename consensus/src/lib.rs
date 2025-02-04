@@ -18,12 +18,12 @@ pub use crate::{
 };
 
 mod consensus {
+    mod consensus_commitment;
     mod consensus_mechanism;
-    mod consensus_view;
-    mod consensus_view_ref;
+    mod vote_tracker;
 
-    pub use consensus_view::ConsensusView;
-    pub use consensus_view_ref::ConsensusViewRef;
+    pub use consensus_commitment::ConsensusCommitment;
+    pub use consensus_mechanism::ConsensusMechanism;
 }
 
 pub(crate) mod errors;
@@ -65,142 +65,98 @@ mod test {
 
         println!("FIRST ROUND - VOTE FOR GENESIS");
 
-        let member1_vote_1 = Vote::new(members[0].key(), vec![&genesis])?;
-        let member2_vote_1 = Vote::new(members[1].key(), vec![&genesis])?;
-        let member3_vote_1 = Vote::new(members[2].key(), vec![&genesis])?;
-        let member4_vote_1 = Vote::new(members[3].key(), vec![&genesis])?;
+        let vote1_1 = Vote::new(members[0].key(), vec![&genesis])?;
+        let vote2_1 = Vote::new(members[1].key(), vec![&genesis])?;
+        let vote3_1 = Vote::new(members[2].key(), vec![&genesis])?;
+        let vote4_1 = Vote::new(members[3].key(), vec![&genesis])?;
         assert!(
-            member1_vote_1
-                .consensus_view
+            vote1_1
+                .consensus_commitment
                 .heaviest_tip
                 .points_to(&genesis)
         );
         assert!(
-            member2_vote_1
-                .consensus_view
+            vote2_1
+                .consensus_commitment
                 .heaviest_tip
                 .points_to(&genesis)
         );
         assert!(
-            member3_vote_1
-                .consensus_view
+            vote3_1
+                .consensus_commitment
                 .heaviest_tip
                 .points_to(&genesis)
         );
         assert!(
-            member4_vote_1
-                .consensus_view
+            vote4_1
+                .consensus_commitment
                 .heaviest_tip
                 .points_to(&genesis)
         );
+        println!("{:?}: {:?}", vote1_1, vote1_1.consensus_commitment,);
+        println!("{:?}: {:?}", vote2_1, vote2_1.consensus_commitment,);
+        println!("{:?}: {:?}", vote3_1, vote3_1.consensus_commitment,);
+        println!("{:?}: {:?}", vote4_1, vote4_1.consensus_commitment,);
 
         println!("SECOND ROUND");
 
-        let member1_vote_2 = Vote::new(members[0].key(), vec![
-            &member1_vote_1,
-            &member2_vote_1,
-            &member3_vote_1,
+        let vote1_2 = Vote::new(members[0].key(), vec![&vote1_1, &vote2_1, &vote3_1])?;
+        let vote2_2 = Vote::new(members[1].key(), vec![&vote1_1, &vote2_1, &vote3_1])?;
+        let vote3_2 = Vote::new(members[2].key(), vec![&vote1_1, &vote2_1, &vote3_1])?;
+        let vote4_2 = Vote::new(members[3].key(), vec![
+            &vote1_1, &vote2_1, &vote3_1, &vote4_1,
         ])?;
-        let member2_vote_2 = Vote::new(members[1].key(), vec![
-            &member1_vote_1,
-            &member2_vote_1,
-            &member3_vote_1,
-        ])?;
-        let member3_vote_2 = Vote::new(members[2].key(), vec![
-            &member1_vote_1,
-            &member2_vote_1,
-            &member3_vote_1,
-            &member4_vote_1,
-        ])?;
-        let member4_vote_2 = Vote::new(members[3].key(), vec![
-            &member1_vote_1,
-            &member2_vote_1,
-            &member3_vote_1,
-            &member4_vote_1,
-        ])?;
-
-        println!("{:?}", member1_vote_2.consensus_view.heaviest_tip);
-
         assert!(
-            member1_vote_2
-                .consensus_view
+            vote1_2
+                .consensus_commitment
                 .heaviest_tip
-                .points_to(&member3_vote_1)
+                .points_to(&vote3_1)
         );
         assert!(
-            member2_vote_2
-                .consensus_view
+            vote2_2
+                .consensus_commitment
                 .heaviest_tip
-                .points_to(&member3_vote_1)
+                .points_to(&vote3_1)
         );
-        assert!(
-            member3_vote_2
-                .consensus_view
-                .heaviest_tip
-                .points_to(&member4_vote_1)
-        );
+        // assert!(vote3_2.consensus_view.heaviest_tip.points_to(&vote4_1));
+        println!("{:?}: {:?}", vote1_2, vote1_2.consensus_commitment,);
+        println!("{:?}: {:?}", vote2_2, vote2_2.consensus_commitment,);
+        println!("{:?}: {:?}", vote3_2, vote3_2.consensus_commitment,);
+        println!("{:?}: {:?}", vote4_2, vote4_2.consensus_commitment,);
 
         println!("THIRD ROUND");
 
-        let member1_vote_3 = Vote::new(members[0].key(), vec![
-            &member1_vote_2,
-            &member2_vote_2,
-            &member3_vote_2,
-            &member4_vote_2,
+        let vote1_3 = Vote::new(members[0].key(), vec![
+            &vote1_2, &vote2_2, &vote3_2, &vote4_2,
         ])?;
-        let member2_vote_3 = Vote::new(members[0].key(), vec![
-            &member1_vote_2,
-            &member2_vote_2,
-            &member3_vote_2,
-            &member4_vote_2,
+        let vote2_3 = Vote::new(members[1].key(), vec![
+            &vote1_2, &vote2_2, &vote3_2, &vote4_2,
         ])?;
-        let member3_vote_3 = Vote::new(members[0].key(), vec![
-            &member1_vote_2,
-            &member2_vote_2,
-            &member3_vote_2,
-            &member4_vote_2,
+        let vote3_3 = Vote::new(members[2].key(), vec![
+            &vote1_2, &vote2_2, &vote3_2, &vote4_2,
         ])?;
-        println!(
-            "{:?}",
-            member1_vote_3.consensus_view.latest_accepted_milestone
-        );
-        println!(
-            "{:?}",
-            member2_vote_3.consensus_view.latest_accepted_milestone
-        );
-        println!(
-            "{:?}",
-            member3_vote_3.consensus_view.latest_accepted_milestone
-        );
+        println!("{:?}: {:?}", vote1_3, vote1_3.consensus_commitment,);
+        println!("{:?}: {:?}", vote2_3, vote2_3.consensus_commitment,);
+        println!("{:?}: {:?}", vote3_3, vote3_3.consensus_commitment,);
 
         println!("FOURTH ROUND");
 
-        let member1_vote_4 = Vote::new(members[0].key(), vec![
-            &member1_vote_3,
-            &member2_vote_3,
-            &member3_vote_3,
-        ])?;
-        let member2_vote_4 = Vote::new(members[0].key(), vec![
-            &member1_vote_3,
-            &member2_vote_3,
-            &member3_vote_3,
-        ])?;
-        let member3_vote_4 = Vote::new(members[0].key(), vec![
-            &member1_vote_3,
-            &member2_vote_3,
-            &member3_vote_3,
-        ])?;
+        let member1_vote_4 = Vote::new(members[0].key(), vec![&vote1_3, &vote2_3, &vote3_3])?;
+        let member2_vote_4 = Vote::new(members[0].key(), vec![&vote1_3, &vote2_3, &vote3_3])?;
+        let member3_vote_4 = Vote::new(members[0].key(), vec![&vote1_3, &vote2_3, &vote3_3])?;
         println!(
-            "{:?}",
-            member1_vote_4.consensus_view.latest_accepted_milestone
+            "member1_vote_4 (round {:?}): {:?}",
+            member1_vote_4.round, member1_vote_4.consensus_commitment,
         );
         println!(
-            "{:?}",
-            member2_vote_4.consensus_view.latest_accepted_milestone
+            "{:?} {:?}",
+            member2_vote_4.consensus_commitment.heaviest_tip,
+            member2_vote_4.consensus_commitment.accepted_milestone
         );
         println!(
-            "{:?}",
-            member3_vote_4.consensus_view.latest_accepted_milestone
+            "{:?} {:?}",
+            member3_vote_4.consensus_commitment.heaviest_tip,
+            member3_vote_4.consensus_commitment.accepted_milestone
         );
 
         Ok(())

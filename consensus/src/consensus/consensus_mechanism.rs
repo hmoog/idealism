@@ -1,132 +1,109 @@
-use std::{
-    cmp::{Ordering, max},
-    collections::HashMap,
+use std::{cmp::max, collections::HashMap};
+
+use crate::{
+    Committee, ConfigInterface, ConsensusCommitment, Error, Result, Vote, VoteBuilder, Votes,
+    VotesByIssuer, VotesByRound, consensus::vote_tracker::VoteTracker,
 };
 
-use crate::{Committee, ConfigInterface, Result, Vote, Votes, VotesByIssuer, VotesByRound};
-
-pub(crate) struct ConsensusMechanism<ID: ConfigInterface> {
+pub struct ConsensusMechanism<ID: ConfigInterface> {
     committee: Committee<ID>,
-    children: HashMap<Vote<ID>, Votes<ID>>,
-    weights: HashMap<Vote<ID>, u64>,
-    pub(crate) last_accepted_milestone: Option<Vote<ID>>,
-    pub(crate) last_confirmed_milestone: Option<Vote<ID>>,
-    pub(crate) heaviest_tip: Option<Vote<ID>>,
+    traversed_children: HashMap<Vote<ID>, Votes<ID>>,
+    vote_tracker: VoteTracker<ID>,
+    accepted: Option<Vote<ID>>,
+    confirmed: Option<Vote<ID>>,
+    heaviest_tip: Option<Vote<ID>>,
 }
 
 impl<C: ConfigInterface> ConsensusMechanism<C> {
-    pub(crate) fn new(committee: Committee<C>) -> Self {
+    pub fn run(vote: &VoteBuilder<C>) -> Result<ConsensusCommitment<C>> {
+        let votes_by_round = VotesByIssuer::try_from(&vote.votes_by_issuer)?.into();
+
+        let mut consensus_mechanism = Self::new(vote.committee.clone());
+        consensus_mechanism.find_confirmed_milestone(votes_by_round)?;
+        consensus_mechanism.find_heaviest_tip();
+
+        Ok(ConsensusCommitment {
+            confirmed_milestone: consensus_mechanism
+                .accepted
+                .ok_or(Error::NoAcceptedMilestoneInPastCone)?
+                .into(),
+            accepted_milestone: consensus_mechanism
+                .confirmed
+                .ok_or(Error::NoConfirmedMilestoneInPastCone)?
+                .into(),
+            heaviest_tip: consensus_mechanism
+                .heaviest_tip
+                .expect("heaviest tip should be set")
+                .into(),
+        })
+    }
+
+    fn new(committee: Committee<C>) -> Self {
         Self {
-            committee,
-            children: HashMap::new(),
-            weights: HashMap::new(),
-            last_accepted_milestone: None,
-            last_confirmed_milestone: None,
+            traversed_children: HashMap::new(),
+            vote_tracker: VoteTracker::new(committee.clone()),
+            accepted: None,
+            confirmed: None,
             heaviest_tip: None,
+            committee,
         }
     }
 
-    /// Walks through the votes of each round and returns the latest accepted
-    /// milestone.
-    pub(crate) fn scan_past_cone(&mut self, mut votes_by_round: VotesByRound<C>) -> Result<()> {
-        for round in (0..=votes_by_round.max_round()).rev() {
-            let previous_round_targets = self.heaviest_target(votes_by_round.fetch(round))?;
-            if !previous_round_targets.is_empty() {
-                votes_by_round.extend(round - 1, previous_round_targets);
-            } else {
+    fn find_confirmed_milestone(&mut self, mut rounds: VotesByRound<C>) -> Result<()> {
+        for round in (0..=rounds.max_round()).rev() {
+            let next_targets = self.evaluate_round(rounds.fetch(round))?;
+            if next_targets.is_empty() {
                 break;
             }
+            rounds.extend(round - 1, next_targets);
         }
-
         Ok(())
     }
 
-    pub(crate) fn scan_future_cone(&mut self) {
-        let Some(mut heaviest_tip) = self.last_accepted_milestone.clone() else {
-            return;
-        };
-        while let Some(children) = self.children.get(&heaviest_tip) {
-            match self.heaviest_child(children) {
-                Some(heaviest_child) => heaviest_tip = heaviest_child,
-                None => break,
+    fn find_heaviest_tip(&mut self) {
+        if let Some(mut heaviest_tip) = self.accepted.clone() {
+            while let Some(heaviest_child) = self
+                .traversed_children
+                .get(&heaviest_tip)
+                .and_then(|c| self.vote_tracker.heaviest_vote(c))
+            {
+                heaviest_tip = heaviest_child;
             }
+
+            self.heaviest_tip = Some(heaviest_tip);
         }
-
-        self.heaviest_tip = Some(heaviest_tip);
     }
 
-    fn add_weight(&mut self, vote: &Vote<C>, weight: u64) -> u64 {
-        *self
-            .weights
-            .entry(vote.clone())
-            .and_modify(|w| *w += weight)
-            .or_insert(weight)
-    }
+    fn evaluate_round(&mut self, votes_by_issuer: &VotesByIssuer<C>) -> Result<VotesByIssuer<C>> {
+        let mut previous_round_targets = VotesByIssuer::default();
+        let mut heaviest = (0, None);
 
-    fn heaviest_target(&mut self, votes_of_round: &VotesByIssuer<C>) -> Result<VotesByIssuer<C>> {
-        let mut targets = VotesByIssuer::default();
-        let mut heaviest_vote = None;
-        let mut heaviest_weight = 0;
+        for (issuer, issuer_votes) in votes_by_issuer {
+            for vote in issuer_votes {
+                heaviest = max(heaviest, self.vote_tracker.track_vote(vote, issuer));
 
-        for (issuer, votes) in votes_of_round {
-            for vote in votes {
-                let target = Vote::try_from(&vote.consensus_view.heaviest_tip)?;
-                let updated_weight = self.add_weight(&target, self.committee.member_weight(issuer));
-                match updated_weight.cmp(&heaviest_weight) {
-                    Ordering::Greater => {
-                        heaviest_vote = Some(target.clone());
-                        heaviest_weight = updated_weight;
-                    }
-                    Ordering::Equal => {
-                        heaviest_vote = max(heaviest_vote, Some(target.clone()));
-                    }
-                    Ordering::Less => continue,
-                }
+                if !vote.consensus_commitment.heaviest_tip.points_to(vote) {
+                    let target = Vote::try_from(&vote.consensus_commitment.heaviest_tip)?;
 
-                if !vote.consensus_view.heaviest_tip.points_to(vote) {
-                    targets.fetch(issuer.clone()).insert(target.clone());
-
-                    self.children
+                    self.traversed_children
                         .entry(target.clone())
                         .or_default()
                         .insert(vote.clone());
+                    previous_round_targets.fetch(issuer.clone()).insert(target);
                 }
             }
         }
 
-        println!("heaviest_vote: {:?} ({:?})", heaviest_vote, heaviest_weight);
-
-        if self.last_accepted_milestone.is_none()
-            && heaviest_weight >= self.committee.acceptance_threshold()
-        {
-            self.last_accepted_milestone = heaviest_vote.clone();
+        if self.accepted.is_none() && heaviest.0 >= self.committee.acceptance_threshold() {
+            self.accepted = heaviest.1.clone();
         }
 
-        if self.last_confirmed_milestone.is_none()
-            && heaviest_weight >= self.committee.confirmation_threshold()
-        {
-            self.last_confirmed_milestone = heaviest_vote.clone();
+        if self.confirmed.is_none() && heaviest.0 >= self.committee.confirmation_threshold() {
+            self.confirmed = heaviest.1.clone();
 
-            return Ok(VotesByIssuer::default());
+            previous_round_targets = VotesByIssuer::default();
         }
 
-        Ok(targets)
-    }
-
-    fn heaviest_child(&self, votes: &Votes<C>) -> Option<Vote<C>> {
-        votes
-            .into_iter()
-            .map(|candidate_weak| {
-                (
-                    candidate_weak.clone(),
-                    self.weights.get(candidate_weak).unwrap_or(&0),
-                )
-            })
-            .max_by(|(candidate1, weight1), (candidate2, weight2)| {
-                weight1
-                    .cmp(weight2)
-                    .then_with(|| candidate1.cmp(candidate2))
-            })
-            .map(|(candidate, _)| candidate)
+        Ok(previous_round_targets)
     }
 }

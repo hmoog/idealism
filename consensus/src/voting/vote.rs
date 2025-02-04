@@ -17,12 +17,12 @@ impl<C: ConfigInterface> Vote<C> {
         Self(Arc::new_cyclic(|me| {
             let mut vote = VoteBuilder::from(config);
 
-            vote.consensus_view = me.into();
+            vote.consensus_commitment = me.into();
             vote.votes_by_issuer =
                 VoteRefsByIssuer::from_iter(vote.committee.iter().map(|member| {
                     (
                         member.key().clone(),
-                        VoteRefs::from_iter([vote.consensus_view.heaviest_tip.clone()]),
+                        VoteRefs::from_iter([vote.consensus_commitment.heaviest_tip.clone()]),
                     )
                 }));
 

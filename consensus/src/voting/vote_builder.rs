@@ -3,8 +3,8 @@ use std::sync::Arc;
 use utils::Id;
 
 use crate::{
-    Committee, ConfigInterface, ConsensusView, ConsensusViewRef, Issuer, Result, Vote, VoteRefs,
-    VoteRefsByIssuer, Votes, VotesByIssuer,
+    Committee, ConfigInterface, ConsensusCommitment, ConsensusMechanism, Issuer, Result, Vote,
+    VoteRefs, VoteRefsByIssuer, Votes, VotesByIssuer,
 };
 
 pub struct VoteBuilder<T: ConfigInterface> {
@@ -15,7 +15,7 @@ pub struct VoteBuilder<T: ConfigInterface> {
     pub leader_weight: u64,
     pub committee: Committee<T>,
     pub votes_by_issuer: VoteRefsByIssuer<T>,
-    pub consensus_view: ConsensusViewRef<T>,
+    pub consensus_commitment: ConsensusCommitment<T>,
 }
 
 impl<C: ConfigInterface> VoteBuilder<C> {
@@ -30,7 +30,7 @@ impl<C: ConfigInterface> VoteBuilder<C> {
             votes_by_issuer: VotesByIssuer::try_from(votes)?.into(),
             committee: heaviest_tip.committee.clone(),
             config: heaviest_tip.config.clone(),
-            consensus_view: heaviest_tip.consensus_view.clone(),
+            consensus_commitment: heaviest_tip.consensus_commitment.clone(),
             cumulative_slot_weight: heaviest_tip.cumulative_slot_weight,
             round: heaviest_tip.round,
             leader_weight: heaviest_tip.leader_weight,
@@ -69,7 +69,7 @@ impl<C: ConfigInterface> VoteBuilder<C> {
             }
         }
 
-        self.consensus_view = ConsensusView::from_vote_builder(&self)?.into();
+        self.consensus_commitment = ConsensusMechanism::run(&self)?.into();
 
         // advance the round if the acceptance threshold is now met
         if referenced_round_weight + committee_member.weight() >= acceptance_threshold {
@@ -90,7 +90,7 @@ impl<C: ConfigInterface> VoteBuilder<C> {
             votes_by_issuer: VoteRefsByIssuer::default(),
             committee: config.select_committee(None),
             config: Arc::new(config),
-            consensus_view: ConsensusViewRef::default(),
+            consensus_commitment: ConsensusCommitment::default(),
             cumulative_slot_weight: 0,
             round: 0,
             leader_weight: 0,
