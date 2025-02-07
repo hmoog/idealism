@@ -5,7 +5,7 @@ use utils::Id;
 use crate::{Member, MemberID};
 
 pub(crate) struct Members<C: MemberID> {
-    pub(crate) members_by_id: Arc<CommitteeMembersByID<C>>,
+    pub(crate) members_by_id: Arc<HashMap<Id<C>, Arc<Member<C>>>>,
     pub(crate) total_weight: u64,
     pub(crate) online_weight: u64,
 }
@@ -19,5 +19,3 @@ impl<T: MemberID> Clone for Members<T> {
         }
     }
 }
-
-type CommitteeMembersByID<C> = HashMap<Id<C>, Arc<Member<C>>>;

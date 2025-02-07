@@ -50,7 +50,7 @@ impl<T: MemberID> Committee<T> {
         self.0
             .members_by_id
             .get(member_id)
-            .map_or(false, |member| member.is_online())
+            .is_some_and(|m| m.is_online())
     }
 
     pub fn set_online(&self, member_id: &Id<T>, online: bool) -> Self {
