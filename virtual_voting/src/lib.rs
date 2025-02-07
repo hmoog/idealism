@@ -4,8 +4,7 @@ pub use crate::{
         committee_selection::CommitteeSelection, config::Config, config_interface::ConfigInterface,
         leader_rotation::LeaderRotation,
     },
-    errors::*,
-    issuer::*,
+    types::*,
     virtual_voting::*,
     vote::*,
     vote_builder::*,
@@ -13,11 +12,12 @@ pub use crate::{
     weight_tracker::*,
 };
 
-mod issuer;
+mod types;
 mod virtual_voting;
 mod vote;
 mod vote_builder;
 mod vote_ref;
+mod weight_tracker;
 
 mod collections {
     mod vote_refs;
@@ -32,10 +32,6 @@ mod collections {
     pub use votes_by_issuer::*;
     pub use votes_by_round::*;
 }
-
-mod weight_tracker;
-
-pub(crate) mod errors;
 
 pub(crate) mod configuration {
     pub(crate) mod committee_selection;
