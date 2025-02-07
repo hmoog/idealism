@@ -1,6 +1,6 @@
 use std::sync::Weak;
 
-use newtype::{Clone0, Default0, Deref0};
+use zero::{Clone0, Default0, Deref0};
 
 use crate::{ConfigInterface, Vote, VoteBuilder};
 

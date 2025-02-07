@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use newtype::{Default0, Deref0, FromIterator0, IntoIterator0};
 use utils::Id;
+use zero::{Default0, Deref0, FromIterator0, IntoIterator0};
 
 use crate::{ConfigInterface, VoteRefs, VotesByIssuer};
 

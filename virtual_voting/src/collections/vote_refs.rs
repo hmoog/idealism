@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use newtype::{Clone0, Default0, Deref0, FromIterator0, IntoIterator0};
+use zero::{Clone0, Default0, Deref0, FromIterator0, IntoIterator0};
 
 use crate::{ConfigInterface, VoteRef};
 

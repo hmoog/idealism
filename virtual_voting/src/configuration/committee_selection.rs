@@ -1,4 +1,5 @@
 use committee::Committee;
+
 use crate::{ConfigInterface, Vote};
 
 pub enum CommitteeSelection<Config: ConfigInterface> {
@@ -7,7 +8,11 @@ pub enum CommitteeSelection<Config: ConfigInterface> {
 }
 
 impl<Config: ConfigInterface> CommitteeSelection<Config> {
-    pub fn dispatch(&self, config: &Config, vote: Option<&Vote<Config>>) -> Committee<Config::IssuerID> {
+    pub fn dispatch(
+        &self,
+        config: &Config,
+        vote: Option<&Vote<Config>>,
+    ) -> Committee<Config::IssuerID> {
         match self {
             Self::FixedCommittee(committee) => fixed_committee(committee, vote),
             Self::Custom(strategy) => strategy(config, vote),

@@ -1,4 +1,5 @@
 use committee::{Committee, MemberID};
+
 use crate::{Vote, VoteBuilder};
 
 pub trait ConfigInterface: Default {

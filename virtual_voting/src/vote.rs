@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use newtype::{Clone0, Deref0};
 use utils::Id;
+use zero::{Clone0, Deref0};
 
 use crate::{ConfigInterface, Result, VoteBuilder, VoteRefs, VoteRefsByIssuer, Votes};
 
@@ -9,20 +9,22 @@ use crate::{ConfigInterface, Result, VoteBuilder, VoteRefs, VoteRefsByIssuer, Vo
 pub struct Vote<Config: ConfigInterface>(Arc<VoteBuilder<Config>>);
 
 impl<C: ConfigInterface> Vote<C> {
-    pub fn new(issuer: &Id<C::IssuerID>, issuing_time: u64, latest: Vec<&Vote<C>>) -> Result<Vote<C>> {
-        VoteBuilder::try_from(Votes::from_iter(latest.into_iter().cloned()))?.build(issuer.clone(), issuing_time)
+    pub fn new(issuer: &Id<C::IssuerID>, time: u64, latest: Vec<&Vote<C>>) -> Result<Vote<C>> {
+        VoteBuilder::try_from(Votes::from_iter(latest.into_iter().cloned()))?.build(issuer, time)
     }
 
     pub fn from_config(config: C) -> Self {
         Self(Arc::new_cyclic(|me| {
             let mut vote = VoteBuilder::from(config);
 
-            vote.consensus = me.into();
+            vote.last_accepted_milestone = me.into();
+            vote.last_confirmed_milestone = me.into();
+            vote.heaviest_tip = me.into();
             vote.votes_by_issuer =
                 VoteRefsByIssuer::from_iter(vote.committee.iter().map(|member| {
                     (
                         member.key().clone(),
-                        VoteRefs::from_iter([vote.consensus.tip.clone()]),
+                        VoteRefs::from_iter([vote.heaviest_tip.clone()]),
                     )
                 }));
 

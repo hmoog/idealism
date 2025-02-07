@@ -1,10 +1,12 @@
-use std::cmp::Ordering;
-use std::collections::HashSet;
-use std::sync::Arc;
+use std::{cmp::Ordering, collections::HashSet, sync::Arc};
+
 use committee::{Committee, Member};
 use utils::Id;
 
-use crate::{ConfigInterface, ConsensusCommitment, ConsensusMechanism, Issuer, Result, Vote, VoteRefs, VoteRefsByIssuer, Votes, VotesByIssuer};
+use crate::{
+    ConfigInterface, Issuer, Result, VirtualVoting, Vote, VoteRef, VoteRefs, VoteRefsByIssuer,
+    Votes, VotesByIssuer,
+};
 
 pub struct VoteBuilder<T: ConfigInterface> {
     pub config: Arc<T>,
@@ -15,7 +17,9 @@ pub struct VoteBuilder<T: ConfigInterface> {
     pub leader_weight: u64,
     pub committee: Committee<T::IssuerID>,
     pub votes_by_issuer: VoteRefsByIssuer<T>,
-    pub consensus: ConsensusCommitment<T>,
+    pub last_accepted_milestone: VoteRef<T>,
+    pub last_confirmed_milestone: VoteRef<T>,
+    pub heaviest_tip: VoteRef<T>,
 }
 
 impl<C: ConfigInterface> VoteBuilder<C> {
@@ -30,38 +34,52 @@ impl<C: ConfigInterface> VoteBuilder<C> {
             issuing_time: heaviest_tip.issuing_time,
             committee: heaviest_tip.committee.clone(),
             config: heaviest_tip.config.clone(),
-            consensus: heaviest_tip.consensus.clone(),
             cumulative_slot_weight: heaviest_tip.cumulative_slot_weight,
             round: heaviest_tip.round,
             leader_weight: heaviest_tip.leader_weight,
             votes_by_issuer: VotesByIssuer::try_from(votes)?.into(),
+            last_accepted_milestone: heaviest_tip.last_accepted_milestone.clone(),
+            last_confirmed_milestone: heaviest_tip.last_confirmed_milestone.clone(),
+            heaviest_tip: heaviest_tip.heaviest_tip.clone(),
         })
     }
 
-    pub fn build(mut self, issuer: Id<C::IssuerID>, issuing_time: u64) -> Result<Vote<C>> {
+    pub fn build(mut self, issuer: &Id<C::IssuerID>, issuing_time: u64) -> Result<Vote<C>> {
         self.issuer = Issuer::User(issuer.clone());
         if let Some(new_slot) = self.update_issuing_time(issuing_time) {
             self.remove_offline_committee_members(new_slot)?;
         }
 
-        if let Some(committee_member) = self.committee.member(&issuer).cloned() {
+        if let Some(committee_member) = self.committee.member(issuer).cloned() {
+            // set ourselves online before voting to count our weight (the only reason why we
+            // wouldn't vote is if we voted already in the current round, in which case we are
+            // already online anyway)
             self.committee = self.committee.set_online(committee_member.key(), true);
 
             let (consensus_threshold, confirm) = self.determine_consensus_threshold();
-            if let Some(seen_weights) = self.can_vote(committee_member.key(), consensus_threshold)? {
-                self.consensus = ConsensusMechanism::run(&self, consensus_threshold)?.into();
+            if let Some(seen_weights) =
+                self.can_vote(committee_member.key(), consensus_threshold)?
+            {
+                let (milestone, heaviest_tip) = VirtualVoting::run(&self, consensus_threshold)?;
 
-                // advance the round if the acceptance threshold is now met
+                self.heaviest_tip = heaviest_tip.into();
+                self.last_accepted_milestone = milestone.into();
+                if confirm {
+                    self.last_confirmed_milestone = self.last_accepted_milestone.clone();
+                }
+
                 if seen_weights + committee_member.weight() >= consensus_threshold {
                     self.leader_weight = self.config.leader_weight(&self);
                     self.round += 1;
                 }
 
                 return Ok(Vote::from(Arc::new_cyclic(|me| {
-                    self.votes_by_issuer
-                        .insert(committee_member.key().clone(), VoteRefs::from_iter([me.into()]));
+                    self.votes_by_issuer.insert(
+                        committee_member.key().clone(),
+                        VoteRefs::from_iter([me.into()]),
+                    );
                     self
-                })))
+                })));
             }
         }
 
@@ -74,7 +92,9 @@ impl<C: ConfigInterface> VoteBuilder<C> {
             issuing_time: config.genesis_time(),
             committee: config.select_committee(None),
             config: Arc::new(config),
-            consensus: ConsensusCommitment::default(),
+            last_accepted_milestone: VoteRef::default(),
+            last_confirmed_milestone: VoteRef::default(),
+            heaviest_tip: VoteRef::default(),
             cumulative_slot_weight: 0,
             round: 0,
             leader_weight: 0,
@@ -90,11 +110,13 @@ impl<C: ConfigInterface> VoteBuilder<C> {
         }
     }
 
-    fn can_vote(&self, member_id: &Id<C::IssuerID>, threshold: u64) -> Result<Option<u64>> {
+    fn can_vote(&self, issuer: &Id<C::IssuerID>, consensus_threshold: u64) -> Result<Option<u64>> {
         let seen_weight = self.referenced_round_weight()?;
-        if let Some(own_votes) = self.votes_by_issuer.get(member_id) {
+        if let Some(own_votes) = self.votes_by_issuer.get(issuer) {
             if let Some(own_vote) = own_votes.iter().next() {
-                if Vote::try_from(own_vote)?.round == self.round && seen_weight < threshold {
+                if Vote::try_from(own_vote)?.round == self.round
+                    && seen_weight < consensus_threshold
+                {
                     return Ok(None);
                 }
             }

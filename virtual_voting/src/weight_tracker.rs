@@ -1,16 +1,17 @@
 use std::collections::{HashMap, HashSet};
+
 use committee::Committee;
 use utils::Id;
 
 use crate::{ConfigInterface, Vote, Votes};
 
-pub struct VoteTracker<C: ConfigInterface> {
+pub struct WeightTracker<C: ConfigInterface> {
     committee: Committee<C::IssuerID>,
     tracked_weights: HashMap<Vote<C>, u64>,
     seen_issuers: HashMap<Vote<C>, HashSet<Id<C::IssuerID>>>,
 }
 
-impl<C: ConfigInterface> VoteTracker<C> {
+impl<C: ConfigInterface> WeightTracker<C> {
     pub fn new(committee: Committee<C::IssuerID>) -> Self {
         Self {
             committee,
@@ -19,7 +20,7 @@ impl<C: ConfigInterface> VoteTracker<C> {
         }
     }
 
-    pub fn track_vote(&mut self, vote: &Vote<C>, issuer: &Id<C::IssuerID>) -> WeightEntry<C> {
+    pub fn weight_entry(&mut self, vote: &Vote<C>, issuer: &Id<C::IssuerID>) -> WeightEntry<C> {
         if self.issuer_voted_already(vote, issuer) {
             return (self.weight(vote), Some(vote.clone()));
         }

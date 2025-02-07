@@ -1,5 +1,5 @@
-use newtype::{Clone0, Default0, Deref0, FromIterator0, IntoIterator0};
 use utils::MaxSet;
+use zero::{Clone0, Default0, Deref0, FromIterator0, IntoIterator0};
 
 use crate::{ConfigInterface, Vote};
 

@@ -1,8 +1,9 @@
 use committee::{Committee, Member};
+
 use crate::{
     CommitteeSelection, ConfigInterface, LeaderRotation, Vote, VoteBuilder,
+    configuration::SlotDuration,
 };
-use crate::configuration::SlotDuration;
 
 pub struct Config {
     genesis_time: u64,
@@ -33,7 +34,10 @@ impl Config {
         self
     }
 
-    pub fn with_committee_selection(mut self, committee_selection: CommitteeSelection<Self>) -> Self {
+    pub fn with_committee_selection(
+        mut self,
+        committee_selection: CommitteeSelection<Self>,
+    ) -> Self {
         self.committee_selection = committee_selection;
         self
     }

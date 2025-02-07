@@ -1,36 +1,30 @@
 use std::{cmp::max, collections::HashMap};
-use committee::Committee;
+
 use crate::{
-    ConfigInterface, ConsensusCommitment, Error, Result, Vote, VoteBuilder, Votes,
-    VotesByIssuer, VotesByRound, consensus::vote_tracker::VoteTracker,
+    ConfigInterface, Error, Result, Vote, VoteBuilder, Votes, VotesByIssuer, VotesByRound,
+    WeightTracker,
 };
 
-pub struct ConsensusMechanism<C: ConfigInterface> {
+pub struct VirtualVoting<C: ConfigInterface> {
     children: HashMap<Vote<C>, Votes<C>>,
-    vote_tracker: VoteTracker<C>,
+    weight_tracker: WeightTracker<C>,
     consensus_threshold: u64,
 }
 
-impl<C: ConfigInterface> ConsensusMechanism<C> {
-    pub fn run(vote: &VoteBuilder<C>, consensus_threshold: u64) -> Result<ConsensusCommitment<C>> {
-        let votes_by_round = VotesByIssuer::try_from(&vote.votes_by_issuer)?.into();
+impl<C: ConfigInterface> VirtualVoting<C> {
+    pub fn run(vote: &VoteBuilder<C>, consensus_threshold: u64) -> Result<(Vote<C>, Vote<C>)> {
+        let votes_by_round = VotesByRound::from(VotesByIssuer::try_from(&vote.votes_by_issuer)?);
 
-        let mut consensus_mechanism = Self::new(vote.committee.clone(), consensus_threshold);
-        let milestone = consensus_mechanism.milestone(votes_by_round)?;
-        let heaviest_tip = consensus_mechanism.find_heaviest_tip(&milestone);
-
-        Ok(ConsensusCommitment {
-            milestone: milestone.into(),
-            tip: heaviest_tip.into(),
-        })
-    }
-
-    fn new(committee: Committee<C::IssuerID>, consensus_threshold: u64) -> Self {
-        Self {
+        let mut virtual_voting = Self {
             children: HashMap::new(),
-            vote_tracker: VoteTracker::new(committee.clone()),
+            weight_tracker: WeightTracker::new(vote.committee.clone()),
             consensus_threshold,
-        }
+        };
+
+        let milestone = virtual_voting.milestone(votes_by_round)?;
+        let heaviest_tip = virtual_voting.heaviest_tip(&milestone);
+
+        Ok((milestone, heaviest_tip))
     }
 
     fn milestone(&mut self, mut rounds: VotesByRound<C>) -> Result<Vote<C>> {
@@ -40,10 +34,10 @@ impl<C: ConfigInterface> ConsensusMechanism<C> {
 
             for (issuer, issuer_votes) in rounds.fetch(round) {
                 for vote in &*issuer_votes {
-                    heaviest = max(heaviest, self.vote_tracker.track_vote(vote, issuer));
+                    heaviest = max(heaviest, self.weight_tracker.weight_entry(vote, issuer));
 
-                    if !vote.consensus.tip.points_to(vote) {
-                        let target = Vote::try_from(&vote.consensus.tip)?;
+                    if !vote.heaviest_tip.points_to(vote) {
+                        let target = Vote::try_from(&vote.heaviest_tip)?;
 
                         self.children
                             .entry(target.clone())
@@ -66,12 +60,12 @@ impl<C: ConfigInterface> ConsensusMechanism<C> {
         Err(Error::NoConfirmedMilestoneInPastCone)
     }
 
-    fn find_heaviest_tip(&mut self, milestone: &Vote<C>) -> Vote<C> {
+    fn heaviest_tip(&mut self, milestone: &Vote<C>) -> Vote<C> {
         let mut heaviest_tip = milestone.clone();
         while let Some(heaviest_child) = self
             .children
             .get(&heaviest_tip)
-            .and_then(|c| self.vote_tracker.heaviest_vote(c))
+            .and_then(|c| self.weight_tracker.heaviest_vote(c))
         {
             heaviest_tip = heaviest_child;
         }
