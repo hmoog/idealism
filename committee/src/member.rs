@@ -1,15 +1,15 @@
 use utils::Id;
 
-use crate::CommitteeMemberID;
+use crate::MemberID;
 
-pub struct CommitteeMember<T: CommitteeMemberID> {
+pub struct Member<T: MemberID> {
     id: Id<T>,
     index: u64,
     weight: u64,
     online: bool,
 }
 
-impl<T: CommitteeMemberID> CommitteeMember<T> {
+impl<T: MemberID> Member<T> {
     pub fn new(id: T) -> Self {
         Self {
             id: Id::new(id),
@@ -66,12 +66,12 @@ impl<T: CommitteeMemberID> CommitteeMember<T> {
         false
     }
 
-    pub(crate) fn key(&self) -> &Id<T> {
+    pub fn key(&self) -> &Id<T> {
         &self.id
     }
 }
 
-impl<T: CommitteeMemberID> Clone for CommitteeMember<T> {
+impl<T: MemberID> Clone for Member<T> {
     fn clone(&self) -> Self {
         Self {
             id: self.id.clone(),
@@ -88,7 +88,7 @@ mod tests {
 
     #[test]
     fn test_new_committee_member() {
-        let member = CommitteeMember::new(1337);
+        let member = Member::new(1337);
         assert_eq!(*member.id(), 1337);
         assert_eq!(member.weight(), 1);
         assert!(member.is_online());
@@ -96,7 +96,7 @@ mod tests {
 
     #[test]
     fn test_with_weight() {
-        let member = CommitteeMember::new(1337).with_weight(10);
+        let member = Member::new(1337).with_weight(10);
         assert_eq!(*member.id(), 1337);
         assert_eq!(member.weight(), 10);
         assert!(member.is_online());
@@ -104,7 +104,7 @@ mod tests {
 
     #[test]
     fn test_with_online() {
-        let member = CommitteeMember::new(1337).with_online(false);
+        let member = Member::new(1337).with_online(false);
         assert_eq!(*member.id(), 1337);
         assert_eq!(member.weight(), 1);
         assert!(!member.is_online());
@@ -112,7 +112,7 @@ mod tests {
 
     #[test]
     fn test_set_weight() {
-        let mut member = CommitteeMember::new(1337);
+        let mut member = Member::new(1337);
         assert!(member.set_weight(10));
         assert_eq!(member.weight(), 10);
         assert!(!member.set_weight(10));
@@ -120,7 +120,7 @@ mod tests {
 
     #[test]
     fn test_set_online() {
-        let mut member = CommitteeMember::new(1337);
+        let mut member = Member::new(1337);
         assert!(member.set_online(false));
         assert!(!member.is_online());
         assert!(!member.set_online(false));

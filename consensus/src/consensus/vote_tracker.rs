@@ -1,17 +1,17 @@
 use std::collections::{HashMap, HashSet};
-
+use committee::Committee;
 use utils::Id;
 
-use crate::{Committee, ConfigInterface, Vote, Votes};
+use crate::{ConfigInterface, Vote, Votes};
 
 pub struct VoteTracker<C: ConfigInterface> {
-    committee: Committee<C>,
+    committee: Committee<C::IssuerID>,
     tracked_weights: HashMap<Vote<C>, u64>,
     seen_issuers: HashMap<Vote<C>, HashSet<Id<C::IssuerID>>>,
 }
 
 impl<C: ConfigInterface> VoteTracker<C> {
-    pub fn new(committee: Committee<C>) -> Self {
+    pub fn new(committee: Committee<C::IssuerID>) -> Self {
         Self {
             committee,
             tracked_weights: HashMap::new(),

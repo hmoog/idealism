@@ -1,12 +1,12 @@
 use std::{cmp::max, collections::HashMap};
-
+use committee::Committee;
 use crate::{
-    Committee, ConfigInterface, ConsensusCommitment, Error, Result, Vote, VoteBuilder, Votes,
+    ConfigInterface, ConsensusCommitment, Error, Result, Vote, VoteBuilder, Votes,
     VotesByIssuer, VotesByRound, consensus::vote_tracker::VoteTracker,
 };
 
 pub struct ConsensusMechanism<ID: ConfigInterface> {
-    committee: Committee<ID>,
+    committee: Committee<ID::IssuerID>,
     children: HashMap<Vote<ID>, Votes<ID>>,
     vote_tracker: VoteTracker<ID>,
     accepted: Option<Vote<ID>>,
@@ -38,7 +38,7 @@ impl<C: ConfigInterface> ConsensusMechanism<C> {
         })
     }
 
-    fn new(committee: Committee<C>) -> Self {
+    fn new(committee: Committee<C::IssuerID>) -> Self {
         Self {
             children: HashMap::new(),
             vote_tracker: VoteTracker::new(committee.clone()),

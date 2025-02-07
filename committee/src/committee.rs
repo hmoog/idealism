@@ -2,21 +2,11 @@ use std::{collections::HashMap, sync::Arc};
 
 use utils::Id;
 
-use crate::{
-    CommitteeData, CommitteeMember, ConfigInterface,
-};
+use crate::{Member, MemberID, Members};
 
-pub struct Committee<C: ConfigInterface>(Arc<CommitteeData<C>>);
+pub struct Committee<C: MemberID>(Arc<Members<C>>);
 
-impl<T: ConfigInterface> Committee<T> {
-    pub fn acceptance_threshold(&self) -> u64 {
-        self.online_weight() - self.online_weight() / 3
-    }
-
-    pub fn confirmation_threshold(&self) -> u64 {
-        self.total_weight() - self.total_weight() / 3
-    }
-
+impl<T: MemberID> Committee<T> {
     pub fn total_weight(&self) -> u64 {
         self.0.total_weight
     }
@@ -25,22 +15,30 @@ impl<T: ConfigInterface> Committee<T> {
         self.0.online_weight
     }
 
-    pub fn member(&self, member_id: &Id<T::IssuerID>) -> Option<&CommitteeMember<T::IssuerID>> {
+    pub fn acceptance_threshold(&self) -> u64 {
+        self.online_weight() - self.online_weight() / 3
+    }
+
+    pub fn confirmation_threshold(&self) -> u64 {
+        self.total_weight() - self.total_weight() / 3
+    }
+
+    pub fn member(&self, member_id: &Id<T>) -> Option<&Member<T>> {
         self.0.members_by_id.get(member_id).map(|member| &**member)
     }
 
-    pub fn members(&self) -> Vec<CommitteeMember<T::IssuerID>> {
+    pub fn members(&self) -> Vec<Member<T>> {
         let mut values: Vec<_> = self
             .0
             .members_by_id
             .values()
-            .map(|member| CommitteeMember::clone(member))
+            .map(|member| Member::clone(member))
             .collect();
         values.sort_by_key(|item| item.index());
         values
     }
 
-    pub fn member_weight(&self, member_id: &Id<T::IssuerID>) -> u64 {
+    pub fn member_weight(&self, member_id: &Id<T>) -> u64 {
         self.0
             .members_by_id
             .get(member_id)
@@ -48,14 +46,14 @@ impl<T: ConfigInterface> Committee<T> {
             .unwrap_or(0)
     }
 
-    pub fn is_member_online(&self, member_id: &Id<T::IssuerID>) -> bool {
+    pub fn is_member_online(&self, member_id: &Id<T>) -> bool {
         self.0
             .members_by_id
             .get(member_id)
             .map_or(false, |member| member.is_online())
     }
 
-    pub fn set_online(&self, member_id: &Id<T::IssuerID>, online: bool) -> Self {
+    pub fn set_online(&self, member_id: &Id<T>, online: bool) -> Self {
         let mut new_committee = Committee(self.0.clone());
 
         if let Some(member) = self.0.members_by_id.get(member_id) {
@@ -83,7 +81,7 @@ impl<T: ConfigInterface> Committee<T> {
         new_committee
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &CommitteeMember<T::IssuerID>> {
+    pub fn iter(&self) -> impl Iterator<Item = &Member<T>> {
         self.0.members_by_id.values().map(|member| &**member)
     }
 
@@ -92,9 +90,7 @@ impl<T: ConfigInterface> Committee<T> {
     }
 }
 
-impl<C: ConfigInterface, T: IntoIterator<Item = CommitteeMember<C::IssuerID>>> From<T>
-    for Committee<C>
-{
+impl<C: MemberID, T: IntoIterator<Item = Member<C>>> From<T> for Committee<C> {
     fn from(members: T) -> Self {
         let (members_by_id, total_weight, online_weight) = members.into_iter().fold(
             (HashMap::new(), 0, 0),
@@ -112,7 +108,7 @@ impl<C: ConfigInterface, T: IntoIterator<Item = CommitteeMember<C::IssuerID>>> F
             },
         );
 
-        Committee(Arc::new(CommitteeData {
+        Committee(Arc::new(Members {
             members_by_id: Arc::new(members_by_id),
             total_weight,
             online_weight,
@@ -120,7 +116,7 @@ impl<C: ConfigInterface, T: IntoIterator<Item = CommitteeMember<C::IssuerID>>> F
     }
 }
 
-impl<T: ConfigInterface> Clone for Committee<T> {
+impl<T: MemberID> Clone for Committee<T> {
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }

@@ -1,10 +1,10 @@
 use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::sync::Arc;
-
+use committee::{Committee, Member};
 use utils::Id;
 
-use crate::{Committee, CommitteeMember, ConfigInterface, ConsensusCommitment, ConsensusMechanism, Issuer, Result, Vote, VoteRefs, VoteRefsByIssuer, Votes, VotesByIssuer};
+use crate::{ConfigInterface, ConsensusCommitment, ConsensusMechanism, Issuer, Result, Vote, VoteRefs, VoteRefsByIssuer, Votes, VotesByIssuer};
 
 pub struct VoteBuilder<T: ConfigInterface> {
     pub config: Arc<T>,
@@ -13,7 +13,7 @@ pub struct VoteBuilder<T: ConfigInterface> {
     pub cumulative_slot_weight: u64,
     pub round: u64,
     pub leader_weight: u64,
-    pub committee: Committee<T>,
+    pub committee: Committee<T::IssuerID>,
     pub votes_by_issuer: VoteRefsByIssuer<T>,
     pub consensus: ConsensusCommitment<T>,
 }
@@ -153,7 +153,7 @@ impl<C: ConfigInterface> VoteBuilder<C> {
         Ok(idle_members)
     }
 
-    fn committee_member_idle_since(&self, member: &CommitteeMember<C::IssuerID>, slot: u64) -> Result<bool> {
+    fn committee_member_idle_since(&self, member: &Member<C::IssuerID>, slot: u64) -> Result<bool> {
         let mut is_idle = true;
         if let Some(votes) = self.votes_by_issuer.get(member.key()) {
             for vote in votes.iter() {

@@ -1,9 +1,4 @@
-pub(crate) use crate::bft_committee::committee_data::CommitteeData;
 pub use crate::{
-    bft_committee::{
-        committee::Committee, committee_member::CommitteeMember,
-        committee_member_id::CommitteeMemberID,
-    },
     configuration::{
         committee_selection::CommitteeSelection, config::Config, config_interface::ConfigInterface,
         leader_rotation::LeaderRotation,
@@ -27,13 +22,6 @@ mod consensus {
 }
 
 pub(crate) mod errors;
-
-pub(crate) mod bft_committee {
-    pub(crate) mod committee;
-    pub(crate) mod committee_data;
-    pub(crate) mod committee_member;
-    pub(crate) mod committee_member_id;
-}
 
 pub(crate) mod configuration {
     pub(crate) mod committee_selection;

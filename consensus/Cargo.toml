@@ -5,4 +5,5 @@ edition = "2021"
 
 [dependencies]
 utils = { path = "../utils" }
+committee = { path = "../committee" }
 newtype = { path = "../newtype" }
