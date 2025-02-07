@@ -22,7 +22,7 @@ impl<C: ConfigInterface> Vote<C> {
                 VoteRefsByIssuer::from_iter(vote.committee.iter().map(|member| {
                     (
                         member.key().clone(),
-                        VoteRefs::from_iter([vote.consensus.heaviest_tip.clone()]),
+                        VoteRefs::from_iter([vote.consensus.tip.clone()]),
                     )
                 }));
 

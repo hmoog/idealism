@@ -49,7 +49,7 @@ impl<C: ConfigInterface> VoteBuilder<C> {
 
             let (consensus_threshold, confirm) = self.determine_consensus_threshold();
             if let Some(seen_weights) = self.can_vote(committee_member.key(), consensus_threshold)? {
-                self.consensus = ConsensusMechanism::run(&self)?.into();
+                self.consensus = ConsensusMechanism::run(&self, consensus_threshold)?.into();
 
                 // advance the round if the acceptance threshold is now met
                 if seen_weights + committee_member.weight() >= consensus_threshold {

@@ -63,25 +63,25 @@ mod test {
         assert!(
             vote1_1
                 .consensus
-                .heaviest_tip
+                .tip
                 .points_to(&genesis)
         );
         assert!(
             vote2_1
                 .consensus
-                .heaviest_tip
+                .tip
                 .points_to(&genesis)
         );
         assert!(
             vote3_1
                 .consensus
-                .heaviest_tip
+                .tip
                 .points_to(&genesis)
         );
         assert!(
             vote4_1
                 .consensus
-                .heaviest_tip
+                .tip
                 .points_to(&genesis)
         );
         println!("{:?}: {:?}", vote1_1, vote1_1.consensus,);
@@ -100,13 +100,13 @@ mod test {
         assert!(
             vote1_2
                 .consensus
-                .heaviest_tip
+                .tip
                 .points_to(&vote3_1)
         );
         assert!(
             vote2_2
                 .consensus
-                .heaviest_tip
+                .tip
                 .points_to(&vote3_1)
         );
         // assert!(vote3_2.consensus_view.heaviest_tip.points_to(&vote4_1));
@@ -141,13 +141,13 @@ mod test {
         );
         println!(
             "{:?} {:?}",
-            member2_vote_4.consensus.heaviest_tip,
-            member2_vote_4.consensus.accepted_milestone
+            member2_vote_4.consensus.tip,
+            member2_vote_4.consensus.milestone
         );
         println!(
             "{:?} {:?}",
-            member3_vote_4.consensus.heaviest_tip,
-            member3_vote_4.consensus.accepted_milestone
+            member3_vote_4.consensus.tip,
+            member3_vote_4.consensus.milestone
         );
 
         Ok(())

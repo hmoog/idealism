@@ -6,30 +6,30 @@ use crate::{
 };
 
 pub struct ConsensusMechanism<C: ConfigInterface> {
-    committee: Committee<C::IssuerID>,
     children: HashMap<Vote<C>, Votes<C>>,
     vote_tracker: VoteTracker<C>,
+    consensus_threshold: u64,
 }
 
 impl<C: ConfigInterface> ConsensusMechanism<C> {
-    pub fn run(vote: &VoteBuilder<C>) -> Result<ConsensusCommitment<C>> {
+    pub fn run(vote: &VoteBuilder<C>, consensus_threshold: u64) -> Result<ConsensusCommitment<C>> {
         let votes_by_round = VotesByIssuer::try_from(&vote.votes_by_issuer)?.into();
 
-        let mut consensus_mechanism = Self::new(vote.committee.clone());
+        let mut consensus_mechanism = Self::new(vote.committee.clone(), consensus_threshold);
         let milestone = consensus_mechanism.milestone(votes_by_round)?;
         let heaviest_tip = consensus_mechanism.find_heaviest_tip(&milestone);
 
         Ok(ConsensusCommitment {
-            accepted_milestone: milestone.into(),
-            heaviest_tip: heaviest_tip.into(),
+            milestone: milestone.into(),
+            tip: heaviest_tip.into(),
         })
     }
 
-    fn new(committee: Committee<C::IssuerID>) -> Self {
+    fn new(committee: Committee<C::IssuerID>, consensus_threshold: u64) -> Self {
         Self {
             children: HashMap::new(),
             vote_tracker: VoteTracker::new(committee.clone()),
-            committee,
+            consensus_threshold,
         }
     }
 
@@ -42,8 +42,8 @@ impl<C: ConfigInterface> ConsensusMechanism<C> {
                 for vote in &*issuer_votes {
                     heaviest = max(heaviest, self.vote_tracker.track_vote(vote, issuer));
 
-                    if !vote.consensus.heaviest_tip.points_to(vote) {
-                        let target = Vote::try_from(&vote.consensus.heaviest_tip)?;
+                    if !vote.consensus.tip.points_to(vote) {
+                        let target = Vote::try_from(&vote.consensus.tip)?;
 
                         self.children
                             .entry(target.clone())
@@ -54,7 +54,7 @@ impl<C: ConfigInterface> ConsensusMechanism<C> {
                 }
             }
 
-            if heaviest.0 >= self.committee.acceptance_threshold() {
+            if heaviest.0 >= self.consensus_threshold {
                 return Ok(heaviest.1.expect("heaviest vote should be set"));
             } else if round == 0 || next_votes.is_empty() {
                 break;
