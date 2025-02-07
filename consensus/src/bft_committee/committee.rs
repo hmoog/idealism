@@ -1,9 +1,9 @@
-use std::{cmp::Ordering, collections::HashMap, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 use utils::Id;
 
 use crate::{
-    CommitteeData, CommitteeMember, ConfigInterface, Vote, VoteRefsByIssuer, errors::Error,
+    CommitteeData, CommitteeMember, ConfigInterface,
 };
 
 pub struct Committee<C: ConfigInterface>(Arc<CommitteeData<C>>);
@@ -15,31 +15,6 @@ impl<T: ConfigInterface> Committee<T> {
 
     pub fn confirmation_threshold(&self) -> u64 {
         self.total_weight() - self.total_weight() / 3
-    }
-
-    pub fn referenced_round_weight(&self, votes: &VoteRefsByIssuer<T>) -> Result<u64, Error> {
-        let mut latest_round = 0;
-        let mut referenced_round_weight = 0;
-
-        for (issuer, votes) in votes {
-            if let Some(member) = self.0.members_by_id.get(issuer) {
-                if let Some(vote_ref) = votes.iter().next() {
-                    let vote = Vote::try_from(vote_ref)?;
-                    match vote.round.cmp(&latest_round) {
-                        Ordering::Greater => {
-                            latest_round = vote.round;
-                            referenced_round_weight = member.weight();
-                        }
-                        Ordering::Equal => {
-                            referenced_round_weight += member.weight();
-                        }
-                        Ordering::Less => continue,
-                    }
-                }
-            }
-        }
-
-        Ok(referenced_round_weight)
     }
 
     pub fn total_weight(&self) -> u64 {

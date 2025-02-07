@@ -2,15 +2,20 @@ use crate::{
     Committee, CommitteeMember, CommitteeSelection, ConfigInterface, LeaderRotation, Vote,
     VoteBuilder,
 };
+use crate::configuration::SlotDuration;
 
 pub struct Config {
+    genesis_time: u64,
     committee_selection: CommitteeSelection,
     leader_rotation: LeaderRotation,
+    slot_duration: SlotDuration,
+    offline_threshold: u64,
 }
 
 impl Config {
     pub fn new() -> Self {
         Self {
+            genesis_time: 0,
             committee_selection: CommitteeSelection::FixedCommittee(Committee::from([
                 CommitteeMember::new(1),
                 CommitteeMember::new(2),
@@ -18,7 +23,14 @@ impl Config {
                 CommitteeMember::new(4),
             ])),
             leader_rotation: LeaderRotation::RoundRobin,
+            slot_duration: SlotDuration::Static(10),
+            offline_threshold: 1,
         }
+    }
+
+    pub fn with_genesis_time(mut self, genesis_time: u64) -> Self {
+        self.genesis_time = genesis_time;
+        self
     }
 
     pub fn with_committee_selection(mut self, committee_selection: CommitteeSelection) -> Self {
@@ -30,10 +42,27 @@ impl Config {
         self.leader_rotation = leader_rotation;
         self
     }
+
+    pub fn with_slot_duration(mut self, slot_duration: SlotDuration) -> Self {
+        self.slot_duration = slot_duration;
+        self
+    }
 }
 
 impl ConfigInterface for Config {
     type IssuerID = u64;
+
+    fn genesis_time(&self) -> u64 {
+        self.genesis_time
+    }
+
+    fn slot_oracle(&self, vote: &VoteBuilder<Self>) -> u64 {
+        self.slot_duration.map_slot(self, vote)
+    }
+
+    fn offline_threshold(&self) -> u64 {
+        self.offline_threshold
+    }
 
     fn select_committee(&self, vote: Option<&Vote<Self>>) -> Committee<Self>
     where

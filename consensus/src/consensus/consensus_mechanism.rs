@@ -7,7 +7,7 @@ use crate::{
 
 pub struct ConsensusMechanism<ID: ConfigInterface> {
     committee: Committee<ID>,
-    traversed_children: HashMap<Vote<ID>, Votes<ID>>,
+    children: HashMap<Vote<ID>, Votes<ID>>,
     vote_tracker: VoteTracker<ID>,
     accepted: Option<Vote<ID>>,
     confirmed: Option<Vote<ID>>,
@@ -40,7 +40,7 @@ impl<C: ConfigInterface> ConsensusMechanism<C> {
 
     fn new(committee: Committee<C>) -> Self {
         Self {
-            traversed_children: HashMap::new(),
+            children: HashMap::new(),
             vote_tracker: VoteTracker::new(committee.clone()),
             accepted: None,
             confirmed: None,
@@ -55,6 +55,7 @@ impl<C: ConfigInterface> ConsensusMechanism<C> {
             if next_targets.is_empty() {
                 break;
             }
+
             rounds.extend(round - 1, next_targets);
         }
         Ok(())
@@ -63,7 +64,7 @@ impl<C: ConfigInterface> ConsensusMechanism<C> {
     fn find_heaviest_tip(&mut self) {
         if let Some(mut heaviest_tip) = self.accepted.clone() {
             while let Some(heaviest_child) = self
-                .traversed_children
+                .children
                 .get(&heaviest_tip)
                 .and_then(|c| self.vote_tracker.heaviest_vote(c))
             {
@@ -82,10 +83,10 @@ impl<C: ConfigInterface> ConsensusMechanism<C> {
             for vote in issuer_votes {
                 heaviest = max(heaviest, self.vote_tracker.track_vote(vote, issuer));
 
-                if !vote.consensus_commitment.heaviest_tip.points_to(vote) {
-                    let target = Vote::try_from(&vote.consensus_commitment.heaviest_tip)?;
+                if !vote.consensus.heaviest_tip.points_to(vote) {
+                    let target = Vote::try_from(&vote.consensus.heaviest_tip)?;
 
-                    self.traversed_children
+                    self.children
                         .entry(target.clone())
                         .or_default()
                         .insert(vote.clone());

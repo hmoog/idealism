@@ -9,20 +9,20 @@ use crate::{ConfigInterface, Result, VoteBuilder, VoteRefs, VoteRefsByIssuer, Vo
 pub struct Vote<Config: ConfigInterface>(Arc<VoteBuilder<Config>>);
 
 impl<C: ConfigInterface> Vote<C> {
-    pub fn new(issuer: &Id<C::IssuerID>, latest: Vec<&Vote<C>>) -> Result<Vote<C>> {
-        VoteBuilder::try_from(Votes::from_iter(latest.into_iter().cloned()))?.build(issuer.clone())
+    pub fn new(issuer: &Id<C::IssuerID>, issuing_time: u64, latest: Vec<&Vote<C>>) -> Result<Vote<C>> {
+        VoteBuilder::try_from(Votes::from_iter(latest.into_iter().cloned()))?.build(issuer.clone(), issuing_time)
     }
 
     pub fn from_config(config: C) -> Self {
         Self(Arc::new_cyclic(|me| {
             let mut vote = VoteBuilder::from(config);
 
-            vote.consensus_commitment = me.into();
+            vote.consensus = me.into();
             vote.votes_by_issuer =
                 VoteRefsByIssuer::from_iter(vote.committee.iter().map(|member| {
                     (
                         member.key().clone(),
-                        VoteRefs::from_iter([vote.consensus_commitment.heaviest_tip.clone()]),
+                        VoteRefs::from_iter([vote.consensus.heaviest_tip.clone()]),
                     )
                 }));
 
