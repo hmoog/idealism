@@ -17,8 +17,8 @@ impl<C: ConfigInterface> Vote<C> {
         Self(Arc::new_cyclic(|me| {
             let mut vote = VoteBuilder::from(config);
 
-            vote.last_accepted_milestone = me.into();
-            vote.last_confirmed_milestone = me.into();
+            vote.accepted_milestone = me.into();
+            vote.confirmed_milestone = me.into();
             vote.heaviest_tip = me.into();
             vote.votes_by_issuer =
                 VoteRefsByIssuer::from_iter(vote.committee.iter().map(|member| {

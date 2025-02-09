@@ -62,10 +62,10 @@ mod test {
         assert!(vote2_1.heaviest_tip.points_to(&genesis));
         assert!(vote3_1.heaviest_tip.points_to(&genesis));
         assert!(vote4_1.heaviest_tip.points_to(&genesis));
-        println!("{:?}: {:?}", vote1_1, vote1_1.last_accepted_milestone,);
-        println!("{:?}: {:?}", vote2_1, vote2_1.last_accepted_milestone,);
-        println!("{:?}: {:?}", vote3_1, vote3_1.last_accepted_milestone,);
-        println!("{:?}: {:?}", vote4_1, vote4_1.last_accepted_milestone,);
+        println!("{:?}: {:?}", vote1_1, vote1_1.accepted_milestone,);
+        println!("{:?}: {:?}", vote2_1, vote2_1.accepted_milestone,);
+        println!("{:?}: {:?}", vote3_1, vote3_1.accepted_milestone,);
+        println!("{:?}: {:?}", vote4_1, vote4_1.accepted_milestone,);
 
         println!("SECOND ROUND");
 
@@ -78,10 +78,10 @@ mod test {
         assert!(vote1_2.heaviest_tip.points_to(&vote3_1));
         assert!(vote2_2.heaviest_tip.points_to(&vote3_1));
         // assert!(vote3_2.last_accepted_milestone_view.heaviest_tip.points_to(&vote4_1));
-        println!("{:?}: {:?}", vote1_2, vote1_2.last_accepted_milestone,);
-        println!("{:?}: {:?}", vote2_2, vote2_2.last_accepted_milestone,);
-        println!("{:?}: {:?}", vote3_2, vote3_2.last_accepted_milestone,);
-        println!("{:?}: {:?}", vote4_2, vote4_2.last_accepted_milestone,);
+        println!("{:?}: {:?}", vote1_2, vote1_2.accepted_milestone,);
+        println!("{:?}: {:?}", vote2_2, vote2_2.accepted_milestone,);
+        println!("{:?}: {:?}", vote3_2, vote3_2.accepted_milestone,);
+        println!("{:?}: {:?}", vote4_2, vote4_2.accepted_milestone,);
 
         println!("THIRD ROUND");
 
@@ -94,9 +94,9 @@ mod test {
         let vote3_3 = Vote::new(members[2].key(), 3, vec![
             &vote1_2, &vote2_2, &vote3_2, &vote4_2,
         ])?;
-        println!("{:?}: {:?}", vote1_3, vote1_3.last_accepted_milestone,);
-        println!("{:?}: {:?}", vote2_3, vote2_3.last_accepted_milestone,);
-        println!("{:?}: {:?}", vote3_3, vote3_3.last_accepted_milestone,);
+        println!("{:?}: {:?}", vote1_3, vote1_3.accepted_milestone,);
+        println!("{:?}: {:?}", vote2_3, vote2_3.accepted_milestone,);
+        println!("{:?}: {:?}", vote3_3, vote3_3.accepted_milestone,);
 
         println!("FOURTH ROUND");
 
@@ -105,15 +105,15 @@ mod test {
         let member3_vote_4 = Vote::new(members[0].key(), 4, vec![&vote1_3, &vote2_3, &vote3_3])?;
         println!(
             "member1_vote_4 (round {:?}): {:?}",
-            member1_vote_4.round, member1_vote_4.last_accepted_milestone,
+            member1_vote_4.round, member1_vote_4.accepted_milestone,
         );
         println!(
             "{:?} {:?}",
-            member2_vote_4.heaviest_tip, member2_vote_4.last_accepted_milestone,
+            member2_vote_4.heaviest_tip, member2_vote_4.accepted_milestone,
         );
         println!(
             "{:?} {:?}",
-            member3_vote_4.heaviest_tip, member3_vote_4.last_accepted_milestone,
+            member3_vote_4.heaviest_tip, member3_vote_4.accepted_milestone,
         );
 
         Ok(())

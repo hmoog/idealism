@@ -11,14 +11,14 @@ use crate::{
 pub struct VoteBuilder<T: ConfigInterface> {
     pub config: Arc<T>,
     pub issuer: Issuer<T::IssuerID>,
-    pub issuing_time: u64,
+    pub time: u64,
     pub cumulative_slot_weight: u64,
     pub round: u64,
     pub leader_weight: u64,
     pub committee: Committee<T::IssuerID>,
     pub votes_by_issuer: VoteRefsByIssuer<T>,
-    pub last_accepted_milestone: VoteRef<T>,
-    pub last_confirmed_milestone: VoteRef<T>,
+    pub accepted_milestone: VoteRef<T>,
+    pub confirmed_milestone: VoteRef<T>,
     pub heaviest_tip: VoteRef<T>,
 }
 
@@ -31,53 +31,61 @@ impl<C: ConfigInterface> VoteBuilder<C> {
 
         Ok(VoteBuilder {
             issuer: Issuer::Genesis,
-            issuing_time: heaviest_tip.issuing_time,
+            time: heaviest_tip.time,
             committee: heaviest_tip.committee.clone(),
             config: heaviest_tip.config.clone(),
             cumulative_slot_weight: heaviest_tip.cumulative_slot_weight,
             round: heaviest_tip.round,
             leader_weight: heaviest_tip.leader_weight,
             votes_by_issuer: VotesByIssuer::try_from(votes)?.into(),
-            last_accepted_milestone: heaviest_tip.last_accepted_milestone.clone(),
-            last_confirmed_milestone: heaviest_tip.last_confirmed_milestone.clone(),
+            accepted_milestone: heaviest_tip.accepted_milestone.clone(),
+            confirmed_milestone: heaviest_tip.confirmed_milestone.clone(),
             heaviest_tip: heaviest_tip.heaviest_tip.clone(),
         })
     }
 
-    pub fn build(mut self, issuer: &Id<C::IssuerID>, issuing_time: u64) -> Result<Vote<C>> {
+    pub fn build(mut self, issuer: &Id<C::IssuerID>, time: u64) -> Result<Vote<C>> {
+        // update issuer
         self.issuer = Issuer::User(issuer.clone());
-        if let Some(new_slot) = self.update_issuing_time(issuing_time) {
-            self.remove_offline_committee_members(new_slot)?;
+
+        // update time and flag offline validators
+        if let Some(new_slot) = self.update_time(time) {
+            self.flag_offline_validators(new_slot)?;
         }
 
-        if let Some(committee_member) = self.committee.member(issuer).cloned() {
-            // set ourselves online before voting to count our weight (the only reason why we
-            // wouldn't vote is if we voted already in the current round, in which case we are
-            // already online anyway)
-            self.committee = self.committee.set_online(committee_member.key(), true);
+        // check if we are a committee member
+        if let Some(validator) = self.committee.member(issuer).cloned() {
+            // set ourselves online before voting to also consider our weight
+            self.committee = self.committee.set_online(validator.key(), true);
 
-            let (consensus_threshold, confirm) = self.determine_consensus_threshold();
-            if let Some(seen_weights) =
-                self.can_vote(committee_member.key(), consensus_threshold)?
-            {
-                let (milestone, heaviest_tip) = VirtualVoting::run(&self, consensus_threshold)?;
+            // determine consensus threshold (switch between confirmation and acceptance)
+            let (threshold, does_confirm) = self.consensus_threshold();
 
-                self.heaviest_tip = heaviest_tip.into();
-                self.last_accepted_milestone = milestone.into();
-                if confirm {
-                    self.last_confirmed_milestone = self.last_accepted_milestone.clone();
+            // check if we shall vote
+            if let Some(seen_weights) = self.shall_vote(validator.key(), threshold)? {
+                // run virtual voting algorithm
+                let (new_milestone, heaviest_tip) = VirtualVoting::run(&self, threshold)?;
+
+                // update consensus weights
+                if new_milestone.slot() > Vote::try_from(&self.accepted_milestone)?.slot() {
+                    self.cumulative_slot_weight += new_milestone.committee.online_weight();
                 }
-
-                if seen_weights + committee_member.weight() >= consensus_threshold {
+                if seen_weights + validator.weight() >= threshold {
                     self.leader_weight = self.config.leader_weight(&self);
                     self.round += 1;
                 }
 
+                // store consensus outcome
+                self.heaviest_tip = heaviest_tip.into();
+                self.accepted_milestone = new_milestone.into();
+                if does_confirm {
+                    self.confirmed_milestone = self.accepted_milestone.clone();
+                }
+
+                // build vote and update votes_by_issuer map
                 return Ok(Vote::from(Arc::new_cyclic(|me| {
-                    self.votes_by_issuer.insert(
-                        committee_member.key().clone(),
-                        VoteRefs::from_iter([me.into()]),
-                    );
+                    self.votes_by_issuer
+                        .insert(validator.key().clone(), VoteRefs::from_iter([me.into()]));
                     self
                 })));
             }
@@ -89,11 +97,11 @@ impl<C: ConfigInterface> VoteBuilder<C> {
     pub fn build_genesis(config: C) -> Self {
         Self {
             issuer: Issuer::Genesis,
-            issuing_time: config.genesis_time(),
+            time: config.genesis_time(),
             committee: config.select_committee(None),
             config: Arc::new(config),
-            last_accepted_milestone: VoteRef::default(),
-            last_confirmed_milestone: VoteRef::default(),
+            accepted_milestone: VoteRef::default(),
+            confirmed_milestone: VoteRef::default(),
             heaviest_tip: VoteRef::default(),
             cumulative_slot_weight: 0,
             round: 0,
@@ -102,7 +110,11 @@ impl<C: ConfigInterface> VoteBuilder<C> {
         }
     }
 
-    fn determine_consensus_threshold(&self) -> (u64, bool) {
+    fn slot(&self) -> u64 {
+        self.config.slot_oracle(&self)
+    }
+
+    fn consensus_threshold(&self) -> (u64, bool) {
         if self.committee.online_weight() >= self.committee.confirmation_threshold() {
             (self.committee.confirmation_threshold(), true)
         } else {
@@ -110,8 +122,8 @@ impl<C: ConfigInterface> VoteBuilder<C> {
         }
     }
 
-    fn can_vote(&self, issuer: &Id<C::IssuerID>, consensus_threshold: u64) -> Result<Option<u64>> {
-        let seen_weight = self.referenced_round_weight()?;
+    fn shall_vote(&self, issuer: &Id<C::IssuerID>, consensus_threshold: u64) -> Result<Option<u64>> {
+        let seen_weight = self.seen_weight()?;
         if let Some(own_votes) = self.votes_by_issuer.get(issuer) {
             if let Some(own_vote) = own_votes.iter().next() {
                 if Vote::try_from(own_vote)?.round == self.round
@@ -125,7 +137,7 @@ impl<C: ConfigInterface> VoteBuilder<C> {
         Ok(Some(seen_weight))
     }
 
-    fn referenced_round_weight(&self) -> Result<u64> {
+    fn seen_weight(&self) -> Result<u64> {
         let mut latest_round = 0;
         let mut referenced_round_weight = 0;
 
@@ -150,42 +162,42 @@ impl<C: ConfigInterface> VoteBuilder<C> {
         Ok(referenced_round_weight)
     }
 
-    fn update_issuing_time(&mut self, issuing_time: u64) -> Option<u64> {
-        let old_slot = self.config.slot_oracle(&self);
-        self.issuing_time = issuing_time;
-        let new_slot = self.config.slot_oracle(&self);
+    fn update_time(&mut self, issuing_time: u64) -> Option<u64> {
+        let old_slot = self.slot();
+        self.time = issuing_time;
+        let new_slot = self.slot();
 
         (new_slot > old_slot).then_some(new_slot)
     }
 
-    fn remove_offline_committee_members(&mut self, slot: u64) -> Result<()> {
-        for member in self.committee_members_idle_since(slot - self.config.offline_threshold())? {
+    fn flag_offline_validators(&mut self, slot: u64) -> Result<()> {
+        for member in self.offline_validators(slot - self.config.offline_threshold())? {
             self.committee = self.committee.set_online(&member, false);
         }
         Ok(())
     }
 
-    fn committee_members_idle_since(&self, slot: u64) -> Result<HashSet<Id<C::IssuerID>>> {
+    fn offline_validators(&self, slot: u64) -> Result<HashSet<Id<C::IssuerID>>> {
         let mut idle_members = HashSet::new();
         for member in self.committee.iter() {
-            if member.is_online() && self.committee_member_idle_since(&member, slot)? {
+            if member.is_online() && self.validator_appears_offline(member.key(), slot)? {
                 idle_members.insert(member.key().clone());
             }
         }
         Ok(idle_members)
     }
 
-    fn committee_member_idle_since(&self, member: &Member<C::IssuerID>, slot: u64) -> Result<bool> {
-        let mut is_idle = true;
-        if let Some(votes) = self.votes_by_issuer.get(member.key()) {
+    fn validator_appears_offline(&self, id: &Id<C::IssuerID>, offline_threshold: u64) -> Result<bool> {
+        let mut is_offline = true;
+        if let Some(votes) = self.votes_by_issuer.get(id) {
             for vote in votes.iter() {
-                if self.config.slot_oracle(&(*Vote::try_from(vote)?)) >= slot {
-                    is_idle = false;
+                if Vote::try_from(vote)?.slot() >= offline_threshold {
+                    is_offline = false;
                 }
             }
         };
 
-        Ok(is_idle)
+        Ok(is_offline)
     }
 }
 

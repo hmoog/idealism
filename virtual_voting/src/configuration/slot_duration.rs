@@ -8,7 +8,7 @@ pub enum SlotDuration {
 impl SlotDuration {
     pub fn map_slot(&self, config: &Config, vote: &VoteBuilder<Config>) -> u64 {
         match self {
-            Self::Static(duration) => vote.issuing_time - config.genesis_time() / duration,
+            Self::Static(duration) => vote.time - config.genesis_time() / duration,
             Self::Dynamic(strategy) => strategy(config, vote),
         }
     }
