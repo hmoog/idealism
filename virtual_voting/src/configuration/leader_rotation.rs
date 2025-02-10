@@ -17,7 +17,7 @@ impl LeaderRotation {
 fn round_robin(vote: &VoteBuilder<Config>) -> u64 {
     if let Issuer::User(issuer) = &vote.issuer {
         vote.committee.member(issuer).map_or(0, |member| {
-            (member.index() + vote.round) % vote.committee.size()
+            (member.index() + vote.round - 1) % vote.committee.size()
         })
     } else {
         0

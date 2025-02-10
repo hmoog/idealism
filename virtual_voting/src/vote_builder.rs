@@ -1,11 +1,11 @@
 use std::{cmp::Ordering, collections::HashSet, sync::Arc};
 
-use committee::{Committee, Member};
+use committee::Committee;
 use utils::Id;
 
 use crate::{
-    ConfigInterface, Issuer, Result, VirtualVoting, Vote, VoteRef, VoteRefs, VoteRefsByIssuer,
-    Votes, VotesByIssuer,
+    ConfigInterface, Error, Issuer, Milestone, Result, VirtualVoting, Vote, VoteRefs,
+    VoteRefsByIssuer, Votes, VotesByIssuer,
 };
 
 pub struct VoteBuilder<T: ConfigInterface> {
@@ -14,12 +14,9 @@ pub struct VoteBuilder<T: ConfigInterface> {
     pub time: u64,
     pub cumulative_slot_weight: u64,
     pub round: u64,
-    pub leader_weight: u64,
     pub committee: Committee<T::IssuerID>,
-    pub votes_by_issuer: VoteRefsByIssuer<T>,
-    pub accepted_milestone: VoteRef<T>,
-    pub confirmed_milestone: VoteRef<T>,
-    pub heaviest_tip: VoteRef<T>,
+    pub referenced_milestones: VoteRefsByIssuer<T>,
+    pub milestone: Option<Milestone<T>>,
 }
 
 impl<C: ConfigInterface> VoteBuilder<C> {
@@ -36,12 +33,13 @@ impl<C: ConfigInterface> VoteBuilder<C> {
             config: heaviest_tip.config.clone(),
             cumulative_slot_weight: heaviest_tip.cumulative_slot_weight,
             round: heaviest_tip.round,
-            leader_weight: heaviest_tip.leader_weight,
-            votes_by_issuer: VotesByIssuer::try_from(votes)?.into(),
-            accepted_milestone: heaviest_tip.accepted_milestone.clone(),
-            confirmed_milestone: heaviest_tip.confirmed_milestone.clone(),
-            heaviest_tip: heaviest_tip.heaviest_tip.clone(),
+            referenced_milestones: VotesByIssuer::try_from(votes)?.into(),
+            milestone: None,
         })
+    }
+
+    pub fn milestone(&self) -> Result<&Milestone<C>> {
+        self.milestone.as_ref().ok_or(Error::NoCommitmentExists)
     }
 
     pub fn build(mut self, issuer: &Id<C::IssuerID>, time: u64) -> Result<Vote<C>> {
@@ -67,24 +65,26 @@ impl<C: ConfigInterface> VoteBuilder<C> {
                 let (new_milestone, heaviest_tip) = VirtualVoting::run(&self, threshold)?;
 
                 // update consensus weights
-                if new_milestone.slot() > Vote::try_from(&self.accepted_milestone)?.slot() {
-                    self.cumulative_slot_weight += new_milestone.committee.online_weight();
+                if new_milestone.slot() > Vote::try_from(&new_milestone.milestone()?.prev)?.slot() {
+                    self.cumulative_slot_weight += heaviest_tip.committee.online_weight();
                 }
                 if seen_weights + validator.weight() >= threshold {
-                    self.leader_weight = self.config.leader_weight(&self);
                     self.round += 1;
                 }
 
-                // store consensus outcome
-                self.heaviest_tip = heaviest_tip.into();
-                self.accepted_milestone = new_milestone.into();
-                if does_confirm {
-                    self.confirmed_milestone = self.accepted_milestone.clone();
-                }
+                self.milestone = Some(Milestone {
+                    round_weight: self.config.leader_weight(&self),
+                    prev: (&heaviest_tip).into(),
+                    accepted: (&new_milestone).into(),
+                    confirmed: match does_confirm {
+                        true => (&new_milestone).into(),
+                        false => heaviest_tip.milestone()?.confirmed.clone(),
+                    },
+                });
 
                 // build vote and update votes_by_issuer map
                 return Ok(Vote::from(Arc::new_cyclic(|me| {
-                    self.votes_by_issuer
+                    self.referenced_milestones
                         .insert(validator.key().clone(), VoteRefs::from_iter([me.into()]));
                     self
                 })));
@@ -100,13 +100,10 @@ impl<C: ConfigInterface> VoteBuilder<C> {
             time: config.genesis_time(),
             committee: config.select_committee(None),
             config: Arc::new(config),
-            accepted_milestone: VoteRef::default(),
-            confirmed_milestone: VoteRef::default(),
-            heaviest_tip: VoteRef::default(),
             cumulative_slot_weight: 0,
             round: 0,
-            leader_weight: 0,
-            votes_by_issuer: VoteRefsByIssuer::default(),
+            referenced_milestones: VoteRefsByIssuer::default(),
+            milestone: None,
         }
     }
 
@@ -122,9 +119,13 @@ impl<C: ConfigInterface> VoteBuilder<C> {
         }
     }
 
-    fn shall_vote(&self, issuer: &Id<C::IssuerID>, consensus_threshold: u64) -> Result<Option<u64>> {
+    fn shall_vote(
+        &self,
+        issuer: &Id<C::IssuerID>,
+        consensus_threshold: u64,
+    ) -> Result<Option<u64>> {
         let seen_weight = self.seen_weight()?;
-        if let Some(own_votes) = self.votes_by_issuer.get(issuer) {
+        if let Some(own_votes) = self.referenced_milestones.get(issuer) {
             if let Some(own_vote) = own_votes.iter().next() {
                 if Vote::try_from(own_vote)?.round == self.round
                     && seen_weight < consensus_threshold
@@ -141,7 +142,7 @@ impl<C: ConfigInterface> VoteBuilder<C> {
         let mut latest_round = 0;
         let mut referenced_round_weight = 0;
 
-        for (issuer, votes) in &self.votes_by_issuer {
+        for (issuer, votes) in &self.referenced_milestones {
             if let Some(member) = self.committee.member(issuer) {
                 if let Some(vote_ref) = votes.iter().next() {
                     let vote = Vote::try_from(vote_ref)?;
@@ -187,9 +188,13 @@ impl<C: ConfigInterface> VoteBuilder<C> {
         Ok(idle_members)
     }
 
-    fn validator_appears_offline(&self, id: &Id<C::IssuerID>, offline_threshold: u64) -> Result<bool> {
+    fn validator_appears_offline(
+        &self,
+        id: &Id<C::IssuerID>,
+        offline_threshold: u64,
+    ) -> Result<bool> {
         let mut is_offline = true;
-        if let Some(votes) = self.votes_by_issuer.get(id) {
+        if let Some(votes) = self.referenced_milestones.get(id) {
             for vote in votes.iter() {
                 if Vote::try_from(vote)?.slot() >= offline_threshold {
                     is_offline = false;

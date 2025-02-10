@@ -57,7 +57,7 @@ mod traits {
         fn try_from(votes: Votes<Config>) -> Result<VotesByIssuer<Config>, Self::Error> {
             let mut votes_by_issuer: VotesByIssuer<Config> = VotesByIssuer::default();
             for vote in votes {
-                votes_by_issuer.extend(VotesByIssuer::try_from(&vote.votes_by_issuer)?);
+                votes_by_issuer.extend(VotesByIssuer::try_from(&vote.referenced_milestones)?);
             }
             Ok(votes_by_issuer)
         }

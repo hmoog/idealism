@@ -13,7 +13,8 @@ pub struct VirtualVoting<C: ConfigInterface> {
 
 impl<C: ConfigInterface> VirtualVoting<C> {
     pub fn run(vote: &VoteBuilder<C>, consensus_threshold: u64) -> Result<(Vote<C>, Vote<C>)> {
-        let votes_by_round = VotesByRound::from(VotesByIssuer::try_from(&vote.votes_by_issuer)?);
+        let votes_by_round =
+            VotesByRound::from(VotesByIssuer::try_from(&vote.referenced_milestones)?);
 
         let mut virtual_voting = Self {
             children: HashMap::new(),
@@ -36,8 +37,8 @@ impl<C: ConfigInterface> VirtualVoting<C> {
                 for vote in &*issuer_votes {
                     heaviest = max(heaviest, self.weight_tracker.weight_entry(vote, issuer));
 
-                    if !vote.heaviest_tip.points_to(vote) {
-                        let target = Vote::try_from(&vote.heaviest_tip)?;
+                    if !vote.milestone()?.prev.points_to(vote) {
+                        let target = Vote::try_from(&vote.milestone()?.prev)?;
 
                         self.children
                             .entry(target.clone())

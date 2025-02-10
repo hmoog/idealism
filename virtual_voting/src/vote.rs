@@ -3,7 +3,7 @@ use std::sync::Arc;
 use utils::Id;
 use zero::{Clone0, Deref0};
 
-use crate::{ConfigInterface, Result, VoteBuilder, VoteRefs, VoteRefsByIssuer, Votes};
+use crate::{ConfigInterface, Milestone, Result, VoteBuilder, VoteRefs, VoteRefsByIssuer, Votes};
 
 #[derive(Clone0, Deref0)]
 pub struct Vote<Config: ConfigInterface>(Arc<VoteBuilder<Config>>);
@@ -17,23 +17,28 @@ impl<C: ConfigInterface> Vote<C> {
         Self(Arc::new_cyclic(|me| {
             let mut vote = VoteBuilder::from(config);
 
-            vote.accepted_milestone = me.into();
-            vote.confirmed_milestone = me.into();
-            vote.heaviest_tip = me.into();
-            vote.votes_by_issuer =
-                VoteRefsByIssuer::from_iter(vote.committee.iter().map(|member| {
-                    (
-                        member.key().clone(),
-                        VoteRefs::from_iter([vote.heaviest_tip.clone()]),
-                    )
-                }));
+            vote.milestone = Some(Milestone {
+                round_weight: 0,
+                accepted: me.into(),
+                confirmed: me.into(),
+                prev: me.into(),
+            });
+            vote.referenced_milestones = VoteRefsByIssuer::from_iter(
+                vote.committee
+                    .iter()
+                    .map(|member| (member.key().clone(), VoteRefs::from_iter([me.into()]))),
+            );
 
             vote
         }))
     }
 
     pub fn consensus_weights(&self) -> (u64, u64, u64) {
-        (self.cumulative_slot_weight, self.round, self.leader_weight)
+        (
+            self.cumulative_slot_weight,
+            self.round,
+            self.milestone().map_or(0, |c| c.round_weight),
+        )
     }
 }
 

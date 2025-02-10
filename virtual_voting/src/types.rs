@@ -7,6 +7,7 @@ pub enum Error {
     VotesMustNotBeEmpty,
     NoAcceptedMilestoneInPastCone,
     NoConfirmedMilestoneInPastCone,
+    NoCommitmentExists,
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
