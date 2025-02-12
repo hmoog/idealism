@@ -1,17 +1,16 @@
 use std::{cmp::max, collections::HashMap};
 
 use crate::{
-    ConfigInterface, Error, Result, Vote, VoteBuilder, Votes, VotesByIssuer, VotesByRound,
-    WeightTracker,
+    Config, Error, Result, Vote, VoteBuilder, Votes, VotesByIssuer, VotesByRound, WeightTracker,
 };
 
-pub struct VirtualVoting<C: ConfigInterface> {
+pub struct VirtualVoting<C: Config> {
     children: HashMap<Vote<C>, Votes<C>>,
     weight_tracker: WeightTracker<C>,
     consensus_threshold: u64,
 }
 
-impl<C: ConfigInterface> VirtualVoting<C> {
+impl<C: Config> VirtualVoting<C> {
     pub fn run(vote: &VoteBuilder<C>, consensus_threshold: u64) -> Result<(Vote<C>, Vote<C>)> {
         let votes_by_round =
             VotesByRound::from(VotesByIssuer::try_from(&vote.referenced_milestones)?);
@@ -50,7 +49,7 @@ impl<C: ConfigInterface> VirtualVoting<C> {
             }
 
             if heaviest.0 >= self.consensus_threshold {
-                return Ok(heaviest.1.expect("heaviest vote should be set"));
+                return Ok(heaviest.1.expect("must exist"));
             } else if round == 0 || next_votes.is_empty() {
                 break;
             }

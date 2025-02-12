@@ -1,13 +1,13 @@
 use std::{cmp::max, collections::HashMap};
 
-use crate::{ConfigInterface, VotesByIssuer};
+use crate::{Config, VotesByIssuer};
 
-pub struct VotesByRound<T: ConfigInterface> {
+pub struct VotesByRound<T: Config> {
     elements: HashMap<u64, VotesByIssuer<T>>,
     max_round: u64,
 }
 
-impl<T: ConfigInterface> VotesByRound<T> {
+impl<T: Config> VotesByRound<T> {
     pub fn from(src: VotesByIssuer<T>) -> VotesByRound<T> {
         src.into_iter().fold(
             VotesByRound::default(),
@@ -40,20 +40,14 @@ impl<T: ConfigInterface> VotesByRound<T> {
 mod traits {
     use std::collections::HashMap;
 
-    use crate::{ConfigInterface, VotesByIssuer, VotesByRound};
+    use crate::{Config, VotesByRound};
 
-    impl<T: ConfigInterface> Default for VotesByRound<T> {
+    impl<T: Config> Default for VotesByRound<T> {
         fn default() -> Self {
             Self {
                 elements: HashMap::new(),
                 max_round: 0,
             }
-        }
-    }
-
-    impl<T: ConfigInterface> From<VotesByIssuer<T>> for VotesByRound<T> {
-        fn from(votes_by_issuer: VotesByIssuer<T>) -> VotesByRound<T> {
-            VotesByRound::from(votes_by_issuer)
         }
     }
 }

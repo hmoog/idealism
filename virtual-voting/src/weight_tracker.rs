@@ -3,19 +3,19 @@ use std::collections::{HashMap, HashSet};
 use committee::Committee;
 use utils::Id;
 
-use crate::{ConfigInterface, Vote, Votes};
+use crate::{Config, Vote, Votes};
 
-pub struct WeightTracker<C: ConfigInterface> {
+pub struct WeightTracker<C: Config> {
     committee: Committee<C::IssuerID>,
-    tracked_weights: HashMap<Vote<C>, u64>,
+    weights: HashMap<Vote<C>, u64>,
     seen_issuers: HashMap<Vote<C>, HashSet<Id<C::IssuerID>>>,
 }
 
-impl<C: ConfigInterface> WeightTracker<C> {
+impl<C: Config> WeightTracker<C> {
     pub fn new(committee: Committee<C::IssuerID>) -> Self {
         Self {
             committee,
-            tracked_weights: HashMap::new(),
+            weights: HashMap::new(),
             seen_issuers: HashMap::new(),
         }
     }
@@ -25,7 +25,7 @@ impl<C: ConfigInterface> WeightTracker<C> {
             return (self.weight(vote), Some(vote.clone()));
         }
 
-        let vote_weight = self.tracked_weights.entry(vote.clone()).or_insert(0);
+        let vote_weight = self.weights.entry(vote.clone()).or_insert(0);
         *vote_weight += self.committee.member_weight(issuer);
 
         (*vote_weight, Some(vote.clone()))
@@ -39,7 +39,7 @@ impl<C: ConfigInterface> WeightTracker<C> {
     }
 
     fn weight(&self, vote: &Vote<C>) -> u64 {
-        self.tracked_weights.get(vote).copied().unwrap_or(0)
+        self.weights.get(vote).copied().unwrap_or(0)
     }
 
     fn issuer_voted_already(&mut self, vote: &Vote<C>, issuer: &Id<C::IssuerID>) -> bool {

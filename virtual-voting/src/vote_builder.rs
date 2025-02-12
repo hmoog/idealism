@@ -4,22 +4,22 @@ use committee::Committee;
 use utils::Id;
 
 use crate::{
-    ConfigInterface, Error, Issuer, Milestone, Result, VirtualVoting, Vote, VoteRefs,
-    VoteRefsByIssuer, Votes, VotesByIssuer,
+    Config, Error, Issuer, Milestone, Result, VirtualVoting, Vote, VoteRefs, VoteRefsByIssuer,
+    Votes, VotesByIssuer,
 };
 
-pub struct VoteBuilder<T: ConfigInterface> {
+pub struct VoteBuilder<T: Config> {
     pub config: Arc<T>,
     pub issuer: Issuer<T::IssuerID>,
     pub time: u64,
-    pub cumulative_slot_weight: u64,
+    pub slot_weight: u64,
     pub round: u64,
     pub committee: Committee<T::IssuerID>,
     pub referenced_milestones: VoteRefsByIssuer<T>,
     pub milestone: Option<Milestone<T>>,
 }
 
-impl<C: ConfigInterface> VoteBuilder<C> {
+impl<C: Config> VoteBuilder<C> {
     pub fn new(votes: Votes<C>) -> Result<VoteBuilder<C>> {
         let heaviest_tip = votes
             .heaviest_element()
@@ -31,7 +31,7 @@ impl<C: ConfigInterface> VoteBuilder<C> {
             time: heaviest_tip.time,
             committee: heaviest_tip.committee.clone(),
             config: heaviest_tip.config.clone(),
-            cumulative_slot_weight: heaviest_tip.cumulative_slot_weight,
+            slot_weight: heaviest_tip.slot_weight,
             round: heaviest_tip.round,
             referenced_milestones: VotesByIssuer::try_from(votes)?.into(),
             milestone: None,
@@ -66,14 +66,14 @@ impl<C: ConfigInterface> VoteBuilder<C> {
 
                 // update consensus weights
                 if new_milestone.slot() > Vote::try_from(&new_milestone.milestone()?.prev)?.slot() {
-                    self.cumulative_slot_weight += heaviest_tip.committee.online_weight();
+                    self.slot_weight += heaviest_tip.committee.online_weight();
                 }
                 if seen_weights + validator.weight() >= threshold {
                     self.round += 1;
                 }
 
                 self.milestone = Some(Milestone {
-                    round_weight: self.config.leader_weight(&self),
+                    leader_weight: self.config.leader_weight(&self),
                     prev: (&heaviest_tip).into(),
                     accepted: (&new_milestone).into(),
                     confirmed: match does_confirm {
@@ -94,21 +94,34 @@ impl<C: ConfigInterface> VoteBuilder<C> {
         Ok(Vote::from(Arc::new(self)))
     }
 
-    pub fn build_genesis(config: C) -> Self {
-        Self {
-            issuer: Issuer::Genesis,
-            time: config.genesis_time(),
-            committee: config.select_committee(None),
-            config: Arc::new(config),
-            cumulative_slot_weight: 0,
-            round: 0,
-            referenced_milestones: VoteRefsByIssuer::default(),
-            milestone: None,
-        }
+    pub fn build_genesis(config: C) -> Vote<C> {
+        Vote::from(Arc::new_cyclic(|me| {
+            let committee = config.select_committee(None);
+
+            Self {
+                issuer: Issuer::Genesis,
+                time: config.genesis_time(),
+                committee: committee.clone(),
+                config: Arc::new(config),
+                slot_weight: 0,
+                round: 0,
+                referenced_milestones: VoteRefsByIssuer::from_iter(
+                    committee
+                        .iter()
+                        .map(|member| (member.key().clone(), VoteRefs::from_iter([me.into()]))),
+                ),
+                milestone: Some(Milestone {
+                    leader_weight: 0,
+                    accepted: me.into(),
+                    confirmed: me.into(),
+                    prev: me.into(),
+                }),
+            }
+        }))
     }
 
     fn slot(&self) -> u64 {
-        self.config.slot_oracle(&self)
+        self.config.slot_oracle(self)
     }
 
     fn consensus_threshold(&self) -> (u64, bool) {
@@ -172,53 +185,32 @@ impl<C: ConfigInterface> VoteBuilder<C> {
     }
 
     fn flag_offline_validators(&mut self, slot: u64) -> Result<()> {
-        for member in self.offline_validators(slot - self.config.offline_threshold())? {
+        for member in self.validators_offline_since(slot - self.config.offline_threshold())? {
             self.committee = self.committee.set_online(&member, false);
         }
         Ok(())
     }
 
-    fn offline_validators(&self, slot: u64) -> Result<HashSet<Id<C::IssuerID>>> {
-        let mut idle_members = HashSet::new();
+    fn validators_offline_since(&self, slot: u64) -> Result<HashSet<Id<C::IssuerID>>> {
+        let mut offline_validators = HashSet::new();
         for member in self.committee.iter() {
-            if member.is_online() && self.validator_appears_offline(member.key(), slot)? {
-                idle_members.insert(member.key().clone());
+            if member.is_online() && self.validator_offline_since(member.key(), slot)? {
+                offline_validators.insert(member.key().clone());
             }
         }
-        Ok(idle_members)
+        Ok(offline_validators)
     }
 
-    fn validator_appears_offline(
-        &self,
-        id: &Id<C::IssuerID>,
-        offline_threshold: u64,
-    ) -> Result<bool> {
+    fn validator_offline_since(&self, id: &Id<C::IssuerID>, slot: u64) -> Result<bool> {
         let mut is_offline = true;
-        if let Some(votes) = self.referenced_milestones.get(id) {
-            for vote in votes.iter() {
-                if Vote::try_from(vote)?.slot() >= offline_threshold {
+        if let Some(validator_milestones) = self.referenced_milestones.get(id) {
+            for validator_milestone in validator_milestones {
+                if Vote::try_from(validator_milestone)?.slot() >= slot {
                     is_offline = false;
                 }
             }
         };
 
         Ok(is_offline)
-    }
-}
-
-mod traits {
-    use crate::{ConfigInterface, Error, Result, VoteBuilder, Votes};
-
-    impl<Config: ConfigInterface> TryFrom<Votes<Config>> for VoteBuilder<Config> {
-        type Error = Error;
-        fn try_from(votes: Votes<Config>) -> Result<VoteBuilder<Config>> {
-            Self::new(votes)
-        }
-    }
-
-    impl<Config: ConfigInterface> From<Config> for VoteBuilder<Config> {
-        fn from(config: Config) -> Self {
-            Self::build_genesis(config)
-        }
     }
 }

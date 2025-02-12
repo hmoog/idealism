@@ -3,23 +3,23 @@ use std::collections::HashMap;
 use utils::Id;
 use zero::{Clone0, Default0, FromIterator0, IntoIterator0};
 
-use crate::{ConfigInterface, Votes};
+use crate::{Config, Votes};
 
 /// A collection of votes indexed by committee member ID.
 ///
 /// This structure maintains votes from different committee members, ensuring proper handling of
 /// voting rounds and vote updates.
 #[derive(Default0, IntoIterator0, FromIterator0, Clone0)]
-pub struct VotesByIssuer<Config: ConfigInterface>(HashMap<Id<Config::IssuerID>, Votes<Config>>);
+pub struct VotesByIssuer<C: Config>(HashMap<Id<C::IssuerID>, Votes<C>>);
 
-impl<Config: ConfigInterface> VotesByIssuer<Config> {
+impl<C: Config> VotesByIssuer<C> {
     /// Inserts or updates votes for a committee member based on the voting round.
     ///
     /// - Clears existing votes if the new entry's round is greater.
     /// - Extends votes if the new entry's round is equal to or greater.
     ///
     /// Ensures only the most relevant votes for the latest round are retained.
-    pub fn insert_or_update(&mut self, entry: Entry<Config>) {
+    pub fn insert_or_update(&mut self, entry: Entry<C>) {
         let target_votes = self.fetch(entry.0);
         let current_round = target_votes.round();
         let new_round = entry.1.round();
@@ -36,7 +36,7 @@ impl<Config: ConfigInterface> VotesByIssuer<Config> {
     /// Retrieves or creates a mutable reference to the votes for a given committee member.
     ///
     /// If no votes exist for the given key, a new empty votes collection is created.
-    pub fn fetch(&mut self, key: Id<Config::IssuerID>) -> &mut Votes<Config> {
+    pub fn fetch(&mut self, key: Id<C::IssuerID>) -> &mut Votes<C> {
         self.0.entry(key).or_default()
     }
 
@@ -46,16 +46,16 @@ impl<Config: ConfigInterface> VotesByIssuer<Config> {
     }
 }
 
-type Entry<Config> = (Id<<Config as ConfigInterface>::IssuerID>, Votes<Config>);
+type Entry<C> = (Id<<C as Config>::IssuerID>, Votes<C>);
 
 mod traits {
     use super::{Entry, VotesByIssuer};
-    use crate::{ConfigInterface, Error, Vote, VoteRefsByIssuer, Votes};
+    use crate::{Config, Error, Vote, VoteRefsByIssuer, Votes};
 
-    impl<Config: ConfigInterface> TryFrom<Votes<Config>> for VotesByIssuer<Config> {
+    impl<C: Config> TryFrom<Votes<C>> for VotesByIssuer<C> {
         type Error = Error;
-        fn try_from(votes: Votes<Config>) -> Result<VotesByIssuer<Config>, Self::Error> {
-            let mut votes_by_issuer: VotesByIssuer<Config> = VotesByIssuer::default();
+        fn try_from(votes: Votes<C>) -> Result<VotesByIssuer<C>, Self::Error> {
+            let mut votes_by_issuer: VotesByIssuer<C> = VotesByIssuer::default();
             for vote in votes {
                 votes_by_issuer.extend(VotesByIssuer::try_from(&vote.referenced_milestones)?);
             }
@@ -63,9 +63,9 @@ mod traits {
         }
     }
 
-    impl<Config: ConfigInterface> TryFrom<&VoteRefsByIssuer<Config>> for VotesByIssuer<Config> {
+    impl<C: Config> TryFrom<&VoteRefsByIssuer<C>> for VotesByIssuer<C> {
         type Error = Error;
-        fn try_from(src: &VoteRefsByIssuer<Config>) -> Result<VotesByIssuer<Config>, Self::Error> {
+        fn try_from(src: &VoteRefsByIssuer<C>) -> Result<VotesByIssuer<C>, Self::Error> {
             Ok(VotesByIssuer(
                 src.into_iter()
                     .map(|(issuer, vote_refs)| {
@@ -82,8 +82,8 @@ mod traits {
         }
     }
 
-    impl<Config: ConfigInterface> Extend<Entry<Config>> for VotesByIssuer<Config> {
-        fn extend<T: IntoIterator<Item = Entry<Config>>>(&mut self, entries: T) {
+    impl<C: Config> Extend<Entry<C>> for VotesByIssuer<C> {
+        fn extend<T: IntoIterator<Item = Entry<C>>>(&mut self, entries: T) {
             for entry in entries {
                 self.insert_or_update(entry);
             }

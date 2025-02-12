@@ -1,11 +1,11 @@
-use consensus::{Committee, CommitteeMember, Config};
+use committee::{Committee, Member};
 use utils::Id;
 
 #[test]
 fn test_committee() {
-    let committee: Committee<Config> = Committee::from(vec![
-        CommitteeMember::new(1).with_weight(10).with_online(true),
-        CommitteeMember::new(2).with_weight(20).with_online(false),
+    let committee: Committee<i32> = Committee::from(vec![
+        Member::new(1).with_weight(10).with_online(true),
+        Member::new(2).with_weight(20).with_online(false),
     ]);
 
     // assert initial state

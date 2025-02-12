@@ -1,19 +1,16 @@
 use committee::{Committee, Member};
 
-use crate::{
-    CommitteeSelection, ConfigInterface, LeaderRotation, Vote, VoteBuilder,
-    configuration::SlotDuration,
-};
+use crate::{CommitteeSelection, Config, LeaderRotation, SlotDuration, Vote, VoteBuilder};
 
-pub struct Config {
+pub struct DefaultConfig {
     genesis_time: u64,
-    committee_selection: CommitteeSelection<Config>,
+    committee_selection: CommitteeSelection<DefaultConfig>,
     leader_rotation: LeaderRotation,
     slot_duration: SlotDuration,
     offline_threshold: u64,
 }
 
-impl Config {
+impl DefaultConfig {
     pub fn new() -> Self {
         Self {
             genesis_time: 0,
@@ -53,7 +50,7 @@ impl Config {
     }
 }
 
-impl ConfigInterface for Config {
+impl Config for DefaultConfig {
     type IssuerID = u64;
 
     fn genesis_time(&self) -> u64 {
@@ -83,7 +80,7 @@ impl ConfigInterface for Config {
     }
 }
 
-impl Default for Config {
+impl Default for DefaultConfig {
     fn default() -> Self {
         Self::new()
     }
