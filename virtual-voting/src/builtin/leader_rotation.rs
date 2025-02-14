@@ -1,4 +1,4 @@
-use crate::{DefaultConfig, Issuer, VoteBuilder};
+use crate::{Issuer, VoteBuilder, builtin::DefaultConfig};
 
 pub enum LeaderRotation {
     RoundRobin,

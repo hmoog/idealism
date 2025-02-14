@@ -1,8 +1,8 @@
 pub use crate::{
-    builtin::*, collections::*, config::*, error::*, issuer::*, milestone::*, virtual_voting::*,
-    vote::*, vote_builder::*, vote_ref::*, weight_tracker::*,
+    collections::*, config::*, error::*, issuer::*, milestone::*, virtual_voting::*, vote::*,
+    vote_builder::*, vote_ref::*, weight_tracker::*,
 };
-mod builtin {
+pub mod builtin {
     mod committee_selection;
     mod default_config;
     mod leader_rotation;
@@ -13,16 +13,6 @@ mod builtin {
     pub use leader_rotation::*;
     pub use slot_duration::*;
 }
-mod config;
-mod error;
-mod issuer;
-mod milestone;
-mod virtual_voting;
-mod vote;
-mod vote_builder;
-mod vote_ref;
-mod weight_tracker;
-
 mod collections {
     mod vote_refs;
     mod vote_refs_by_issuer;
@@ -36,14 +26,23 @@ mod collections {
     pub use votes_by_issuer::*;
     pub use votes_by_round::*;
 }
+mod config;
+mod error;
+mod issuer;
+mod milestone;
+mod virtual_voting;
+mod vote;
+mod vote_builder;
+mod vote_ref;
+mod weight_tracker;
 
 #[cfg(test)]
 mod test {
-    use crate::{DefaultConfig, Result, Vote};
+    use crate::{Result, Vote, builtin::DefaultConfig};
 
     #[test]
     fn test_consensus() -> Result<()> {
-        let genesis = Vote::from_config(DefaultConfig::new());
+        let genesis = Vote::new_genesis(DefaultConfig::new());
         let members = genesis.committee.members();
 
         println!("FIRST ROUND - VOTE FOR GENESIS");

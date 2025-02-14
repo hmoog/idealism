@@ -9,7 +9,7 @@ use crate::{Config, VoteRefs, VotesByIssuer};
 pub struct VoteRefsByIssuer<C: Config>(HashMap<Id<C::IssuerID>, VoteRefs<C>>);
 
 impl<C: Config> VoteRefsByIssuer<C> {
-    pub fn from_votes_by_issuer(vote: VotesByIssuer<C>) -> VoteRefsByIssuer<C> {
+    pub fn from_votes_by_issuer(vote: &VotesByIssuer<C>) -> VoteRefsByIssuer<C> {
         vote.into_iter()
             .map(|(k, v)| {
                 (
@@ -25,8 +25,14 @@ mod traits {
     use crate::{Config, VoteRefsByIssuer, VotesByIssuer};
 
     impl<C: Config> From<VotesByIssuer<C>> for VoteRefsByIssuer<C> {
-        fn from(vote: VotesByIssuer<C>) -> VoteRefsByIssuer<C> {
-            VoteRefsByIssuer::from_votes_by_issuer(vote)
+        fn from(src: VotesByIssuer<C>) -> VoteRefsByIssuer<C> {
+            VoteRefsByIssuer::from_votes_by_issuer(&src)
+        }
+    }
+
+    impl<C: Config> From<&VotesByIssuer<C>> for VoteRefsByIssuer<C> {
+        fn from(src: &VotesByIssuer<C>) -> VoteRefsByIssuer<C> {
+            VoteRefsByIssuer::from_votes_by_issuer(src)
         }
     }
 }

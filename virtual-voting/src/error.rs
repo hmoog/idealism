@@ -5,6 +5,8 @@ pub enum Error {
     NoAcceptedMilestoneInPastCone,
     NoConfirmedMilestoneInPastCone,
     NoCommitmentExists,
+    NoMilestone,
+    TimeMustIncrease,
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

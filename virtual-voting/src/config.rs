@@ -7,7 +7,7 @@ pub trait Config: Default {
 
     fn genesis_time(&self) -> u64;
 
-    fn slot_oracle(&self, vote: &VoteBuilder<Self>) -> u64;
+    fn slot_oracle(&self, time: u64) -> u64;
 
     fn offline_threshold(&self) -> u64;
 

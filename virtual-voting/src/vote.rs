@@ -10,10 +10,10 @@ pub struct Vote<C: Config>(Arc<VoteBuilder<C>>);
 
 impl<C: Config> Vote<C> {
     pub fn new(issuer: &Id<C::IssuerID>, time: u64, latest: Vec<&Vote<C>>) -> Result<Vote<C>> {
-        VoteBuilder::new(Votes::from_iter(latest.into_iter().cloned()))?.build(issuer, time)
+        VoteBuilder::build(issuer, time, &Votes::from_iter(latest.into_iter().cloned()))
     }
 
-    pub fn from_config(config: C) -> Self {
+    pub fn new_genesis(config: C) -> Self {
         VoteBuilder::build_genesis(config)
     }
 
@@ -21,7 +21,8 @@ impl<C: Config> Vote<C> {
         (
             self.slot_weight,
             self.round,
-            self.milestone().map_or(self.time, |m| m.leader_weight),
+            self.milestone()
+                .map_or(self.referenced_round_weight, |m| m.leader_weight),
         )
     }
 }

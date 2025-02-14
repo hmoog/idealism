@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use utils::Id;
-use zero::{Clone0, Default0, FromIterator0, IntoIterator0};
+use zero::{Clone0, Default0, Deref0, FromIterator0, IntoIterator0};
 
 use crate::{Config, Votes};
 
@@ -9,7 +9,7 @@ use crate::{Config, Votes};
 ///
 /// This structure maintains votes from different committee members, ensuring proper handling of
 /// voting rounds and vote updates.
-#[derive(Default0, IntoIterator0, FromIterator0, Clone0)]
+#[derive(Default0, Deref0, IntoIterator0, FromIterator0, Clone0)]
 pub struct VotesByIssuer<C: Config>(HashMap<Id<C::IssuerID>, Votes<C>>);
 
 impl<C: Config> VotesByIssuer<C> {

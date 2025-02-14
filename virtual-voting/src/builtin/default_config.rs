@@ -1,6 +1,9 @@
 use committee::{Committee, Member};
 
-use crate::{CommitteeSelection, Config, LeaderRotation, SlotDuration, Vote, VoteBuilder};
+use crate::{
+    Config, Vote, VoteBuilder,
+    builtin::{CommitteeSelection, LeaderRotation, SlotDuration},
+};
 
 pub struct DefaultConfig {
     genesis_time: u64,
@@ -57,8 +60,8 @@ impl Config for DefaultConfig {
         self.genesis_time
     }
 
-    fn slot_oracle(&self, vote: &VoteBuilder<Self>) -> u64 {
-        self.slot_duration.map_slot(self, vote)
+    fn slot_oracle(&self, time: u64) -> u64 {
+        self.slot_duration.map_slot(self, time)
     }
 
     fn offline_threshold(&self) -> u64 {
