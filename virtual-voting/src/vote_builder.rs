@@ -4,13 +4,13 @@ use committee::{Committee, Member};
 use utils::Id;
 
 use crate::{
-    Config, Error,
-    Error::{NoMilestone, VotesMustNotBeEmpty},
+    Config,
+    Error::{TimeMustIncrease, VotesMustNotBeEmpty},
     Issuer,
     Issuer::User,
-    Milestone, Result, VirtualVoting, Vote, VoteRefs, VoteRefsByIssuer, Votes, VotesByIssuer,
+    Milestone, Result, VirtualVoting, Vote, VoteRef, VoteRefs, VoteRefsByIssuer, Votes,
+    VotesByIssuer, VotesByRound,
 };
-use crate::Error::TimeMustIncrease;
 
 pub struct VoteBuilder<T: Config> {
     pub config: Arc<T>,
@@ -26,7 +26,7 @@ pub struct VoteBuilder<T: Config> {
 }
 
 impl<C: Config> VoteBuilder<C> {
-    pub fn build_genesis(config: C) -> Vote<C> {
+    pub(crate) fn build_genesis(config: C) -> Vote<C> {
         Vote::from(Arc::new_cyclic(|me| {
             let committee = config.select_committee(None);
 
@@ -39,10 +39,9 @@ impl<C: Config> VoteBuilder<C> {
                 slot_weight: 0,
                 round: 0,
                 referenced_round_weight: u64::MAX,
-                referenced_milestones: VoteRefsByIssuer::from_iter(
-                    committee
-                        .iter()
-                        .map(|member| (member.key().clone(), VoteRefs::from_iter([me.into()]))),
+                referenced_milestones: VoteRefsByIssuer::from_committee(
+                    &committee,
+                    &VoteRef::from(me),
                 ),
                 milestone: Some(Milestone {
                     leader_weight: u64::MAX,
@@ -54,31 +53,30 @@ impl<C: Config> VoteBuilder<C> {
         }))
     }
 
-    pub fn build(issuer: &Id<C::IssuerID>, time: u64, votes: &Votes<C>) -> Result<Vote<C>> {
+    pub(crate) fn build(issuer: &Id<C::IssuerID>, time: u64, votes: &Votes<C>) -> Result<Vote<C>> {
         let Some(heaviest_vote) = votes.heaviest_element() else {
             return Err(VotesMustNotBeEmpty);
         };
 
-        let mut builder = heaviest_vote.inherit_perception(issuer, time);
+        let mut builder = heaviest_vote.copy_perception(issuer, time);
         let (referenced_milestones, latest_vote) = builder.aggregate_knowledge(votes);
 
         if builder.time < latest_vote.time {
             return Err(TimeMustIncrease);
-        }
-        if builder.slot > latest_vote.slot {
+        } else if builder.slot > latest_vote.slot {
             builder.flag_offline_validators(&referenced_milestones)?;
         }
 
         // TODO: UPDATE COMMITTEE
 
         if let Some(validator) = builder.committee.member(issuer).cloned() {
-            return builder.build_validator_vote(&validator, referenced_milestones);
+            return builder.build_validator_perception(&validator, referenced_milestones);
         }
 
         Ok(Vote::from(Arc::new(builder)))
     }
 
-    fn inherit_perception(&self, issuer: &Id<C::IssuerID>, time: u64) -> VoteBuilder<C> {
+    fn copy_perception(&self, issuer: &Id<C::IssuerID>, time: u64) -> VoteBuilder<C> {
         VoteBuilder {
             issuer: User(issuer.clone()),
             time,
@@ -97,18 +95,16 @@ impl<C: Config> VoteBuilder<C> {
         let mut referenced_milestones = VotesByIssuer::default();
         let mut latest_vote = (0, None);
 
-        let mut seen_issuers = HashSet::new();
+        let mut seen_voters = HashSet::new();
         for vote in votes {
             latest_vote = max(latest_vote, (vote.time, Some(vote)));
-            self.time = max(self.time, vote.time);
 
             for (issuer, milestone_refs) in &vote.referenced_milestones {
                 if let Some(committee_member) = self.committee.member(issuer) {
                     let mut milestones = Votes::default();
                     for milestone_ref in milestone_refs {
                         if let Ok(milestone) = Vote::try_from(milestone_ref) {
-                            if milestone.round == self.round && seen_issuers.insert(issuer.clone())
-                            {
+                            if milestone.round == self.round && seen_voters.insert(issuer.clone()) {
                                 self.referenced_round_weight += committee_member.weight();
                             }
                             milestones.insert(milestone);
@@ -126,83 +122,6 @@ impl<C: Config> VoteBuilder<C> {
             referenced_milestones,
             latest_vote.1.expect("must exist").clone(),
         )
-    }
-
-    fn build_validator_vote(
-        mut self,
-        validator: &Member<C::IssuerID>,
-        referenced_milestones: VotesByIssuer<C>,
-    ) -> Result<Vote<C>> {
-        // set ourselves online before voting to also consider our weight
-        self.committee = self.committee.set_online(validator.key(), true);
-
-        // determine consensus threshold (switch between confirmation and acceptance)
-        let (threshold, does_confirm) = self.consensus_threshold();
-
-        // check if we should vote
-        if self.should_vote(validator.key(), threshold, &referenced_milestones) {
-            // run virtual voting algorithm
-            let (accepted, prev) = VirtualVoting::run(&self, threshold)?;
-
-            // update consensus weights
-            if accepted.slot > Vote::try_from(&accepted.milestone()?.prev)?.slot {
-                self.slot_weight += prev.committee.online_weight();
-            }
-            if self.referenced_round_weight + validator.weight() >= threshold {
-                self.round += 1;
-            }
-
-            self.milestone = Some(Milestone {
-                leader_weight: self.config.leader_weight(&self),
-                prev: (&prev).into(),
-                accepted: (&accepted).into(),
-                confirmed: match does_confirm {
-                    true => (&accepted).into(),
-                    false => prev
-                        .milestone
-                        .as_ref()
-                        .ok_or(NoMilestone)?
-                        .confirmed
-                        .clone(),
-                },
-            });
-
-            // build vote and update votes_by_issuer map
-            return Ok(Vote::from(Arc::new_cyclic(|me| {
-                self.referenced_milestones
-                    .insert(validator.key().clone(), VoteRefs::from_iter([me.into()]));
-                self
-            })));
-        }
-
-        Ok(Vote::from(Arc::new(self)))
-    }
-
-    pub fn milestone(&self) -> Result<&Milestone<C>> {
-        self.milestone.as_ref().ok_or(Error::NoMilestone)
-    }
-
-    fn consensus_threshold(&self) -> (u64, bool) {
-        if self.committee.online_weight() >= self.committee.confirmation_threshold() {
-            (self.committee.confirmation_threshold(), true)
-        } else {
-            (self.committee.acceptance_threshold(), false)
-        }
-    }
-
-    fn should_vote(
-        &self,
-        issuer: &Id<C::IssuerID>,
-        consensus_threshold: u64,
-        referenced_milestones: &VotesByIssuer<C>,
-    ) -> bool {
-        referenced_milestones
-            .get(issuer)
-            .and_then(|m| m.heaviest_element())
-            .map_or(true, |issuer_vote| {
-                issuer_vote.round != self.round
-                    || self.referenced_round_weight >= consensus_threshold
-            })
     }
 
     fn flag_offline_validators(&mut self, referenced_milestones: &VotesByIssuer<C>) -> Result<()> {
@@ -247,5 +166,79 @@ impl<C: Config> VoteBuilder<C> {
         };
 
         Ok(is_offline)
+    }
+
+    fn build_validator_perception(
+        mut self,
+        validator: &Member<C::IssuerID>,
+        votes: VotesByIssuer<C>,
+    ) -> Result<Vote<C>> {
+        // set ourselves online before voting to also consider our own weight
+        self.committee = self.committee.set_online(validator.key(), true);
+
+        // determine consensus threshold (switch between confirmation and acceptance)
+        let (threshold, does_confirm) = self.consensus_threshold();
+
+        // check if we should commit (haven't voted yet for this round or have enough weight)
+        if self.should_commit(validator.key(), threshold, &votes) {
+            // determine the heaviest tip and the accepted milestone
+            let (accepted, heaviest_tip) = VirtualVoting::run(votes, &self.committee, threshold)?;
+
+            // update the round and referenced round weight if we have enough weight
+            if self.referenced_round_weight + validator.weight() >= threshold {
+                self.round += 1;
+                self.referenced_round_weight = validator.weight();
+            }
+
+            // update the milestone
+            self.milestone = Some(Milestone {
+                leader_weight: self.config.leader_weight(&self),
+                prev: (&heaviest_tip).into(),
+                accepted: (&accepted).into(),
+                confirmed: match does_confirm {
+                    true => (&accepted).into(),
+                    false => heaviest_tip.confirmed_milestone()?.clone(),
+                },
+            });
+
+            // finally update the slot weight
+            let prev_accepted = Vote::try_from(heaviest_tip.accepted_milestone()?)?;
+            self.update_slot_weight(accepted, prev_accepted)?;
+
+            // build milestone vote and insert it into the referenced milestones
+            return Ok(Vote::from(Arc::new_cyclic(|me| {
+                self.referenced_milestones
+                    .insert(validator.key().clone(), VoteRefs::from_iter([me.into()]));
+                self
+            })));
+        }
+
+        Ok(Vote::from(Arc::new(self)))
+    }
+
+    fn consensus_threshold(&self) -> (u64, bool) {
+        if self.committee.online_weight() >= self.committee.confirmation_threshold() {
+            (self.committee.confirmation_threshold(), true)
+        } else {
+            (self.committee.acceptance_threshold(), false)
+        }
+    }
+
+    fn should_commit(&self, id: &Id<C::IssuerID>, threshold: u64, votes: &VotesByIssuer<C>) -> bool {
+        votes
+            .get(id)
+            .and_then(|m| m.heaviest_element())
+            .map_or(true, |v| {
+                v.round != self.round || self.referenced_round_weight >= threshold
+            })
+    }
+
+    fn update_slot_weight(&mut self, mut accepted: Vote<C>, prev_accepted: Vote<C>) -> Result<()> {
+        while accepted.slot != prev_accepted.slot {
+            accepted = accepted.find_slot_boundary()?;
+
+            self.slot_weight += accepted.committee.online_weight();
+        }
+        Ok(())
     }
 }

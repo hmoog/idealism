@@ -1,8 +1,8 @@
 use std::{cmp::max, collections::HashMap};
 
-use crate::{
-    Config, Error, Result, Vote, VoteBuilder, Votes, VotesByIssuer, VotesByRound, WeightTracker,
-};
+use committee::Committee;
+
+use crate::{Config, Error, Result, Vote, Votes, VotesByIssuer, VotesByRound, WeightTracker};
 
 pub struct VirtualVoting<C: Config> {
     children: HashMap<Vote<C>, Votes<C>>,
@@ -11,23 +11,24 @@ pub struct VirtualVoting<C: Config> {
 }
 
 impl<C: Config> VirtualVoting<C> {
-    pub fn run(vote: &VoteBuilder<C>, consensus_threshold: u64) -> Result<(Vote<C>, Vote<C>)> {
-        let votes_by_round =
-            VotesByRound::from(VotesByIssuer::try_from(&vote.referenced_milestones)?);
-
+    pub fn run(
+        votes: VotesByIssuer<C>,
+        committee: &Committee<C::IssuerID>,
+        threshold: u64,
+    ) -> Result<(Vote<C>, Vote<C>)> {
         let mut virtual_voting = Self {
             children: HashMap::new(),
-            weight_tracker: WeightTracker::new(vote.committee.clone()),
-            consensus_threshold,
+            weight_tracker: WeightTracker::new(committee.clone()),
+            consensus_threshold: threshold,
         };
 
-        let milestone = virtual_voting.milestone(votes_by_round)?;
-        let heaviest_tip = virtual_voting.heaviest_tip(&milestone);
+        let accepted = virtual_voting.accepted(VotesByRound::from(votes))?;
+        let heaviest_tip = virtual_voting.heaviest_tip(&accepted);
 
-        Ok((milestone, heaviest_tip))
+        Ok((accepted, heaviest_tip))
     }
 
-    fn milestone(&mut self, mut rounds: VotesByRound<C>) -> Result<Vote<C>> {
+    fn accepted(&mut self, mut rounds: VotesByRound<C>) -> Result<Vote<C>> {
         for round in (0..=rounds.max_round()).rev() {
             let mut next_votes = VotesByIssuer::default();
             let mut heaviest = (0, None);

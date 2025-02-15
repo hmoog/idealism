@@ -3,7 +3,7 @@ use std::sync::Arc;
 use utils::Id;
 use zero::{Clone0, Deref0};
 
-use crate::{Config, Result, VoteBuilder, Votes};
+use crate::{Config, Error::NoMilestone, Milestone, Result, VoteBuilder, VoteRef, Votes};
 
 #[derive(Clone0, Deref0)]
 pub struct Vote<C: Config>(Arc<VoteBuilder<C>>);
@@ -15,6 +15,30 @@ impl<C: Config> Vote<C> {
 
     pub fn new_genesis(config: C) -> Self {
         VoteBuilder::build_genesis(config)
+    }
+
+    pub fn prev_milestone(&self) -> Result<&VoteRef<C>> {
+        Ok(&self.milestone()?.prev)
+    }
+
+    pub fn accepted_milestone(&self) -> Result<&VoteRef<C>> {
+        Ok(&self.milestone()?.accepted)
+    }
+
+    pub fn confirmed_milestone(&self) -> Result<&VoteRef<C>> {
+        Ok(&self.milestone()?.confirmed)
+    }
+
+    pub fn milestone(&self) -> Result<&Milestone<C>> {
+        self.milestone.as_ref().ok_or(NoMilestone)
+    }
+
+    pub fn find_slot_boundary(&self) -> Result<Vote<C>> {
+        let mut vote = Vote::try_from(self.prev_milestone()?)?;
+        while vote.slot == self.slot {
+            vote = Vote::try_from(vote.prev_milestone()?)?;
+        }
+        Ok(vote)
     }
 
     pub fn weight(&self) -> (u64, u64, u64) {
