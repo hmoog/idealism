@@ -29,21 +29,29 @@ impl<C: Config> Vote<C> {
         Ok(&self.milestone()?.confirmed)
     }
 
+    pub fn slot_boundary(&self) -> Result<&VoteRef<C>> {
+        Ok(&self.milestone()?.slot_boundary)
+    }
+
+    pub fn slot_weight_since(&self, since: u64) -> Result<u64> {
+        let mut weight = 0;
+        let mut current = self.clone();
+
+        while current.slot > since {
+            current = Vote::try_from(current.slot_boundary()?)?;
+            weight += current.committee.online_weight();
+        }
+
+        Ok(weight)
+    }
+
     pub fn milestone(&self) -> Result<&Milestone<C>> {
         self.milestone.as_ref().ok_or(NoMilestone)
     }
 
-    pub fn find_slot_boundary(&self) -> Result<Vote<C>> {
-        let mut vote = Vote::try_from(self.prev_milestone()?)?;
-        while vote.slot == self.slot {
-            vote = Vote::try_from(vote.prev_milestone()?)?;
-        }
-        Ok(vote)
-    }
-
     pub fn weight(&self) -> (u64, u64, u64) {
         (
-            self.slot_weight,
+            self.cumulative_slot_weight,
             self.round,
             self.milestone()
                 .map_or(self.referenced_round_weight, |m| m.leader_weight),

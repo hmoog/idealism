@@ -15,14 +15,6 @@ impl<T: MemberID> Committee<T> {
         self.0.online_weight
     }
 
-    pub fn acceptance_threshold(&self) -> u64 {
-        self.online_weight() - self.online_weight() / 3
-    }
-
-    pub fn confirmation_threshold(&self) -> u64 {
-        self.total_weight() - self.total_weight() / 3
-    }
-
     pub fn member(&self, member_id: &Id<T>) -> Option<&Member<T>> {
         self.0.members_by_id.get(member_id).map(|member| &**member)
     }
