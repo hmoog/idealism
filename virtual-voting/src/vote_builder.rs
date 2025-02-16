@@ -7,7 +7,6 @@ use crate::{
     Config,
     Error::{TimeMustIncrease, VotesMustNotBeEmpty},
     Issuer,
-    Issuer::User,
     Milestone, Result, VirtualVoting, Vote, VoteRef, VoteRefs, VoteRefsByIssuer, Votes,
     VotesByIssuer,
 };
@@ -27,12 +26,14 @@ pub struct VoteBuilder<T: Config> {
 
 impl<C: Config> VoteBuilder<C> {
     pub(crate) fn build(issuer: &Id<C::IssuerID>, time: u64, votes: &Votes<C>) -> Result<Vote<C>> {
+        // determine heaviest vote
         let Some(heaviest_vote) = votes.heaviest_element() else {
             return Err(VotesMustNotBeEmpty);
         };
 
+        // copy perception of heaviest vote
         let mut builder = VoteBuilder {
-            issuer: User(issuer.clone()),
+            issuer: Issuer::User(issuer.clone()),
             time,
             slot: heaviest_vote.slot,
             committee: heaviest_vote.committee.clone(),
@@ -44,24 +45,29 @@ impl<C: Config> VoteBuilder<C> {
             milestone: None,
         };
 
+        // aggregate information from remaining votes
         let (referenced_milestones, latest_vote) = builder.aggregate_votes(votes);
 
+        // check if time is monotonically increasing
         if builder.time < latest_vote.time {
             return Err(TimeMustIncrease);
         }
 
+        // update validator availability on slot transition
         if builder.slot > latest_vote.slot {
             for member in builder.offline_validators(&referenced_milestones) {
                 builder.committee = builder.committee.set_online(&member, false);
             }
         }
 
-        // TODO: UPDATE COMMITTEE
+        // TODO: ROTATE COMMITTEE
 
+        // build validator perception if issuer is part of the committee
         if let Some(validator) = builder.committee.member(issuer).cloned() {
             return builder.build_validator_perception(&validator, referenced_milestones);
         }
 
+        // wrap final state in a Vote and return
         Ok(Vote::from(Arc::new(builder)))
     }
 
@@ -148,7 +154,7 @@ impl<C: Config> VoteBuilder<C> {
             })));
         }
 
-        // return self as a vote
+        // wrap final state in a Vote and return
         Ok(Vote::from(Arc::new(self)))
     }
 
