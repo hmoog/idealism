@@ -38,7 +38,7 @@ mod weight_tracker;
 
 #[cfg(test)]
 mod test {
-    use crate::{Result, Vote, builtin::DefaultConfig};
+    use crate::{Result, Vote, Votes, builtin::DefaultConfig};
 
     #[test]
     fn test_consensus() -> Result<()> {
@@ -47,10 +47,10 @@ mod test {
 
         println!("FIRST ROUND - VOTE FOR GENESIS");
 
-        let vote1_1 = Vote::new(members[0].key(), 1, vec![&genesis])?;
-        let vote2_1 = Vote::new(members[1].key(), 1, vec![&genesis])?;
-        let vote3_1 = Vote::new(members[2].key(), 1, vec![&genesis])?;
-        let vote4_1 = Vote::new(members[3].key(), 1, vec![&genesis])?;
+        let vote1_1 = Vote::new(members[0].key(), 1, Votes::from_iter(vec![genesis.clone()]))?;
+        let vote2_1 = Vote::new(members[1].key(), 1, Votes::from_iter(vec![genesis.clone()]))?;
+        let vote3_1 = Vote::new(members[2].key(), 1, Votes::from_iter(vec![genesis.clone()]))?;
+        let vote4_1 = Vote::new(members[3].key(), 1, Votes::from_iter(vec![genesis.clone()]))?;
         assert!(vote1_1.milestone()?.prev.points_to(&genesis));
         assert!(vote2_1.milestone()?.prev.points_to(&genesis));
         assert!(vote3_1.milestone()?.prev.points_to(&genesis));
@@ -62,12 +62,31 @@ mod test {
 
         println!("SECOND ROUND");
 
-        let vote1_2 = Vote::new(members[0].key(), 2, vec![&vote1_1, &vote2_1, &vote3_1])?;
-        let vote2_2 = Vote::new(members[1].key(), 2, vec![&vote1_1, &vote2_1, &vote3_1])?;
-        let vote3_2 = Vote::new(members[2].key(), 2, vec![&vote1_1, &vote2_1, &vote3_1])?;
-        let vote4_2 = Vote::new(members[3].key(), 2, vec![
-            &vote1_1, &vote2_1, &vote3_1, &vote4_1,
-        ])?;
+        let vote1_2 = Vote::new(
+            members[0].key(),
+            2,
+            Votes::from_iter(vec![vote1_1.clone(), vote2_1.clone(), vote3_1.clone()]),
+        )?;
+        let vote2_2 = Vote::new(
+            members[1].key(),
+            2,
+            Votes::from_iter(vec![vote1_1.clone(), vote2_1.clone(), vote3_1.clone()]),
+        )?;
+        let vote3_2 = Vote::new(
+            members[2].key(),
+            2,
+            Votes::from_iter(vec![vote1_1.clone(), vote2_1.clone(), vote3_1.clone()]),
+        )?;
+        let vote4_2 = Vote::new(
+            members[3].key(),
+            2,
+            Votes::from_iter(vec![
+                vote1_1.clone(),
+                vote2_1.clone(),
+                vote3_1.clone(),
+                vote4_1.clone(),
+            ]),
+        )?;
         assert!(vote1_2.milestone()?.prev.points_to(&vote3_1));
         assert!(vote2_2.milestone()?.prev.points_to(&vote3_1));
         // assert!(vote3_2.last_accepted_milestone_view.commitment()?.heaviest_tip.points_to(&
@@ -79,24 +98,57 @@ mod test {
 
         println!("THIRD ROUND");
 
-        let vote1_3 = Vote::new(members[0].key(), 3, vec![
-            &vote1_2, &vote2_2, &vote3_2, &vote4_2,
-        ])?;
-        let vote2_3 = Vote::new(members[1].key(), 3, vec![
-            &vote1_2, &vote2_2, &vote3_2, &vote4_2,
-        ])?;
-        let vote3_3 = Vote::new(members[2].key(), 3, vec![
-            &vote1_2, &vote2_2, &vote3_2, &vote4_2,
-        ])?;
+        let vote1_3 = Vote::new(
+            members[0].key(),
+            3,
+            Votes::from_iter(vec![
+                vote1_2.clone(),
+                vote2_2.clone(),
+                vote3_2.clone(),
+                vote4_2.clone(),
+            ]),
+        )?;
+        let vote2_3 = Vote::new(
+            members[1].key(),
+            3,
+            Votes::from_iter(vec![
+                vote1_2.clone(),
+                vote2_2.clone(),
+                vote3_2.clone(),
+                vote4_2.clone(),
+            ]),
+        )?;
+        let vote3_3 = Vote::new(
+            members[2].key(),
+            3,
+            Votes::from_iter(vec![
+                vote1_2.clone(),
+                vote2_2.clone(),
+                vote3_2.clone(),
+                vote4_2.clone(),
+            ]),
+        )?;
         println!("{:?}: {:?}", vote1_3, vote1_3.milestone()?.accepted,);
         println!("{:?}: {:?}", vote2_3, vote2_3.milestone()?.accepted,);
         println!("{:?}: {:?}", vote3_3, vote3_3.milestone()?.accepted,);
 
         println!("FOURTH ROUND");
 
-        let member1_vote_4 = Vote::new(members[0].key(), 4, vec![&vote1_3, &vote2_3, &vote3_3])?;
-        let member2_vote_4 = Vote::new(members[0].key(), 4, vec![&vote1_3, &vote2_3, &vote3_3])?;
-        let member3_vote_4 = Vote::new(members[0].key(), 4, vec![&vote1_3, &vote2_3, &vote3_3])?;
+        let member1_vote_4 = Vote::new(
+            members[0].key(),
+            4,
+            Votes::from_iter(vec![vote1_3.clone(), vote2_3.clone(), vote3_3.clone()]),
+        )?;
+        let member2_vote_4 = Vote::new(
+            members[0].key(),
+            4,
+            Votes::from_iter(vec![vote1_3.clone(), vote2_3.clone(), vote3_3.clone()]),
+        )?;
+        let member3_vote_4 = Vote::new(
+            members[0].key(),
+            4,
+            Votes::from_iter(vec![vote1_3.clone(), vote2_3.clone(), vote3_3.clone()]),
+        )?;
         println!(
             "member1_vote_4 (round {:?}): {:?}",
             member1_vote_4.round,

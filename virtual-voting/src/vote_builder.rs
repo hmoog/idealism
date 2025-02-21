@@ -6,8 +6,7 @@ use utils::Id;
 use crate::{
     Config,
     Error::{TimeMustIncrease, VotesMustNotBeEmpty},
-    Issuer,
-    Milestone, Result, VirtualVoting, Vote, VoteRef, VoteRefs, VoteRefsByIssuer, Votes,
+    Issuer, Milestone, Result, VirtualVoting, Vote, VoteRef, VoteRefs, VoteRefsByIssuer, Votes,
     VotesByIssuer,
 };
 
@@ -89,6 +88,7 @@ impl<C: Config> VoteBuilder<C> {
                     &VoteRef::from(me),
                 ),
                 milestone: Some(Milestone {
+                    height: 0,
                     leader_weight: u64::MAX,
                     accepted: me.into(),
                     confirmed: me.into(),
@@ -125,6 +125,7 @@ impl<C: Config> VoteBuilder<C> {
 
             // build milestone
             self.milestone = Some(Milestone {
+                height: heaviest_tip.milestone()?.height + 1,
                 leader_weight: self.config.leader_weight(&self),
                 prev: (&heaviest_tip).into(),
                 accepted: (&accepted).into(),

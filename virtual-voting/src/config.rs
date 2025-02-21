@@ -2,7 +2,7 @@ use committee::{Committee, MemberID};
 
 use crate::{Vote, VoteBuilder};
 
-pub trait Config: Default {
+pub trait Config: Default + Sync + Send + 'static {
     type IssuerID: MemberID;
 
     fn genesis_time(&self) -> u64;

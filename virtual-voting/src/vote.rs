@@ -9,12 +9,16 @@ use crate::{Config, Error::NoMilestone, Milestone, Result, VoteBuilder, VoteRef,
 pub struct Vote<C: Config>(Arc<VoteBuilder<C>>);
 
 impl<C: Config> Vote<C> {
-    pub fn new(issuer: &Id<C::IssuerID>, time: u64, latest: Vec<&Vote<C>>) -> Result<Vote<C>> {
-        VoteBuilder::build(issuer, time, &Votes::from_iter(latest.into_iter().cloned()))
+    pub fn new(issuer: &Id<C::IssuerID>, time: u64, latest: Votes<C>) -> Result<Vote<C>> {
+        VoteBuilder::build(issuer, time, &latest)
     }
 
     pub fn new_genesis(config: C) -> Self {
         VoteBuilder::build_genesis(config)
+    }
+    
+    pub fn height(&self) -> Result<u64> {
+        Ok(self.milestone()?.height)
     }
 
     pub fn prev_milestone(&self) -> Result<&VoteRef<C>> {
