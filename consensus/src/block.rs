@@ -1,6 +1,6 @@
+use types::BlockID;
 use utils::Id;
 use virtual_voting::Config;
-use crate::block_id::BlockID;
 
 pub enum Block<C: Config> {
     GenesisBlock(genesis_block::Details<C>),
@@ -17,8 +17,8 @@ impl<C: Config> Block<C> {
 }
 
 pub mod genesis_block {
+    use types::BlockID;
     use virtual_voting::Config;
-    use crate::block_id::BlockID;
     use crate::issuer_id::IssuerID;
 
     pub struct Details<C: Config> {
@@ -28,8 +28,8 @@ pub mod genesis_block {
 }
 
 pub mod network_block {
+    use types::BlockID;
     use virtual_voting::Config;
-    use crate::block_id::BlockID;
     use crate::issuer_id::IssuerID;
 
     pub struct Details<C: Config> {

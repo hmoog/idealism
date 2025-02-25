@@ -1,6 +1,7 @@
 use std::{cmp::max, collections::HashSet, sync::Arc};
 
 use committee::{Committee, Member};
+use types::BlockID;
 use utils::Id;
 
 use crate::{
@@ -11,6 +12,7 @@ use crate::{
 };
 
 pub struct VoteBuilder<T: Config> {
+    pub block_id: BlockID,
     pub config: Arc<T>,
     pub issuer: Issuer<T::IssuerID>,
     pub time: u64,
@@ -24,7 +26,7 @@ pub struct VoteBuilder<T: Config> {
 }
 
 impl<C: Config> VoteBuilder<C> {
-    pub(crate) fn build(issuer: &Id<C::IssuerID>, time: u64, votes: &Votes<C>) -> Result<Vote<C>> {
+    pub(crate) fn build(block_id: BlockID, issuer: &Id<C::IssuerID>, time: u64, votes: &Votes<C>) -> Result<Vote<C>> {
         // determine heaviest vote
         let Some(heaviest_vote) = votes.heaviest_element() else {
             return Err(VotesMustNotBeEmpty);
@@ -32,6 +34,7 @@ impl<C: Config> VoteBuilder<C> {
 
         // copy perception of heaviest vote
         let mut builder = VoteBuilder {
+            block_id,
             issuer: Issuer::User(issuer.clone()),
             time,
             slot: heaviest_vote.slot,
@@ -75,6 +78,7 @@ impl<C: Config> VoteBuilder<C> {
             let committee = config.select_committee(None);
 
             Self {
+                block_id: BlockID::default(),
                 issuer: Issuer::Genesis,
                 time: config.genesis_time(),
                 slot: 0,

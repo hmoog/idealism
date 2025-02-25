@@ -1,5 +1,4 @@
 mod block;
-mod block_id;
 mod error;
 mod issuer_id;
 mod protocol;

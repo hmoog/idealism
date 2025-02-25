@@ -1,13 +1,13 @@
 use std::{collections::HashMap, sync::Mutex};
 
 use blockdag::BlockDAG;
+use types::BlockID;
 use utils::rx;
 use utils::rx::Event;
 use virtual_voting::{Config, Vote, Votes};
 
 use crate::{
     block::Block,
-    block_id::BlockID,
     error::{Error::VoteNotFound, Result},
 };
 use crate::error::Error;

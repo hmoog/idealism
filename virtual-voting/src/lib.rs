@@ -38,19 +38,43 @@ mod weight_tracker;
 
 #[cfg(test)]
 mod test {
+    use types::{BlockID, Hashable, Hasher};
     use crate::{Result, Vote, Votes, builtin::DefaultConfig};
+
+    pub struct Block(u64);
+
+    impl Hashable for Block {
+        fn hash<H: Hasher>(&self, hasher: &mut H) {
+            hasher.update(&self.0.to_be_bytes());
+        }
+    }
+    
+    pub struct BlockIDGenerator(u64);
+    
+    impl BlockIDGenerator {
+        pub fn new() -> Self {
+            Self(0)
+        }
+        
+        pub fn next(&mut self) -> BlockID {
+            self.0 += 1;
+            Block(self.0).into()
+        }
+    }
 
     #[test]
     fn test_consensus() -> Result<()> {
+        let mut block_id = BlockIDGenerator::new();
+        
         let genesis = Vote::new_genesis(DefaultConfig::new());
         let members = genesis.committee.members();
 
         println!("FIRST ROUND - VOTE FOR GENESIS");
 
-        let vote1_1 = Vote::new(members[0].key(), 1, Votes::from_iter(vec![genesis.clone()]))?;
-        let vote2_1 = Vote::new(members[1].key(), 1, Votes::from_iter(vec![genesis.clone()]))?;
-        let vote3_1 = Vote::new(members[2].key(), 1, Votes::from_iter(vec![genesis.clone()]))?;
-        let vote4_1 = Vote::new(members[3].key(), 1, Votes::from_iter(vec![genesis.clone()]))?;
+        let vote1_1 = Vote::new(block_id.next(), members[0].key(), 1, Votes::from_iter(vec![genesis.clone()]))?;
+        let vote2_1 = Vote::new(block_id.next(), members[1].key(), 1, Votes::from_iter(vec![genesis.clone()]))?;
+        let vote3_1 = Vote::new(block_id.next(), members[2].key(), 1, Votes::from_iter(vec![genesis.clone()]))?;
+        let vote4_1 = Vote::new(block_id.next(), members[3].key(), 1, Votes::from_iter(vec![genesis.clone()]))?;
         assert!(vote1_1.milestone()?.prev.points_to(&genesis));
         assert!(vote2_1.milestone()?.prev.points_to(&genesis));
         assert!(vote3_1.milestone()?.prev.points_to(&genesis));
@@ -63,21 +87,25 @@ mod test {
         println!("SECOND ROUND");
 
         let vote1_2 = Vote::new(
+            block_id.next(),
             members[0].key(),
             2,
             Votes::from_iter(vec![vote1_1.clone(), vote2_1.clone(), vote3_1.clone()]),
         )?;
         let vote2_2 = Vote::new(
+            block_id.next(),
             members[1].key(),
             2,
             Votes::from_iter(vec![vote1_1.clone(), vote2_1.clone(), vote3_1.clone()]),
         )?;
         let vote3_2 = Vote::new(
+            block_id.next(),
             members[2].key(),
             2,
             Votes::from_iter(vec![vote1_1.clone(), vote2_1.clone(), vote3_1.clone()]),
         )?;
         let vote4_2 = Vote::new(
+            block_id.next(),
             members[3].key(),
             2,
             Votes::from_iter(vec![
@@ -99,6 +127,7 @@ mod test {
         println!("THIRD ROUND");
 
         let vote1_3 = Vote::new(
+            block_id.next(),
             members[0].key(),
             3,
             Votes::from_iter(vec![
@@ -109,6 +138,7 @@ mod test {
             ]),
         )?;
         let vote2_3 = Vote::new(
+            block_id.next(),
             members[1].key(),
             3,
             Votes::from_iter(vec![
@@ -119,6 +149,7 @@ mod test {
             ]),
         )?;
         let vote3_3 = Vote::new(
+            block_id.next(),
             members[2].key(),
             3,
             Votes::from_iter(vec![
@@ -135,16 +166,19 @@ mod test {
         println!("FOURTH ROUND");
 
         let member1_vote_4 = Vote::new(
+            block_id.next(),
             members[0].key(),
             4,
             Votes::from_iter(vec![vote1_3.clone(), vote2_3.clone(), vote3_3.clone()]),
         )?;
         let member2_vote_4 = Vote::new(
+            block_id.next(),
             members[0].key(),
             4,
             Votes::from_iter(vec![vote1_3.clone(), vote2_3.clone(), vote3_3.clone()]),
         )?;
         let member3_vote_4 = Vote::new(
+            block_id.next(),
             members[0].key(),
             4,
             Votes::from_iter(vec![vote1_3.clone(), vote2_3.clone(), vote3_3.clone()]),

@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use blockdag::Block as _;
+use types::BlockID;
 use utils::Id;
 use virtual_voting::{Config, Milestone, Vote};
 use zero::{Clone0, Deref0};
@@ -33,13 +34,13 @@ impl<C: Config> Protocol<C> {
 
         self.blocks
             .queue(Block::GenesisBlock(genesis_block::Details {
-                id: Id::new([u8::MAX; 32]),
+                id: BlockID::default(),
                 issuer_id: Id::new(<C::IssuerID>::default()),
             }));
     }
 
     fn process_block(&self, block: &Block<C>) -> Result<()> {
-        let vote = Vote::new(block.issuer_id(), 0, self.votes(block.parents())?)?;
+        let vote = Vote::new(block.id().clone(), block.issuer_id(), 0, self.votes(block.parents())?)?;
         
         self.process_vote(block, vote)
     }
@@ -76,6 +77,10 @@ impl<C: Config> Protocol<C> {
         let accepted_milestones = self.milestone_range(new, new.height()? - old.height()?)?;
         if accepted_milestones.last().expect("range must not be empty") != old {
             println!("Reorg detected");
+        }
+        
+        for accepted_milestone in accepted_milestones.iter().rev() {
+            &accepted_milestone.block_id;
         }
         
         // TODO: TRIGGER CONFIRMED BLOCKS IN ORDER
