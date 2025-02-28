@@ -1,11 +1,6 @@
-use std::fmt::Debug;
-use std::hash;
-use std::hash::Hash;
-use std::marker::PhantomData;
-use std::ops::Deref;
-use std::sync::Arc;
-use crate::hashable::Hashable;
-use crate::hasher::Hasher;
+use std::{fmt::Debug, hash, hash::Hash, marker::PhantomData, ops::Deref, sync::Arc};
+
+use crate::{hashable::Hashable, hasher::Hasher};
 
 pub struct Id<H: Hasher>(Arc<[u8; 32]>, PhantomData<H>);
 

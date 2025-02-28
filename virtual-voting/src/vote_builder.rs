@@ -26,7 +26,12 @@ pub struct VoteBuilder<T: Config> {
 }
 
 impl<C: Config> VoteBuilder<C> {
-    pub(crate) fn build(block_id: BlockID, issuer: &Id<C::IssuerID>, time: u64, votes: &Votes<C>) -> Result<Vote<C>> {
+    pub(crate) fn build(
+        block_id: BlockID,
+        issuer: &Id<C::IssuerID>,
+        time: u64,
+        votes: &Votes<C>,
+    ) -> Result<Vote<C>> {
         // determine heaviest vote
         let Some(heaviest_vote) = votes.heaviest_element() else {
             return Err(VotesMustNotBeEmpty);

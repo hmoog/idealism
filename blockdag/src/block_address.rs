@@ -20,6 +20,10 @@ impl<Block: block::Block> BlockAddress<Block> {
         }
     }
 
+    pub fn data(&self) -> &Signal<BlockMetadata<Block>> {
+        &self.data
+    }
+
     /// Publishes a block.
     pub fn publish(&self, block: Block) -> BlockMetadata<Block> {
         self.data

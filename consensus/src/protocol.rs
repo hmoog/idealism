@@ -1,15 +1,16 @@
 use std::sync::Arc;
 
-use blockdag::Block as _;
-use types::BlockID;
-use utils::Id;
-use virtual_voting::{Config, Milestone, Vote};
+use blockdag::{Accepted, Block as _, BlockMetadata};
+use indexmap::IndexSet;
+use utils::rx::ResourceGuard;
+use virtual_voting::{Config, Vote};
 use zero::{Clone0, Deref0};
 
 use crate::{
-    error::Result,
-    block::{Block, genesis_block},
+    error::{Error, Result},
+    events::BlocksOrderedEvent,
     protocol_data::ProtocolData,
+    types::Block,
 };
 
 #[derive(Deref0, Clone0)]
@@ -21,70 +22,95 @@ impl<C: Config> Protocol<C> {
     }
 
     pub fn run(&mut self) {
-        self.blocks
-            .on_ready({
-                let this = self.clone();
-                move |b| {
-                    let _ = this.process_block(b.block()).inspect_err(|err| {
-                        this.error_event.trigger(err);
-                    });
-                }
-            })
-            .forever();
+        let this = self.clone();
 
-        self.blocks
-            .queue(Block::GenesisBlock(genesis_block::Details {
-                id: BlockID::default(),
-                issuer_id: Id::new(<C::IssuerID>::default()),
-            }));
+        let process_block = move |b: &ResourceGuard<BlockMetadata<Block<C>>>| {
+            let _ = this.process_block(b.block()).inspect_err(|err| this.error_event.trigger(err));
+        };
+
+        self.blocks.on_ready(process_block).forever();
     }
 
     fn process_block(&self, block: &Block<C>) -> Result<()> {
-        let vote = Vote::new(block.id().clone(), block.issuer_id(), 0, self.votes(block.parents())?)?;
-        
+        let vote = Vote::new(
+            block.id().clone(),
+            block.issuer_id(),
+            0,
+            self.votes(block.parents())?,
+        )?;
+
         self.process_vote(block, vote)
     }
 
     fn process_vote(&self, block: &Block<C>, vote: Vote<C>) -> Result<()> {
         if let Some(milestone) = &vote.milestone {
-            self.process_milestone(milestone)?;
+            self.process_milestone(Vote::try_from(&milestone.accepted)?)?;
         }
 
         self.votes.lock().unwrap().insert(block.id().clone(), vote);
-        
+
         Ok(())
     }
 
-    fn process_milestone(&self, milestone: &Milestone<C>) -> Result<()> {
-        let new_milestone = Vote::try_from(&milestone.accepted)?;
-
+    fn process_milestone(&self, new: Vote<C>) -> Result<()> {
         let mut guard = self.latest_accepted_milestone.get();
         *guard = Some('update: {
-            if let Some(current_milestone) = guard.take() {
-                if current_milestone >= new_milestone {
-                    break 'update current_milestone;
+            if let Some(current) = guard.take() {
+                if current >= new {
+                    break 'update current;
                 }
 
-                self.advance_acceptance(&current_milestone, &new_milestone)?;
+                let current_height = current.height()?;
+                let new_height = new.height()?;
+
+                match new_height.checked_sub(current_height) {
+                    None | Some(0) => self.process_reorg(),
+                    Some(accepted_height) => {
+                        let accepted_milestones = self.milestone_range(&new, accepted_height)?;
+                        match *accepted_milestones.last().expect("must exist") == current {
+                            false => self.process_reorg(),
+                            true => self.blocks_ordered.trigger(&BlocksOrderedEvent {
+                                current_height,
+                                ordered_blocks: self
+                                    .advance_acceptance(current_height, accepted_milestones)?,
+                            }),
+                        }
+                    }
+                }
             }
-            new_milestone
+
+            new
         });
-        
-        Ok(())
-    }
-    
-    fn advance_acceptance(&self, old: &Vote<C>, new: &Vote<C>) -> Result<()> {
-        let accepted_milestones = self.milestone_range(new, new.height()? - old.height()?)?;
-        if accepted_milestones.last().expect("range must not be empty") != old {
-            println!("Reorg detected");
-        }
-        
-        for accepted_milestone in accepted_milestones.iter().rev() {
-            &accepted_milestone.block_id;
-        }
-        
-        // TODO: TRIGGER CONFIRMED BLOCKS IN ORDER
 
         Ok(())
+    }
+
+    fn process_reorg(&self) {}
+
+    fn advance_acceptance(
+        &self,
+        current_height: u64,
+        accepted_milestones: Vec<Vote<C>>,
+    ) -> Result<Vec<IndexSet<BlockMetadata<Block<C>>>>> {
+        let mut accepted_blocks = Vec::with_capacity(accepted_milestones.len());
+
+        for (height_index, accepted_milestone) in accepted_milestones.iter().rev().enumerate() {
+            let milestone_block = self
+                .block(&accepted_milestone.block_id)
+                .ok_or(Error::BlockNotFound)?;
+            let past_cone = self.past_cone(milestone_block, |b| !b.is_accepted(0))?;
+
+            for (round_index, block) in past_cone.iter().rev().enumerate() {
+                block.accepted.set(Accepted {
+                    chain_id: 0,
+                    height: current_height + (height_index + 1) as u64,
+                    round_index: round_index as u64,
+                });
+            }
+
+            accepted_blocks.push(past_cone);
+        }
+
+        Ok(accepted_blocks)
     }
 }

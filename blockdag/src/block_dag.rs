@@ -23,7 +23,7 @@ impl<Block: block::Block> BlockDAG<Block> {
     }
 
     pub fn queue(&self, block: Block) {
-        self.address(block.id().clone()).publish(block);
+        self.address(block.id()).publish(block);
     }
 
     pub fn on_ready(
@@ -33,7 +33,16 @@ impl<Block: block::Block> BlockDAG<Block> {
         self.0.ready_event.subscribe(callback)
     }
 
-    fn address(&self, block_id: Block::ID) -> BlockAddress<Block> {
+    pub fn get(&self, block_id: &Block::ID) -> Option<BlockMetadata<Block>> {
+        self.0
+            .blocks
+            .lock()
+            .unwrap()
+            .get(block_id)
+            .and_then(|a| a.data().get().as_ref().cloned())
+    }
+
+    fn address(&self, block_id: &Block::ID) -> BlockAddress<Block> {
         self.0
             .blocks
             .lock()
@@ -69,16 +78,17 @@ impl<Block: block::Block> BlockDAG<Block> {
 
     fn on_all_parents_processed(
         &self,
-        block: &BlockMetadata<Block>,
+        metadata: &BlockMetadata<Block>,
         callback: impl Fn() + Send + Sync + 'static,
     ) {
-        let pending_parents = Countdown::new(block.parents().len(), callback);
+        let parents = metadata.block().parents();
+        let pending_parents = Countdown::new(parents.len(), callback);
 
-        for (index, parent_id) in block.parents().iter().enumerate() {
-            let block = block.clone();
+        for (index, parent_id) in parents.iter().enumerate() {
+            let block = metadata.clone();
             let pending_parents = pending_parents.clone();
 
-            self.address(parent_id.clone())
+            self.address(parent_id)
                 .on_available(move |parent| {
                     block.register_parent(index, parent.downgrade());
 

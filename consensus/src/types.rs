@@ -1,3 +1,5 @@
+use std::{fmt, fmt::Debug};
+
 use types::BlockID;
 use utils::Id;
 use virtual_voting::Config;
@@ -19,6 +21,7 @@ impl<C: Config> Block<C> {
 pub mod genesis_block {
     use types::BlockID;
     use virtual_voting::Config;
+
     use crate::issuer_id::IssuerID;
 
     pub struct Details<C: Config> {
@@ -30,6 +33,7 @@ pub mod genesis_block {
 pub mod network_block {
     use types::BlockID;
     use virtual_voting::Config;
+
     use crate::issuer_id::IssuerID;
 
     pub struct Details<C: Config> {
@@ -53,6 +57,15 @@ impl<C: Config> blockdag::Block for Block<C> {
         match &self {
             Block::GenesisBlock(_) => &[],
             Block::NetworkBlock(network_block) => network_block.parents.as_slice(),
+        }
+    }
+}
+
+impl<C: Config> Debug for Block<C> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match &self {
+            Block::GenesisBlock(genesis_block) => write!(f, "GenesisBlock({:?})", genesis_block.id),
+            Block::NetworkBlock(network_block) => write!(f, "NetworkBlock({:?})", network_block.id),
         }
     }
 }
