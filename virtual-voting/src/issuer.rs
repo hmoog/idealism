@@ -1,9 +1,9 @@
-use committee::MemberID;
+use types::IssuerID;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub enum Issuer {
     Genesis,
-    User(MemberID),
+    User(IssuerID),
 }
 
 impl Clone for Issuer {

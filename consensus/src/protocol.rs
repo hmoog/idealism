@@ -2,16 +2,16 @@ use std::sync::Arc;
 
 use blockdag::{Accepted, Block as _, BlockMetadata};
 use indexmap::IndexSet;
+use types::IssuerID;
 use utils::rx::ResourceGuard;
 use virtual_voting::{Config, Vote};
 use zero::{Clone0, Deref0};
 
 use crate::{
+    block::{Block, NetworkBlock},
     error::{Error, Result},
     events::BlocksOrderedEvent,
-    issuer_id::IssuerID,
     protocol_data::ProtocolData,
-    types::{Block, NetworkBlock},
 };
 
 #[derive(Deref0, Clone0)]

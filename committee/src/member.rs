@@ -1,14 +1,14 @@
-use crate::MemberID;
+use types::IssuerID;
 
 pub struct Member {
-    id: MemberID,
+    id: IssuerID,
     index: u64,
     weight: u64,
     online: bool,
 }
 
 impl Member {
-    pub fn new(id: MemberID) -> Self {
+    pub fn new(id: IssuerID) -> Self {
         Self {
             id,
             index: 0,
@@ -32,7 +32,7 @@ impl Member {
         self
     }
 
-    pub fn id(&self) -> &MemberID {
+    pub fn id(&self) -> &IssuerID {
         &self.id
     }
 
@@ -64,7 +64,7 @@ impl Member {
         false
     }
 
-    pub fn key(&self) -> &MemberID {
+    pub fn key(&self) -> &IssuerID {
         &self.id
     }
 }
@@ -82,7 +82,7 @@ impl Clone for Member {
 
 #[cfg(test)]
 mod tests {
-    use types::{Hashable, Hasher};
+    use types::{Hashable, Hasher, IssuerID};
 
     use super::*;
 
@@ -96,7 +96,7 @@ mod tests {
 
     #[test]
     fn test_new_committee_member() {
-        let member_id = MemberID::new(&HashableID(1337));
+        let member_id = IssuerID::new(&HashableID(1337));
         let member = Member::new(member_id.clone());
         assert_eq!(*member.id(), member_id);
         assert_eq!(member.weight(), 1);
@@ -105,7 +105,7 @@ mod tests {
 
     #[test]
     fn test_with_weight() {
-        let member_id = MemberID::new(&HashableID(1337));
+        let member_id = IssuerID::new(&HashableID(1337));
         let member = Member::new(member_id.clone()).with_weight(10);
         assert_eq!(*member.id(), member_id);
         assert_eq!(member.weight(), 10);
@@ -114,7 +114,7 @@ mod tests {
 
     #[test]
     fn test_with_online() {
-        let member_id = MemberID::new(&HashableID(1337));
+        let member_id = IssuerID::new(&HashableID(1337));
         let member = Member::new(member_id.clone()).with_online(false);
         assert_eq!(*member.id(), member_id);
         assert_eq!(member.weight(), 1);
@@ -123,7 +123,7 @@ mod tests {
 
     #[test]
     fn test_set_weight() {
-        let member_id = MemberID::new(&HashableID(1337));
+        let member_id = IssuerID::new(&HashableID(1337));
         let mut member = Member::new(member_id.clone());
         assert!(member.set_weight(10));
         assert_eq!(member.weight(), 10);
@@ -132,7 +132,7 @@ mod tests {
 
     #[test]
     fn test_set_online() {
-        let member_id = MemberID::new(&HashableID(1337));
+        let member_id = IssuerID::new(&HashableID(1337));
         let mut member = Member::new(member_id);
         assert!(member.set_online(false));
         assert!(!member.is_online());

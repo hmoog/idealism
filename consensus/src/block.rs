@@ -42,9 +42,7 @@ impl Debug for Block {
 }
 
 mod network_block {
-    use types::{BlockID, Hashable, Hasher};
-
-    use crate::issuer_id::IssuerID;
+    use types::{BlockID, Hashable, Hasher, IssuerID};
 
     pub struct NetworkBlock {
         pub parents: Vec<BlockID>,

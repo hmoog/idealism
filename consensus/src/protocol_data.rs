@@ -10,10 +10,10 @@ use utils::rx::{Event, Variable};
 use virtual_voting::{Config, Vote, Votes};
 
 use crate::{
+    block::Block,
     error::{Error, Error::VoteNotFound, Result},
     events::BlocksOrderedEvent,
     tips::Tips,
-    types::Block,
 };
 
 pub struct ProtocolData<C: Config> {

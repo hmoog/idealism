@@ -1,9 +1,11 @@
 use std::{collections::HashMap, sync::Arc};
 
-use crate::{Member, MemberID};
+use types::IssuerID;
+
+use crate::Member;
 
 pub(crate) struct Members {
-    pub(crate) members_by_id: Arc<HashMap<MemberID, Arc<Member>>>,
+    pub(crate) members_by_id: Arc<HashMap<IssuerID, Arc<Member>>>,
     pub(crate) total_weight: u64,
     pub(crate) online_weight: u64,
 }

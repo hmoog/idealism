@@ -1,9 +1,10 @@
-use committee::{Committee, Member, MemberID};
+use committee::{Committee, Member};
+use types::IssuerID;
 
 #[test]
 fn test_committee() {
-    let member_id_1 = MemberID::from([1; 32]);
-    let member_id_2 = MemberID::from([2; 32]);
+    let member_id_1 = IssuerID::from([1; 32]);
+    let member_id_2 = IssuerID::from([2; 32]);
 
     let committee: Committee = Committee::from(vec![
         Member::new(member_id_1.clone())

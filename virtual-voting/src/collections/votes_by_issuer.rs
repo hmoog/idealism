@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use committee::MemberID;
+use types::IssuerID;
 use zero::{Clone0, Default0, Deref0, FromIterator0, IntoIterator0};
 
 use crate::{Config, Votes};
@@ -10,7 +10,7 @@ use crate::{Config, Votes};
 /// This structure maintains votes from different committee members, ensuring proper handling of
 /// voting rounds and vote updates.
 #[derive(Default0, Deref0, IntoIterator0, FromIterator0, Clone0)]
-pub struct VotesByIssuer<C: Config>(HashMap<MemberID, Votes<C>>);
+pub struct VotesByIssuer<C: Config>(HashMap<IssuerID, Votes<C>>);
 
 impl<C: Config> VotesByIssuer<C> {
     /// Inserts or updates votes for a committee member based on the voting round.
@@ -36,7 +36,7 @@ impl<C: Config> VotesByIssuer<C> {
     /// Retrieves or creates a mutable reference to the votes for a given committee member.
     ///
     /// If no votes exist for the given key, a new empty votes collection is created.
-    pub fn fetch(&mut self, key: MemberID) -> &mut Votes<C> {
+    pub fn fetch(&mut self, key: IssuerID) -> &mut Votes<C> {
         self.0.entry(key).or_default()
     }
 
@@ -46,7 +46,7 @@ impl<C: Config> VotesByIssuer<C> {
     }
 }
 
-type Entry<C> = (MemberID, Votes<C>);
+type Entry<C> = (IssuerID, Votes<C>);
 
 mod traits {
     use super::{Entry, VotesByIssuer};

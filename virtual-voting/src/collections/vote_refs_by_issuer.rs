@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 
-use committee::{Committee, MemberID};
+use committee::Committee;
+use types::IssuerID;
 use zero::{Default0, Deref0, FromIterator0, IntoIterator0};
 
 use crate::{Config, VoteRef, VoteRefs, VotesByIssuer};
 
 #[derive(Default0, Deref0, FromIterator0, IntoIterator0)]
-pub struct VoteRefsByIssuer<C: Config>(HashMap<MemberID, VoteRefs<C>>);
+pub struct VoteRefsByIssuer<C: Config>(HashMap<IssuerID, VoteRefs<C>>);
 
 impl<C: Config> VoteRefsByIssuer<C> {
     pub fn from_committee(committee: &Committee, target: &VoteRef<C>) -> VoteRefsByIssuer<C> {

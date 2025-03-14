@@ -1,7 +1,7 @@
 use std::{cmp::max, collections::HashSet, sync::Arc};
 
-use committee::{Committee, Member, MemberID};
-use types::BlockID;
+use committee::{Committee, Member};
+use types::{BlockID, IssuerID};
 
 use crate::{
     Config,
@@ -27,7 +27,7 @@ pub struct VoteBuilder<T: Config> {
 impl<C: Config> VoteBuilder<C> {
     pub(crate) fn build(
         block_id: BlockID,
-        issuer: &MemberID,
+        issuer: &IssuerID,
         time: u64,
         votes: &Votes<C>,
     ) -> Result<Vote<C>> {
@@ -199,7 +199,7 @@ impl<C: Config> VoteBuilder<C> {
         )
     }
 
-    fn offline_validators(&self, votes: &VotesByIssuer<C>) -> HashSet<MemberID> {
+    fn offline_validators(&self, votes: &VotesByIssuer<C>) -> HashSet<IssuerID> {
         let offline_threshold = self.slot - self.config.offline_threshold();
 
         // filter online validators that haven't voted since the offline threshold

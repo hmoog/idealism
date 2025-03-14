@@ -1,13 +1,14 @@
 use std::collections::{HashMap, HashSet};
 
-use committee::{Committee, MemberID};
+use committee::Committee;
+use types::IssuerID;
 
 use crate::{Config, Vote, Votes};
 
 pub struct WeightTracker<C: Config> {
     committee: Committee,
     weights: HashMap<Vote<C>, u64>,
-    seen_issuers: HashMap<Vote<C>, HashSet<MemberID>>,
+    seen_issuers: HashMap<Vote<C>, HashSet<IssuerID>>,
 }
 
 impl<C: Config> WeightTracker<C> {
@@ -19,7 +20,7 @@ impl<C: Config> WeightTracker<C> {
         }
     }
 
-    pub fn weight_entry(&mut self, vote: &Vote<C>, issuer: &MemberID) -> WeightEntry<C> {
+    pub fn weight_entry(&mut self, vote: &Vote<C>, issuer: &IssuerID) -> WeightEntry<C> {
         if self.issuer_voted_already(vote, issuer) {
             return (self.weight(vote), Some(vote.clone()));
         }
@@ -41,7 +42,7 @@ impl<C: Config> WeightTracker<C> {
         self.weights.get(vote).copied().unwrap_or(0)
     }
 
-    fn issuer_voted_already(&mut self, vote: &Vote<C>, issuer: &MemberID) -> bool {
+    fn issuer_voted_already(&mut self, vote: &Vote<C>, issuer: &IssuerID) -> bool {
         !self
             .seen_issuers
             .entry(vote.clone())

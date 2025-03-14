@@ -1,6 +1,8 @@
 use std::{collections::HashMap, sync::Arc};
 
-use crate::{Member, MemberID, Members};
+use types::IssuerID;
+
+use crate::{Member, Members};
 
 pub struct Committee(Arc<Members>);
 
@@ -13,7 +15,7 @@ impl Committee {
         self.0.online_weight
     }
 
-    pub fn member(&self, member_id: &MemberID) -> Option<&Member> {
+    pub fn member(&self, member_id: &IssuerID) -> Option<&Member> {
         self.0.members_by_id.get(member_id).map(|member| &**member)
     }
 
@@ -28,7 +30,7 @@ impl Committee {
         values
     }
 
-    pub fn member_weight(&self, member_id: &MemberID) -> u64 {
+    pub fn member_weight(&self, member_id: &IssuerID) -> u64 {
         self.0
             .members_by_id
             .get(member_id)
@@ -36,14 +38,14 @@ impl Committee {
             .unwrap_or(0)
     }
 
-    pub fn is_member_online(&self, member_id: &MemberID) -> bool {
+    pub fn is_member_online(&self, member_id: &IssuerID) -> bool {
         self.0
             .members_by_id
             .get(member_id)
             .is_some_and(|m| m.is_online())
     }
 
-    pub fn set_online(&self, member_id: &MemberID, online: bool) -> Self {
+    pub fn set_online(&self, member_id: &IssuerID, online: bool) -> Self {
         let mut new_committee = Committee(self.0.clone());
 
         if let Some(member) = self.0.members_by_id.get(member_id) {

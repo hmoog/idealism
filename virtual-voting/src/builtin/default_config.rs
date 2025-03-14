@@ -1,4 +1,5 @@
-use committee::{Committee, Member, MemberID};
+use committee::{Committee, Member};
+use types::IssuerID;
 
 use crate::{
     Config, Vote, VoteBuilder,
@@ -15,18 +16,18 @@ pub struct DefaultConfig {
 
 impl DefaultConfig {
     pub fn new() -> Self {
-        let member_id_1 = MemberID::from([1u8; 32]);
-        let member_id_2 = MemberID::from([2u8; 32]);
-        let member_id_3 = MemberID::from([3u8; 32]);
-        let member_id_4 = MemberID::from([4u8; 32]);
+        let issuer_id_1 = IssuerID::from([1u8; 32]);
+        let issuer_id_2 = IssuerID::from([2u8; 32]);
+        let issuer_id_3 = IssuerID::from([3u8; 32]);
+        let issuer_id_4 = IssuerID::from([4u8; 32]);
 
         Self {
             genesis_time: 0,
             committee_selection: CommitteeSelection::FixedCommittee(Committee::from([
-                Member::new(member_id_1),
-                Member::new(member_id_2),
-                Member::new(member_id_3),
-                Member::new(member_id_4),
+                Member::new(issuer_id_1),
+                Member::new(issuer_id_2),
+                Member::new(issuer_id_3),
+                Member::new(issuer_id_4),
             ])),
             leader_rotation: LeaderRotation::RoundRobin,
             slot_duration: SlotDuration::Static(10),

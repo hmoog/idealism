@@ -2,7 +2,7 @@ use blockdag::BlockMetadata;
 use types::BlockID;
 use utils::rx::Variable;
 
-use crate::types::Block;
+use crate::block::Block;
 
 pub struct Tips {
     _heaviest: Variable<BlockMetadata<Block>>,

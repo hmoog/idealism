@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use blockdag::BlockMetadata;
 use indexmap::IndexSet;
 
-use crate::types::Block;
+use crate::block::Block;
 
 pub struct BlocksOrderedEvent {
     pub current_height: u64,

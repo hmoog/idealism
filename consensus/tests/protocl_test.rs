@@ -1,4 +1,5 @@
-use consensus::{IssuerID, Protocol};
+use consensus::Protocol;
+use types::IssuerID;
 use virtual_voting::builtin::DefaultConfig;
 
 #[test]
