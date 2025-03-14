@@ -4,6 +4,7 @@ pub enum Error {
     VoteNotFound,
     VirtualVotingError(virtual_voting::Error),
     BlockNotFound,
+    UnsupportedBlockType,
 }
 
 pub type Result<T> = core::result::Result<T, Error>;
@@ -20,6 +21,7 @@ impl Display for Error {
             Error::VoteNotFound => write!(f, "Vote not found"),
             Error::VirtualVotingError(error) => write!(f, "Virtual voting error: {}", error),
             Error::BlockNotFound => write!(f, "Block not found"),
+            Error::UnsupportedBlockType => write!(f, "Unsupported block type"),
         }
     }
 }

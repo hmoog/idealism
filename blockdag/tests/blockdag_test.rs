@@ -1,8 +1,19 @@
+use std::fmt::{Debug, Formatter};
+
 use blockdag::{Block, BlockDAG};
 
 struct MyBlock {
     id: String,
     parents: Vec<String>,
+}
+
+impl Debug for MyBlock {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("MyBlock")
+            .field("id", &self.id)
+            .field("parents", &self.parents)
+            .finish()
+    }
 }
 
 impl Block for MyBlock {
@@ -22,8 +33,8 @@ fn test_block_dag() {
     let block_dag: BlockDAG<MyBlock> = BlockDAG::new();
 
     block_dag
-        .on_ready(|block| {
-            println!("Block {} is ready", block.id());
+        .on_ready(|metadata| {
+            println!("Block {} is ready", metadata.block().id());
         })
         .forever();
 

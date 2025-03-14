@@ -6,21 +6,22 @@ use std::{
 use blockdag::{Block as BlockDagBlock, BlockDAG, BlockMetadata};
 use indexmap::IndexSet;
 use types::BlockID;
-use utils::{Id, rx, rx::Event};
+use utils::rx::{Event, Variable};
 use virtual_voting::{Config, Vote, Votes};
 
 use crate::{
     error::{Error, Error::VoteNotFound, Result},
     events::BlocksOrderedEvent,
-    types::{Block, genesis_block},
+    types::Block,
 };
 
 pub struct ProtocolData<C: Config> {
+    pub error: Event<Error>,
+    pub blocks_ordered: Event<BlocksOrderedEvent<C>>,
     pub(crate) blocks: BlockDAG<Block<C>>,
     pub(crate) votes: Mutex<HashMap<BlockID, Vote<C>>>,
-    pub(crate) error_event: Event<Error>,
-    pub blocks_ordered: Event<BlocksOrderedEvent<C>>,
-    pub(crate) latest_accepted_milestone: rx::Variable<Vote<C>>,
+    pub(crate) latest_accepted_milestone: Variable<Vote<C>>,
+    pub(crate) tips: Variable<IndexSet<BlockMetadata<Block<C>>>>,
 }
 
 impl<C: Config> ProtocolData<C> {
@@ -28,10 +29,7 @@ impl<C: Config> ProtocolData<C> {
         let genesis_vote = Vote::new_genesis(config);
 
         let blocks = BlockDAG::new();
-        blocks.queue(Block::GenesisBlock(genesis_block::Details {
-            id: genesis_vote.block_id.clone(),
-            issuer_id: Id::new(<C::IssuerID>::default()),
-        }));
+        blocks.queue(Block::GenesisBlock(genesis_vote.block_id.clone()));
 
         Self {
             blocks,
@@ -39,9 +37,10 @@ impl<C: Config> ProtocolData<C> {
                 genesis_vote.block_id.clone(),
                 genesis_vote,
             )])),
-            error_event: Event::new(),
-            latest_accepted_milestone: rx::Variable::new(),
+            error: Event::new(),
+            latest_accepted_milestone: Variable::new(),
             blocks_ordered: Event::new(),
+            tips: Variable::new(),
         }
     }
 

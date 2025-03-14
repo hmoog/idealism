@@ -1,45 +1,17 @@
 use std::{fmt, fmt::Debug};
 
+pub use network_block::*;
 use types::BlockID;
-use utils::Id;
 use virtual_voting::Config;
 
 pub enum Block<C: Config> {
-    GenesisBlock(genesis_block::Details<C>),
-    NetworkBlock(network_block::Details<C>),
+    GenesisBlock(BlockID),
+    NetworkBlock(BlockID, NetworkBlock<C>),
 }
 
-impl<C: Config> Block<C> {
-    pub fn issuer_id(&self) -> &Id<C::IssuerID> {
-        match &self {
-            Block::GenesisBlock(genesis_block) => &genesis_block.issuer_id,
-            Block::NetworkBlock(network_block) => &network_block.issuer_id,
-        }
-    }
-}
-
-pub mod genesis_block {
-    use types::BlockID;
-    use virtual_voting::Config;
-
-    use crate::issuer_id::IssuerID;
-
-    pub struct Details<C: Config> {
-        pub id: BlockID,
-        pub issuer_id: IssuerID<C>,
-    }
-}
-
-pub mod network_block {
-    use types::BlockID;
-    use virtual_voting::Config;
-
-    use crate::issuer_id::IssuerID;
-
-    pub struct Details<C: Config> {
-        pub id: BlockID,
-        pub parents: Vec<BlockID>,
-        pub issuer_id: IssuerID<C>,
+impl<C: Config> From<NetworkBlock<C>> for Block<C> {
+    fn from(value: NetworkBlock<C>) -> Self {
+        Block::NetworkBlock(BlockID::new(&value), value)
     }
 }
 
@@ -48,15 +20,15 @@ impl<C: Config> blockdag::Block for Block<C> {
 
     fn id(&self) -> &Self::ID {
         match &self {
-            Block::GenesisBlock(genesis_block) => &genesis_block.id,
-            Block::NetworkBlock(network_block) => &network_block.id,
+            Block::GenesisBlock(id) => id,
+            Block::NetworkBlock(id, _) => id,
         }
     }
 
     fn parents(&self) -> &[Self::ID] {
         match &self {
             Block::GenesisBlock(_) => &[],
-            Block::NetworkBlock(network_block) => network_block.parents.as_slice(),
+            Block::NetworkBlock(_, network_block) => network_block.parents.as_slice(),
         }
     }
 }
@@ -64,8 +36,29 @@ impl<C: Config> blockdag::Block for Block<C> {
 impl<C: Config> Debug for Block<C> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &self {
-            Block::GenesisBlock(genesis_block) => write!(f, "GenesisBlock({:?})", genesis_block.id),
-            Block::NetworkBlock(network_block) => write!(f, "NetworkBlock({:?})", network_block.id),
+            Block::GenesisBlock(id) => write!(f, "GenesisBlock({:?})", id),
+            Block::NetworkBlock(id, _) => write!(f, "NetworkBlock({:?})", id),
+        }
+    }
+}
+
+mod network_block {
+    use types::{BlockID, Hashable, Hasher};
+    use virtual_voting::Config;
+
+    use crate::issuer_id::IssuerID;
+
+    pub struct NetworkBlock<C: Config> {
+        pub parents: Vec<BlockID>,
+        pub issuer_id: IssuerID<C>,
+    }
+
+    impl<C: Config> Hashable for NetworkBlock<C> {
+        fn hash<H: Hasher>(&self, hasher: &mut H) {
+            hasher.update(&self.parents.len().to_be_bytes());
+            for parent in &self.parents {
+                hasher.update(parent.as_slice());
+            }
         }
     }
 }

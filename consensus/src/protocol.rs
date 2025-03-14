@@ -9,8 +9,9 @@ use zero::{Clone0, Deref0};
 use crate::{
     error::{Error, Result},
     events::BlocksOrderedEvent,
+    issuer_id::IssuerID,
     protocol_data::ProtocolData,
-    types::Block,
+    types::{Block, NetworkBlock},
 };
 
 #[derive(Deref0, Clone0)]
@@ -18,28 +19,47 @@ pub struct Protocol<C: Config>(Arc<ProtocolData<C>>);
 
 impl<C: Config> Protocol<C> {
     pub fn new(config: C) -> Self {
-        Self(Arc::new(ProtocolData::new(config)))
+        let protocol = Self(Arc::new(ProtocolData::new(config)));
+        protocol.run();
+
+        protocol
     }
 
-    pub fn run(&mut self) {
-        let this = self.clone();
+    pub fn run(&self) {
+        let process_block = {
+            let this = self.clone();
 
-        let process_block = move |b: &ResourceGuard<BlockMetadata<Block<C>>>| {
-            let _ = this.process_block(b.block()).inspect_err(|err| this.error_event.trigger(err));
+            move |b: &ResourceGuard<BlockMetadata<Block<C>>>| {
+                let _ = this
+                    .process_block(b.block())
+                    .inspect_err(|err| this.error.trigger(err));
+            }
         };
 
         self.blocks.on_ready(process_block).forever();
     }
 
-    fn process_block(&self, block: &Block<C>) -> Result<()> {
-        let vote = Vote::new(
-            block.id().clone(),
-            block.issuer_id(),
-            0,
-            self.votes(block.parents())?,
-        )?;
+    pub fn issue_block(&self, issuer: &IssuerID<C>) {
+        self.blocks.queue(Block::from(NetworkBlock {
+            parents: vec![],
+            issuer_id: issuer.clone(),
+        }));
+    }
 
-        self.process_vote(block, vote)
+    fn process_block(&self, block: &Block<C>) -> Result<()> {
+        match block {
+            Block::NetworkBlock(id, network_block) => {
+                let vote = Vote::new(
+                    id.clone(),
+                    &network_block.issuer_id,
+                    0,
+                    self.votes(block.parents())?,
+                )?;
+
+                self.process_vote(block, vote)
+            }
+            _ => Err(Error::UnsupportedBlockType),
+        }
     }
 
     fn process_vote(&self, block: &Block<C>, vote: Vote<C>) -> Result<()> {
