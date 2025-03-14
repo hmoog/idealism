@@ -77,22 +77,22 @@ impl<C: Config> ProtocolData<C> {
         start: BlockMetadata<Block<C>>,
         should_visit: F,
     ) -> Result<IndexSet<BlockMetadata<Block<C>>>> {
-        let mut visited = IndexSet::new();
+        let mut past_cone = IndexSet::new();
 
-        if should_visit(&start) && visited.insert(start.clone()) {
+        if should_visit(&start) && past_cone.insert(start.clone()) {
             let mut queue = VecDeque::from([start]);
 
             while let Some(current) = queue.pop_front() {
                 for parent_id in current.block().parents() {
                     let parent_block = self.block(parent_id).ok_or(Error::BlockNotFound)?;
 
-                    if should_visit(&parent_block) && visited.insert(parent_block.clone()) {
+                    if should_visit(&parent_block) && past_cone.insert(parent_block.clone()) {
                         queue.push_back(parent_block);
                     }
                 }
             }
         }
 
-        Ok(visited)
+        Ok(past_cone)
     }
 }

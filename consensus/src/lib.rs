@@ -4,6 +4,7 @@ mod issuer_id;
 mod protocol;
 mod protocol_data;
 mod types;
+mod tips;
 
 #[cfg(test)]
 mod tests {
