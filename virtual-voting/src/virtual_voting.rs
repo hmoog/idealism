@@ -13,7 +13,7 @@ pub struct VirtualVoting<C: Config> {
 impl<C: Config> VirtualVoting<C> {
     pub fn run(
         votes: VotesByIssuer<C>,
-        committee: &Committee<C::IssuerID>,
+        committee: &Committee,
         threshold: u64,
     ) -> Result<(Vote<C>, Vote<C>)> {
         let mut virtual_voting = Self {

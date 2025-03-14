@@ -1,4 +1,3 @@
-use std::{fmt::Debug, hash::Hash};
+use types::{Blake2bHasher, Id};
 
-pub trait MemberID: PartialEq + Eq + Hash + Default + Debug + Sync + Send + 'static {}
-impl<T: PartialEq + Eq + Hash + Default + Debug + Sync + Send + 'static> MemberID for T {}
+pub type MemberID = Id<Blake2bHasher>;

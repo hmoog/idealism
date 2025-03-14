@@ -2,16 +2,15 @@ use std::fmt::Debug;
 
 use blockdag::BlockMetadata;
 use indexmap::IndexSet;
-use virtual_voting::Config;
 
 use crate::types::Block;
 
-pub struct BlocksOrderedEvent<C: Config> {
+pub struct BlocksOrderedEvent {
     pub current_height: u64,
-    pub ordered_blocks: Vec<IndexSet<BlockMetadata<Block<C>>>>,
+    pub ordered_blocks: Vec<IndexSet<BlockMetadata<Block>>>,
 }
 
-impl<C: Config> Debug for BlocksOrderedEvent<C> {
+impl Debug for BlocksOrderedEvent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("BlocksOrderedEvent")
             .field("current_height", &self.current_height)

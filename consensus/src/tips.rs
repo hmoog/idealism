@@ -1,8 +1,21 @@
 use blockdag::BlockMetadata;
+use types::BlockID;
 use utils::rx::Variable;
-use virtual_voting::Config;
+
 use crate::types::Block;
 
-pub struct Tips<C: Config> {
-    heaviest: Variable<BlockMetadata<Block<C>>>
+pub struct Tips {
+    _heaviest: Variable<BlockMetadata<Block>>,
+}
+
+impl Tips {
+    pub fn new() -> Self {
+        Self {
+            _heaviest: Variable::new(),
+        }
+    }
+
+    pub fn get(&self) -> Vec<BlockID> {
+        vec![]
+    }
 }

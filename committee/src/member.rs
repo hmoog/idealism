@@ -1,18 +1,16 @@
-use utils::Id;
-
 use crate::MemberID;
 
-pub struct Member<T: MemberID> {
-    id: Id<T>,
+pub struct Member {
+    id: MemberID,
     index: u64,
     weight: u64,
     online: bool,
 }
 
-impl<T: MemberID> Member<T> {
-    pub fn new(id: T) -> Self {
+impl Member {
+    pub fn new(id: MemberID) -> Self {
         Self {
-            id: Id::new(id),
+            id,
             index: 0,
             weight: 1,
             online: true,
@@ -34,7 +32,7 @@ impl<T: MemberID> Member<T> {
         self
     }
 
-    pub fn id(&self) -> &T {
+    pub fn id(&self) -> &MemberID {
         &self.id
     }
 
@@ -66,12 +64,12 @@ impl<T: MemberID> Member<T> {
         false
     }
 
-    pub fn key(&self) -> &Id<T> {
+    pub fn key(&self) -> &MemberID {
         &self.id
     }
 }
 
-impl<T: MemberID> Clone for Member<T> {
+impl Clone for Member {
     fn clone(&self) -> Self {
         Self {
             id: self.id.clone(),
@@ -84,35 +82,49 @@ impl<T: MemberID> Clone for Member<T> {
 
 #[cfg(test)]
 mod tests {
+    use types::{Hashable, Hasher};
+
     use super::*;
+
+    struct HashableID(i32);
+
+    impl Hashable for HashableID {
+        fn hash<H: Hasher>(&self, hasher: &mut H) {
+            hasher.update(&self.0.to_be_bytes());
+        }
+    }
 
     #[test]
     fn test_new_committee_member() {
-        let member = Member::new(1337);
-        assert_eq!(*member.id(), 1337);
+        let member_id = MemberID::new(&HashableID(1337));
+        let member = Member::new(member_id.clone());
+        assert_eq!(*member.id(), member_id);
         assert_eq!(member.weight(), 1);
         assert!(member.is_online());
     }
 
     #[test]
     fn test_with_weight() {
-        let member = Member::new(1337).with_weight(10);
-        assert_eq!(*member.id(), 1337);
+        let member_id = MemberID::new(&HashableID(1337));
+        let member = Member::new(member_id.clone()).with_weight(10);
+        assert_eq!(*member.id(), member_id);
         assert_eq!(member.weight(), 10);
         assert!(member.is_online());
     }
 
     #[test]
     fn test_with_online() {
-        let member = Member::new(1337).with_online(false);
-        assert_eq!(*member.id(), 1337);
+        let member_id = MemberID::new(&HashableID(1337));
+        let member = Member::new(member_id.clone()).with_online(false);
+        assert_eq!(*member.id(), member_id);
         assert_eq!(member.weight(), 1);
         assert!(!member.is_online());
     }
 
     #[test]
     fn test_set_weight() {
-        let mut member = Member::new(1337);
+        let member_id = MemberID::new(&HashableID(1337));
+        let mut member = Member::new(member_id.clone());
         assert!(member.set_weight(10));
         assert_eq!(member.weight(), 10);
         assert!(!member.set_weight(10));
@@ -120,7 +132,8 @@ mod tests {
 
     #[test]
     fn test_set_online() {
-        let mut member = Member::new(1337);
+        let member_id = MemberID::new(&HashableID(1337));
+        let mut member = Member::new(member_id);
         assert!(member.set_online(false));
         assert!(!member.is_online());
         assert!(!member.set_online(false));

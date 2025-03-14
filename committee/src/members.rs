@@ -1,16 +1,14 @@
 use std::{collections::HashMap, sync::Arc};
 
-use utils::Id;
-
 use crate::{Member, MemberID};
 
-pub(crate) struct Members<C: MemberID> {
-    pub(crate) members_by_id: Arc<HashMap<Id<C>, Arc<Member<C>>>>,
+pub(crate) struct Members {
+    pub(crate) members_by_id: Arc<HashMap<MemberID, Arc<Member>>>,
     pub(crate) total_weight: u64,
     pub(crate) online_weight: u64,
 }
 
-impl<T: MemberID> Clone for Members<T> {
+impl Clone for Members {
     fn clone(&self) -> Self {
         Self {
             members_by_id: self.members_by_id.clone(),

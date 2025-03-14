@@ -12,16 +12,17 @@ use virtual_voting::{Config, Vote, Votes};
 use crate::{
     error::{Error, Error::VoteNotFound, Result},
     events::BlocksOrderedEvent,
+    tips::Tips,
     types::Block,
 };
 
 pub struct ProtocolData<C: Config> {
     pub error: Event<Error>,
-    pub blocks_ordered: Event<BlocksOrderedEvent<C>>,
-    pub(crate) blocks: BlockDAG<Block<C>>,
+    pub blocks_ordered: Event<BlocksOrderedEvent>,
+    pub(crate) blocks: BlockDAG<Block>,
     pub(crate) votes: Mutex<HashMap<BlockID, Vote<C>>>,
     pub(crate) latest_accepted_milestone: Variable<Vote<C>>,
-    pub(crate) tips: Variable<IndexSet<BlockMetadata<Block<C>>>>,
+    pub(crate) tips: Tips,
 }
 
 impl<C: Config> ProtocolData<C> {
@@ -40,11 +41,11 @@ impl<C: Config> ProtocolData<C> {
             error: Event::new(),
             latest_accepted_milestone: Variable::new(),
             blocks_ordered: Event::new(),
-            tips: Variable::new(),
+            tips: Tips::new(),
         }
     }
 
-    pub fn block(&self, block_id: &BlockID) -> Option<BlockMetadata<Block<C>>> {
+    pub fn block(&self, block_id: &BlockID) -> Option<BlockMetadata<Block>> {
         self.blocks.get(block_id)
     }
 
@@ -72,11 +73,11 @@ impl<C: Config> ProtocolData<C> {
         Ok(range)
     }
 
-    pub fn past_cone<F: Fn(&BlockMetadata<Block<C>>) -> bool>(
+    pub fn past_cone<F: Fn(&BlockMetadata<Block>) -> bool>(
         &self,
-        start: BlockMetadata<Block<C>>,
+        start: BlockMetadata<Block>,
         should_visit: F,
-    ) -> Result<IndexSet<BlockMetadata<Block<C>>>> {
+    ) -> Result<IndexSet<BlockMetadata<Block>>> {
         let mut past_cone = IndexSet::new();
 
         if should_visit(&start) && past_cone.insert(start.clone()) {

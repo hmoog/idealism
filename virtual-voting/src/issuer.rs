@@ -1,13 +1,12 @@
 use committee::MemberID;
-use utils::Id;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub enum Issuer<I: MemberID> {
+pub enum Issuer {
     Genesis,
-    User(Id<I>),
+    User(MemberID),
 }
 
-impl<I: MemberID> Clone for Issuer<I> {
+impl Clone for Issuer {
     fn clone(&self) -> Self {
         match self {
             Issuer::Genesis => Issuer::Genesis,

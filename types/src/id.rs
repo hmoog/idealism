@@ -18,6 +18,12 @@ impl<H: Hasher, T: Hashable> From<T> for Id<H> {
     }
 }
 
+impl<H: Hasher> From<[u8; 32]> for Id<H> {
+    fn from(value: [u8; 32]) -> Self {
+        Id(Arc::new(value), PhantomData)
+    }
+}
+
 impl<T: Hasher> Default for Id<T> {
     fn default() -> Self {
         Id(Arc::new([0; 32]), PhantomData)

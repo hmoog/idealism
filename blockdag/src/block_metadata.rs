@@ -38,7 +38,7 @@ impl<Block: block::Block> BlockMetadata<Block> {
             .accepted
             .get()
             .as_ref()
-            .map_or(false, |a| a.chain_id == chain_id)
+            .is_some_and(|a| a.chain_id == chain_id)
     }
 
     pub fn on_processed(&self, callback: impl CallbackOnce<()>) -> Subscription<CallbacksOnce<()>> {

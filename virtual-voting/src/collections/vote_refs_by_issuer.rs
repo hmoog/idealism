@@ -1,19 +1,15 @@
 use std::collections::HashMap;
 
-use committee::Committee;
-use utils::Id;
+use committee::{Committee, MemberID};
 use zero::{Default0, Deref0, FromIterator0, IntoIterator0};
 
 use crate::{Config, VoteRef, VoteRefs, VotesByIssuer};
 
 #[derive(Default0, Deref0, FromIterator0, IntoIterator0)]
-pub struct VoteRefsByIssuer<C: Config>(HashMap<Id<C::IssuerID>, VoteRefs<C>>);
+pub struct VoteRefsByIssuer<C: Config>(HashMap<MemberID, VoteRefs<C>>);
 
 impl<C: Config> VoteRefsByIssuer<C> {
-    pub fn from_committee(
-        committee: &Committee<C::IssuerID>,
-        target: &VoteRef<C>,
-    ) -> VoteRefsByIssuer<C> {
+    pub fn from_committee(committee: &Committee, target: &VoteRef<C>) -> VoteRefsByIssuer<C> {
         let mut vote_refs_by_issuer = VoteRefsByIssuer::default();
         for member in committee.iter() {
             vote_refs_by_issuer.insert(member.key().clone(), VoteRefs::from_iter([target.clone()]));

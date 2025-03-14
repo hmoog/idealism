@@ -1,8 +1,7 @@
 use std::{cmp::max, collections::HashSet, sync::Arc};
 
-use committee::{Committee, Member};
+use committee::{Committee, Member, MemberID};
 use types::BlockID;
-use utils::Id;
 
 use crate::{
     Config,
@@ -14,13 +13,13 @@ use crate::{
 pub struct VoteBuilder<T: Config> {
     pub block_id: BlockID,
     pub config: Arc<T>,
-    pub issuer: Issuer<T::IssuerID>,
+    pub issuer: Issuer,
     pub time: u64,
     pub slot: u64,
     pub cumulative_slot_weight: u64,
     pub round: u64,
     pub referenced_round_weight: u64,
-    pub committee: Committee<T::IssuerID>,
+    pub committee: Committee,
     pub referenced_milestones: VoteRefsByIssuer<T>,
     pub milestone: Option<Milestone<T>>,
 }
@@ -28,7 +27,7 @@ pub struct VoteBuilder<T: Config> {
 impl<C: Config> VoteBuilder<C> {
     pub(crate) fn build(
         block_id: BlockID,
-        issuer: &Id<C::IssuerID>,
+        issuer: &MemberID,
         time: u64,
         votes: &Votes<C>,
     ) -> Result<Vote<C>> {
@@ -110,7 +109,7 @@ impl<C: Config> VoteBuilder<C> {
 
     fn build_validator_perception(
         mut self,
-        validator: &Member<C::IssuerID>,
+        validator: &Member,
         votes: VotesByIssuer<C>,
     ) -> Result<Vote<C>> {
         // set ourselves online before voting to also consider our own weight
@@ -120,7 +119,7 @@ impl<C: Config> VoteBuilder<C> {
         let (threshold, does_confirm) = self.consensus_threshold();
 
         // check if we can commit (haven't voted yet for this round or have enough weight)
-        if votes.get(validator.key()).map_or(true, |validator_votes| {
+        if votes.get(validator.key()).is_none_or(|validator_votes| {
             validator_votes.round() < self.round || self.referenced_round_weight >= threshold
         }) {
             // determine the heaviest tip and the accepted milestone
@@ -200,7 +199,7 @@ impl<C: Config> VoteBuilder<C> {
         )
     }
 
-    fn offline_validators(&self, votes: &VotesByIssuer<C>) -> HashSet<Id<C::IssuerID>> {
+    fn offline_validators(&self, votes: &VotesByIssuer<C>) -> HashSet<MemberID> {
         let offline_threshold = self.slot - self.config.offline_threshold();
 
         // filter online validators that haven't voted since the offline threshold
@@ -208,9 +207,9 @@ impl<C: Config> VoteBuilder<C> {
             .iter()
             .filter(|member| {
                 member.is_online()
-                    && !votes.get(member.key()).map_or(false, |m| {
-                        m.into_iter().any(|m| m.slot >= offline_threshold)
-                    })
+                    && !votes
+                        .get(member.key())
+                        .is_some_and(|m| m.into_iter().any(|m| m.slot >= offline_threshold))
             })
             .map(|member| member.key().clone())
             .collect()

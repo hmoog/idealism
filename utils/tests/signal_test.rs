@@ -36,8 +36,7 @@ fn test_signal() {
         .subscribe({
             let callback_counter = callback_counter.clone();
 
-            move |new_value: &i32| match (&callback_counter).fetch_add(1, atomic::Ordering::SeqCst)
-            {
+            move |new_value: &i32| match callback_counter.fetch_add(1, atomic::Ordering::SeqCst) {
                 1 => assert_eq!(*new_value, 42),
                 _ => panic!(),
             }

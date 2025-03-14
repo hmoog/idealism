@@ -29,7 +29,7 @@ impl<C: Config> Protocol<C> {
         let process_block = {
             let this = self.clone();
 
-            move |b: &ResourceGuard<BlockMetadata<Block<C>>>| {
+            move |b: &ResourceGuard<BlockMetadata<Block>>| {
                 let _ = this
                     .process_block(b.block())
                     .inspect_err(|err| this.error.trigger(err));
@@ -39,14 +39,14 @@ impl<C: Config> Protocol<C> {
         self.blocks.on_ready(process_block).forever();
     }
 
-    pub fn issue_block(&self, issuer: &IssuerID<C>) {
+    pub fn issue_block(&self, issuer: &IssuerID) {
         self.blocks.queue(Block::from(NetworkBlock {
-            parents: vec![],
+            parents: self.tips.get(),
             issuer_id: issuer.clone(),
         }));
     }
 
-    fn process_block(&self, block: &Block<C>) -> Result<()> {
+    fn process_block(&self, block: &Block) -> Result<()> {
         match block {
             Block::NetworkBlock(id, network_block) => {
                 let vote = Vote::new(
@@ -62,7 +62,7 @@ impl<C: Config> Protocol<C> {
         }
     }
 
-    fn process_vote(&self, block: &Block<C>, vote: Vote<C>) -> Result<()> {
+    fn process_vote(&self, block: &Block, vote: Vote<C>) -> Result<()> {
         if let Some(milestone) = &vote.milestone {
             self.process_milestone(Vote::try_from(&milestone.accepted)?)?;
         }
@@ -111,7 +111,7 @@ impl<C: Config> Protocol<C> {
         &self,
         current_height: u64,
         accepted_milestones: Vec<Vote<C>>,
-    ) -> Result<Vec<IndexSet<BlockMetadata<Block<C>>>>> {
+    ) -> Result<Vec<IndexSet<BlockMetadata<Block>>>> {
         let mut accepted_blocks = Vec::with_capacity(accepted_milestones.len());
 
         for (height_index, accepted_milestone) in accepted_milestones.iter().rev().enumerate() {

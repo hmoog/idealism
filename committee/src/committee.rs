@@ -1,12 +1,10 @@
 use std::{collections::HashMap, sync::Arc};
 
-use utils::Id;
-
 use crate::{Member, MemberID, Members};
 
-pub struct Committee<C: MemberID>(Arc<Members<C>>);
+pub struct Committee(Arc<Members>);
 
-impl<T: MemberID> Committee<T> {
+impl Committee {
     pub fn total_weight(&self) -> u64 {
         self.0.total_weight
     }
@@ -15,11 +13,11 @@ impl<T: MemberID> Committee<T> {
         self.0.online_weight
     }
 
-    pub fn member(&self, member_id: &Id<T>) -> Option<&Member<T>> {
+    pub fn member(&self, member_id: &MemberID) -> Option<&Member> {
         self.0.members_by_id.get(member_id).map(|member| &**member)
     }
 
-    pub fn members(&self) -> Vec<Member<T>> {
+    pub fn members(&self) -> Vec<Member> {
         let mut values: Vec<_> = self
             .0
             .members_by_id
@@ -30,7 +28,7 @@ impl<T: MemberID> Committee<T> {
         values
     }
 
-    pub fn member_weight(&self, member_id: &Id<T>) -> u64 {
+    pub fn member_weight(&self, member_id: &MemberID) -> u64 {
         self.0
             .members_by_id
             .get(member_id)
@@ -38,14 +36,14 @@ impl<T: MemberID> Committee<T> {
             .unwrap_or(0)
     }
 
-    pub fn is_member_online(&self, member_id: &Id<T>) -> bool {
+    pub fn is_member_online(&self, member_id: &MemberID) -> bool {
         self.0
             .members_by_id
             .get(member_id)
             .is_some_and(|m| m.is_online())
     }
 
-    pub fn set_online(&self, member_id: &Id<T>, online: bool) -> Self {
+    pub fn set_online(&self, member_id: &MemberID, online: bool) -> Self {
         let mut new_committee = Committee(self.0.clone());
 
         if let Some(member) = self.0.members_by_id.get(member_id) {
@@ -73,7 +71,7 @@ impl<T: MemberID> Committee<T> {
         new_committee
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &Member<T>> {
+    pub fn iter(&self) -> impl Iterator<Item = &Member> {
         self.0.members_by_id.values().map(|member| &**member)
     }
 
@@ -82,7 +80,7 @@ impl<T: MemberID> Committee<T> {
     }
 }
 
-impl<C: MemberID, T: IntoIterator<Item = Member<C>>> From<T> for Committee<C> {
+impl<T: IntoIterator<Item = Member>> From<T> for Committee {
     fn from(members: T) -> Self {
         let (members_by_id, total_weight, online_weight) = members.into_iter().fold(
             (HashMap::new(), 0, 0),
@@ -108,7 +106,7 @@ impl<C: MemberID, T: IntoIterator<Item = Member<C>>> From<T> for Committee<C> {
     }
 }
 
-impl<T: MemberID> Clone for Committee<T> {
+impl Clone for Committee {
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }

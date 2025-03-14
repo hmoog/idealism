@@ -1,4 +1,3 @@
-use utils::Id;
-use virtual_voting::Config;
+use types::{Blake2bHasher, Id};
 
-pub type IssuerID<C> = Id<<C as Config>::IssuerID>;
+pub type IssuerID = Id<Blake2bHasher>;

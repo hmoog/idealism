@@ -18,11 +18,7 @@ impl<E: Element> MaxSet<E> {
     /// # Safety
     /// Updates the tracked maximum element if the new element is greater.
     pub fn insert(&mut self, element: E) -> bool {
-        if self
-            .heaviest_element
-            .as_ref()
-            .map_or(true, |v| element > *v)
-        {
+        if self.heaviest_element.as_ref().is_none_or(|v| element > *v) {
             self.heaviest_element = Some(element.clone());
         }
         self.elements.insert(element)

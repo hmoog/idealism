@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
+use committee::MemberID;
 use types::BlockID;
-use utils::Id;
 use zero::{Clone0, Deref0};
 
 use crate::{Config, Error::NoMilestone, Milestone, Result, VoteBuilder, VoteRef, Votes};
@@ -12,7 +12,7 @@ pub struct Vote<C: Config>(Arc<VoteBuilder<C>>);
 impl<C: Config> Vote<C> {
     pub fn new(
         block_id: BlockID,
-        issuer: &Id<C::IssuerID>,
+        issuer: &MemberID,
         time: u64,
         latest: Votes<C>,
     ) -> Result<Vote<C>> {
