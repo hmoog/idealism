@@ -1,4 +1,4 @@
-use consensus::Protocol;
+use protocol::Protocol;
 use types::IssuerID;
 use virtual_voting::builtin::DefaultConfig;
 
@@ -11,7 +11,5 @@ fn test_protocol() {
         .blocks_ordered
         .subscribe(|event| println!("Blocks ordered: {:?}", event));
 
-    let issuer_id = IssuerID::from([1; 32]);
-
-    protocol.issue_block(&issuer_id);
+    protocol.issue_block(&IssuerID::from([1; 32]));
 }
