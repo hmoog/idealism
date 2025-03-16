@@ -1,4 +1,4 @@
-use committee::Committee;
+use types::bft::Committee;
 
 use crate::{Config, Vote};
 

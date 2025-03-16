@@ -1,5 +1,7 @@
-use committee::{Committee, Member};
-use types::ids::IssuerID;
+use types::{
+    bft::{Committee, Member},
+    ids::IssuerID,
+};
 
 use crate::{
     Config, Vote, VoteBuilder,

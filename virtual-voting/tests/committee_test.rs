@@ -1,5 +1,7 @@
-use committee::{Committee, Member};
-use types::ids::IssuerID;
+use types::{
+    bft::{Committee, Member},
+    ids::IssuerID,
+};
 
 #[test]
 fn test_committee() {

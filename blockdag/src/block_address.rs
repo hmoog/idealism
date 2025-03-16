@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use types::Block;
+use types::blocks::Block;
 use utils::rx::{CallbackOnce, CallbacksOnce, Signal, Subscription};
 use virtual_voting::Config;
 

@@ -1,5 +1,5 @@
 use blockdag::BlockDAG;
-use types::{Block, NetworkBlock};
+use types::blocks::{Block, NetworkBlock};
 use virtual_voting::builtin::DefaultConfig;
 
 #[test]

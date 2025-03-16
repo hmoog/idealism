@@ -1,7 +1,9 @@
 use std::{cmp::max, collections::HashSet, sync::Arc};
 
-use committee::{Committee, Member};
-use types::ids::{BlockID, IssuerID};
+use types::{
+    bft::{Committee, Member},
+    ids::{BlockID, IssuerID},
+};
 
 use crate::{
     Config,

@@ -1,8 +1,9 @@
 use std::{collections::HashMap, sync::Arc};
 
-use types::ids::IssuerID;
-
-use crate::{Member, Members};
+use crate::{
+    bft::{Member, Members},
+    ids::IssuerID,
+};
 
 pub struct Committee(Arc<Members>);
 
