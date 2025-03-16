@@ -1,6 +1,5 @@
 use blockdag::BlockMetadata;
-use types::ids::BlockID;
-use utils::rx::Variable;
+use types::{ids::BlockID, rx::Variable};
 use virtual_voting::Config;
 
 pub struct Tips<C: Config> {

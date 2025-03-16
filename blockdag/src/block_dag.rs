@@ -3,8 +3,11 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use types::{blocks::Block, ids::BlockID};
-use utils::rx::{Callback, Callbacks, Countdown, Event, ResourceGuard, Subscription};
+use types::{
+    blocks::Block,
+    ids::BlockID,
+    rx::{Callback, Callbacks, Countdown, Event, ResourceGuard, Subscription},
+};
 use virtual_voting::Config;
 
 use crate::{block_address::BlockAddress, block_metadata::BlockMetadata};

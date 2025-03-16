@@ -6,8 +6,10 @@ use std::{
     sync::{Arc, Mutex, Weak},
 };
 
-use types::blocks::Block;
-use utils::rx::{CallbackOnce, CallbacksOnce, Signal, Subscription};
+use types::{
+    blocks::Block,
+    rx::{CallbackOnce, CallbacksOnce, Signal, Subscription},
+};
 use virtual_voting::{Config, Vote};
 
 use crate::accepted::Accepted;

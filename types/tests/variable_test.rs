@@ -1,6 +1,6 @@
 use std::sync::{Arc, atomic, atomic::AtomicU64};
 
-use utils::rx::Variable;
+use types::rx::Variable;
 
 #[test]
 fn test_variable() {

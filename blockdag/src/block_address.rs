@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
-use types::blocks::Block;
-use utils::rx::{CallbackOnce, CallbacksOnce, Signal, Subscription};
+use types::{
+    blocks::Block,
+    rx::{CallbackOnce, CallbacksOnce, Signal, Subscription},
+};
 use virtual_voting::Config;
 
 use crate::BlockMetadata;

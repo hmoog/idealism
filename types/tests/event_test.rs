@@ -1,4 +1,4 @@
-use utils::rx::Event;
+use types::rx::Event;
 
 #[test]
 fn test_add() {

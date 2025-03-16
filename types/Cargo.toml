@@ -5,3 +5,5 @@ edition = "2024"
 
 [dependencies]
 blake2 = "0.10.6"
+slotmap = "1.0.7"
+trait-set = "0.3.0"

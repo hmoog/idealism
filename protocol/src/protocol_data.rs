@@ -5,8 +5,11 @@ use std::{
 
 use blockdag::{BlockDAG, BlockMetadata};
 use indexmap::IndexSet;
-use types::{blocks::Block, ids::BlockID};
-use utils::rx::{Event, Variable};
+use types::{
+    blocks::Block,
+    ids::BlockID,
+    rx::{Event, Variable},
+};
 use virtual_voting::{Config, Vote, Votes};
 
 use crate::{

@@ -5,8 +5,8 @@ use indexmap::IndexSet;
 use types::{
     blocks::{Block, NetworkBlock},
     ids::IssuerID,
+    rx::ResourceGuard,
 };
-use utils::rx::ResourceGuard;
 use virtual_voting::{Config, Vote};
 use zero::{Clone0, Deref0};
 
