@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 
-use types::IssuerID;
+use types::ids::IssuerID;
 
 use crate::{Member, Members};
 

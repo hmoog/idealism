@@ -2,7 +2,7 @@ use std::{fmt, fmt::Debug};
 
 pub use network_block::*;
 
-use crate::BlockID;
+use crate::ids::BlockID;
 
 pub enum Block {
     GenesisBlock(BlockID),
@@ -41,7 +41,10 @@ impl Debug for Block {
 }
 
 mod network_block {
-    use crate::{BlockID, Hashable, Hasher, IssuerID};
+    use crate::{
+        hash::{Hashable, Hasher},
+        ids::{BlockID, IssuerID},
+    };
 
     pub struct NetworkBlock {
         pub parents: Vec<BlockID>,

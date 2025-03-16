@@ -1,5 +1,5 @@
 use protocol::Protocol;
-use types::IssuerID;
+use types::ids::IssuerID;
 use virtual_voting::builtin::DefaultConfig;
 
 #[test]

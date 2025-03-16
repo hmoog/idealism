@@ -1,8 +1,10 @@
 use blake2::{Blake2b, Digest};
 
+use crate::hash;
+
 pub struct Hasher(Blake2b<blake2::digest::consts::U32>);
 
-impl super::Hasher for Hasher {
+impl hash::Hasher for Hasher {
     fn new() -> Self {
         Hasher(Blake2b::<blake2::digest::consts::U32>::new())
     }

@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use committee::Committee;
-use types::IssuerID;
+use types::ids::IssuerID;
 
 use crate::{Config, Vote, Votes};
 

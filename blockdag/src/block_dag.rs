@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use types::{Block, BlockID};
+use types::{Block, ids::BlockID};
 use utils::rx::{Callback, Callbacks, Countdown, Event, ResourceGuard, Subscription};
 use virtual_voting::Config;
 

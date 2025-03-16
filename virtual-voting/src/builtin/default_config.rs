@@ -1,5 +1,5 @@
 use committee::{Committee, Member};
-use types::IssuerID;
+use types::ids::IssuerID;
 
 use crate::{
     Config, Vote, VoteBuilder,

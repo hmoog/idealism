@@ -1,5 +1,5 @@
 use blockdag::BlockMetadata;
-use types::BlockID;
+use types::ids::BlockID;
 use utils::rx::Variable;
 use virtual_voting::Config;
 

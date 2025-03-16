@@ -1,4 +1,4 @@
-use types::IssuerID;
+use types::ids::IssuerID;
 
 pub struct Member {
     id: IssuerID,
@@ -82,7 +82,10 @@ impl Clone for Member {
 
 #[cfg(test)]
 mod tests {
-    use types::{Hashable, Hasher, IssuerID};
+    use types::{
+        hash::{Hashable, Hasher},
+        ids::IssuerID,
+    };
 
     use super::*;
 

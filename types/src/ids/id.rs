@@ -1,5 +1,5 @@
 use std::{
-    fmt::{Debug, Display},
+    fmt::{Debug, Display, Write},
     hash,
     hash::Hash,
     marker::PhantomData,
@@ -7,7 +7,7 @@ use std::{
     sync::Arc,
 };
 
-use crate::{hashable::Hashable, hasher::Hasher};
+use crate::hash::{Hashable, Hasher};
 
 pub struct Id<H: Hasher>(Arc<[u8; 32]>, PhantomData<H>);
 
@@ -50,8 +50,10 @@ impl<T: Hasher> Display for Id<T> {
             "0x{}",
             self.0
                 .iter()
-                .map(|b| format!("{:02x}", b))
-                .collect::<String>()
+                .fold(String::with_capacity(self.0.len() * 2), |mut s, b| {
+                    write!(s, "{:02x}", b).unwrap();
+                    s
+                })
         )
     }
 }

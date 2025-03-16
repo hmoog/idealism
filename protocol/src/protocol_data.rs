@@ -5,7 +5,7 @@ use std::{
 
 use blockdag::{BlockDAG, BlockMetadata};
 use indexmap::IndexSet;
-use types::{Block, BlockID};
+use types::{Block, ids::BlockID};
 use utils::rx::{Event, Variable};
 use virtual_voting::{Config, Vote, Votes};
 

@@ -38,7 +38,10 @@ mod weight_tracker;
 
 #[cfg(test)]
 mod test {
-    use types::{BlockID, Hashable, Hasher};
+    use types::{
+        hash::{Hashable, Hasher},
+        ids::BlockID,
+    };
 
     use crate::{Result, Vote, Votes, builtin::DefaultConfig};
 

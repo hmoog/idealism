@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use blockdag::{Accepted, BlockMetadata};
 use indexmap::IndexSet;
-use types::{Block, IssuerID, NetworkBlock};
+use types::{Block, NetworkBlock, ids::IssuerID};
 use utils::rx::ResourceGuard;
 use virtual_voting::{Config, Vote};
 use zero::{Clone0, Deref0};

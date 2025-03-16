@@ -1,4 +1,4 @@
-use types::IssuerID;
+use types::ids::IssuerID;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub enum Issuer {

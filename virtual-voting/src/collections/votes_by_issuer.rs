@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use types::IssuerID;
+use types::ids::IssuerID;
 use zero::{Clone0, Default0, Deref0, FromIterator0, IntoIterator0};
 
 use crate::{Config, Votes};

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use types::{BlockID, IssuerID};
+use types::ids::{BlockID, IssuerID};
 use zero::{Clone0, Deref0};
 
 use crate::{Config, Error::NoMilestone, Milestone, Result, VoteBuilder, VoteRef, Votes};
