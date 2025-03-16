@@ -1,34 +1,33 @@
 use std::{fmt, fmt::Debug};
 
 pub use network_block::*;
-use types::BlockID;
+
+use crate::BlockID;
 
 pub enum Block {
     GenesisBlock(BlockID),
     NetworkBlock(BlockID, NetworkBlock),
 }
 
-impl From<NetworkBlock> for Block {
-    fn from(value: NetworkBlock) -> Self {
-        Block::NetworkBlock(BlockID::new(&value), value)
-    }
-}
-
-impl blockdag::Block for Block {
-    type ID = BlockID;
-
-    fn id(&self) -> &Self::ID {
+impl Block {
+    pub fn id(&self) -> &BlockID {
         match &self {
             Block::GenesisBlock(id) => id,
             Block::NetworkBlock(id, _) => id,
         }
     }
 
-    fn parents(&self) -> &[Self::ID] {
+    pub fn parents(&self) -> &[BlockID] {
         match &self {
             Block::GenesisBlock(_) => &[],
             Block::NetworkBlock(_, network_block) => network_block.parents.as_slice(),
         }
+    }
+}
+
+impl From<NetworkBlock> for Block {
+    fn from(value: NetworkBlock) -> Self {
+        Block::NetworkBlock(BlockID::new(&value), value)
     }
 }
 
@@ -42,7 +41,7 @@ impl Debug for Block {
 }
 
 mod network_block {
-    use types::{BlockID, Hashable, Hasher, IssuerID};
+    use crate::{BlockID, Hashable, Hasher, IssuerID};
 
     pub struct NetworkBlock {
         pub parents: Vec<BlockID>,

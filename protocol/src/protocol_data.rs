@@ -3,14 +3,13 @@ use std::{
     sync::Mutex,
 };
 
-use blockdag::{Block as BlockDagBlock, BlockDAG, BlockMetadata};
+use blockdag::{BlockDAG, BlockMetadata};
 use indexmap::IndexSet;
-use types::BlockID;
+use types::{Block, BlockID};
 use utils::rx::{Event, Variable};
 use virtual_voting::{Config, Vote, Votes};
 
 use crate::{
-    block::Block,
     error::{Error, Error::VoteNotFound, Result},
     events::BlocksOrderedEvent,
     tips::Tips,
@@ -19,7 +18,7 @@ use crate::{
 pub struct ProtocolData<C: Config> {
     pub error: Event<Error>,
     pub blocks_ordered: Event<BlocksOrderedEvent>,
-    pub(crate) blocks: BlockDAG<Block>,
+    pub(crate) blocks: BlockDAG,
     pub(crate) votes: Mutex<HashMap<BlockID, Vote<C>>>,
     pub(crate) latest_accepted_milestone: Variable<Vote<C>>,
     pub(crate) tips: Tips,
@@ -45,7 +44,7 @@ impl<C: Config> ProtocolData<C> {
         }
     }
 
-    pub fn block(&self, block_id: &BlockID) -> Option<BlockMetadata<Block>> {
+    pub fn block(&self, block_id: &BlockID) -> Option<BlockMetadata> {
         self.blocks.get(block_id)
     }
 
@@ -73,18 +72,18 @@ impl<C: Config> ProtocolData<C> {
         Ok(range)
     }
 
-    pub fn past_cone<F: Fn(&BlockMetadata<Block>) -> bool>(
+    pub fn past_cone<F: Fn(&BlockMetadata) -> bool>(
         &self,
-        start: BlockMetadata<Block>,
+        start: BlockMetadata,
         should_visit: F,
-    ) -> Result<IndexSet<BlockMetadata<Block>>> {
+    ) -> Result<IndexSet<BlockMetadata>> {
         let mut past_cone = IndexSet::new();
 
         if should_visit(&start) && past_cone.insert(start.clone()) {
             let mut queue = VecDeque::from([start]);
 
             while let Some(current) = queue.pop_front() {
-                for parent_id in current.block().parents() {
+                for parent_id in current.block.parents() {
                     let parent_block = self.block(parent_id).ok_or(Error::BlockNotFound)?;
 
                     if should_visit(&parent_block) && past_cone.insert(parent_block.clone()) {

@@ -2,19 +2,19 @@ use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
 };
-
+use types::{Block, BlockID};
 use utils::rx::{Callback, Callbacks, Countdown, Event, ResourceGuard, Subscription};
 
-use crate::{block, block_address::BlockAddress, block_metadata::BlockMetadata};
+use crate::{block_address::BlockAddress, block_metadata::BlockMetadata};
 
-pub struct BlockDAG<Block: block::Block>(Arc<BlockDAGData<Block>>);
+pub struct BlockDAG(Arc<BlockDAGData>);
 
-struct BlockDAGData<Block: block::Block> {
-    blocks: Mutex<HashMap<Block::ID, BlockAddress<Block>>>,
-    ready_event: Event<ResourceGuard<BlockMetadata<Block>>>,
+struct BlockDAGData {
+    blocks: Mutex<HashMap<BlockID, BlockAddress>>,
+    ready_event: Event<ResourceGuard<BlockMetadata>>,
 }
 
-impl<Block: block::Block> BlockDAG<Block> {
+impl BlockDAG {
     pub fn new() -> Self {
         Self(Arc::new(BlockDAGData {
             blocks: Mutex::new(HashMap::new()),
@@ -28,12 +28,12 @@ impl<Block: block::Block> BlockDAG<Block> {
 
     pub fn on_ready(
         &self,
-        callback: impl Callback<ResourceGuard<BlockMetadata<Block>>>,
-    ) -> Subscription<Callbacks<ResourceGuard<BlockMetadata<Block>>>> {
+        callback: impl Callback<ResourceGuard<BlockMetadata>>,
+    ) -> Subscription<Callbacks<ResourceGuard<BlockMetadata>>> {
         self.0.ready_event.subscribe(callback)
     }
 
-    pub fn get(&self, block_id: &Block::ID) -> Option<BlockMetadata<Block>> {
+    pub fn get(&self, block_id: &BlockID) -> Option<BlockMetadata> {
         self.0
             .blocks
             .lock()
@@ -42,7 +42,7 @@ impl<Block: block::Block> BlockDAG<Block> {
             .and_then(|a| a.data().get().as_ref().cloned())
     }
 
-    fn address(&self, block_id: &Block::ID) -> BlockAddress<Block> {
+    fn address(&self, block_id: &BlockID) -> BlockAddress {
         self.0
             .blocks
             .lock()
@@ -56,7 +56,7 @@ impl<Block: block::Block> BlockDAG<Block> {
             .clone()
     }
 
-    fn monitor_address(&self, new_address: &BlockAddress<Block>) {
+    fn monitor_address(&self, new_address: &BlockAddress) {
         let block_dag = self.clone();
 
         new_address
@@ -78,10 +78,10 @@ impl<Block: block::Block> BlockDAG<Block> {
 
     fn on_all_parents_processed(
         &self,
-        metadata: &BlockMetadata<Block>,
+        metadata: &BlockMetadata,
         callback: impl Fn() + Send + Sync + 'static,
     ) {
-        let parents = metadata.block().parents();
+        let parents = metadata.block.parents();
         let pending_parents = Countdown::new(parents.len(), callback);
 
         for (index, parent_id) in parents.iter().enumerate() {
@@ -101,13 +101,13 @@ impl<Block: block::Block> BlockDAG<Block> {
     }
 }
 
-impl<Block: block::Block> Default for BlockDAG<Block> {
+impl Default for BlockDAG {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<Block: block::Block> Clone for BlockDAG<Block> {
+impl Clone for BlockDAG {
     fn clone(&self) -> Self {
         Self(Arc::clone(&self.0))
     }

@@ -1,18 +1,18 @@
 use std::sync::Arc;
-
+use types::Block;
 use utils::rx::{CallbackOnce, CallbacksOnce, Signal, Subscription};
 
-use crate::{BlockMetadata, block};
+use crate::BlockMetadata;
 
 /// BlockAddress is a helper struct that allows to publish and subscribe to
 /// block metadata.
-pub(crate) struct BlockAddress<Block: block::Block> {
+pub(crate) struct BlockAddress {
     /// Signal that holds the block metadata.
-    data: Arc<Signal<BlockMetadata<Block>>>,
+    data: Arc<Signal<BlockMetadata>>,
 }
 
 /// Implementation of BlockAddress.
-impl<Block: block::Block> BlockAddress<Block> {
+impl BlockAddress {
     /// Creates a new BlockAddress.
     pub fn new() -> Self {
         Self {
@@ -20,12 +20,12 @@ impl<Block: block::Block> BlockAddress<Block> {
         }
     }
 
-    pub fn data(&self) -> &Signal<BlockMetadata<Block>> {
+    pub fn data(&self) -> &Signal<BlockMetadata> {
         &self.data
     }
 
     /// Publishes a block.
-    pub fn publish(&self, block: Block) -> BlockMetadata<Block> {
+    pub fn publish(&self, block: Block) -> BlockMetadata {
         self.data
             .get_or_insert_with(|| BlockMetadata::new(block))
             .clone()
@@ -35,14 +35,14 @@ impl<Block: block::Block> BlockAddress<Block> {
     /// Subscribes to the block metadata.
     pub fn on_available(
         &self,
-        callback: impl CallbackOnce<BlockMetadata<Block>>,
-    ) -> Subscription<CallbacksOnce<BlockMetadata<Block>>> {
+        callback: impl CallbackOnce<BlockMetadata>,
+    ) -> Subscription<CallbacksOnce<BlockMetadata>> {
         self.data.subscribe(callback)
     }
 }
 
 /// Clone implementation for BlockAddress.
-impl<Block: block::Block> Clone for BlockAddress<Block> {
+impl Clone for BlockAddress {
     /// Clones the BlockAddress.
     fn clone(&self) -> Self {
         Self {

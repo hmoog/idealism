@@ -5,32 +5,28 @@ use std::{
     ptr,
     sync::{Arc, Mutex, Weak},
 };
-
+use types::Block;
 use utils::rx::{CallbackOnce, CallbacksOnce, Signal, Subscription};
 
-use crate::{accepted::Accepted, block};
+use crate::{accepted::Accepted};
 
-pub struct BlockMetadata<Block: block::Block>(Arc<Inner<Block>>);
+pub struct BlockMetadata(Arc<Inner>);
 
-pub struct Inner<Block: block::Block> {
-    parents: Mutex<Vec<BlockMetadataRef<Block>>>,
+pub struct Inner {
+    parents: Mutex<Vec<BlockMetadataRef>>,
     processed: Signal<()>,
+    pub block: Block,
     pub accepted: Signal<Accepted>,
-    block: Arc<Block>,
 }
 
-impl<Block: block::Block> BlockMetadata<Block> {
+impl BlockMetadata {
     pub fn new(block: Block) -> Self {
         Self(Arc::new(Inner {
             parents: Mutex::new(vec![BlockMetadataRef::new(); block.parents().len()]),
             processed: Signal::new(),
             accepted: Signal::new(),
-            block: Arc::new(block),
+            block,
         }))
-    }
-
-    pub fn block(&self) -> &Block {
-        &self.0.block
     }
 
     pub fn is_accepted(&self, chain_id: u64) -> bool {
@@ -45,11 +41,11 @@ impl<Block: block::Block> BlockMetadata<Block> {
         self.0.processed.subscribe(callback)
     }
 
-    pub fn downgrade(&self) -> BlockMetadataRef<Block> {
+    pub fn downgrade(&self) -> BlockMetadataRef {
         BlockMetadataRef(Arc::downgrade(&self.0))
     }
 
-    pub(crate) fn register_parent(&self, index: usize, parent: BlockMetadataRef<Block>) {
+    pub(crate) fn register_parent(&self, index: usize, parent: BlockMetadataRef) {
         self.0
             .parents
             .lock()
@@ -62,75 +58,75 @@ impl<Block: block::Block> BlockMetadata<Block> {
     }
 }
 
-impl<Block: block::Block> Deref for BlockMetadata<Block> {
-    type Target = Inner<Block>;
+impl Deref for BlockMetadata {
+    type Target = Inner;
 
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-impl<Block: block::Block> Clone for BlockMetadata<Block> {
+impl Clone for BlockMetadata {
     fn clone(&self) -> Self {
         Self(Arc::clone(&self.0))
     }
 }
 
-impl<Block: block::Block> PartialEq for BlockMetadata<Block> {
+impl PartialEq for BlockMetadata {
     fn eq(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.0, &other.0)
     }
 }
 
-impl<Block: block::Block> Eq for BlockMetadata<Block> {}
+impl Eq for BlockMetadata {}
 
-impl<Block: block::Block> Hash for BlockMetadata<Block> {
+impl Hash for BlockMetadata {
     fn hash<H: Hasher>(&self, state: &mut H) {
         ptr::hash(Arc::as_ptr(&self.0), state);
     }
 }
 
-impl<Block: block::Block> Debug for BlockMetadata<Block> {
+impl Debug for BlockMetadata {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("BlockMetadata")
-            .field("block", self.block())
+            .field("block", &self.block)
             .finish()
     }
 }
 
-pub struct BlockMetadataRef<Block: block::Block>(Weak<Inner<Block>>);
+pub struct BlockMetadataRef(Weak<Inner>);
 
-impl<Block: block::Block> BlockMetadataRef<Block> {
+impl BlockMetadataRef {
     pub fn new() -> Self {
         Self(Weak::new())
     }
 
-    pub fn upgrade(&self) -> Option<BlockMetadata<Block>> {
+    pub fn upgrade(&self) -> Option<BlockMetadata> {
         self.0.upgrade().map(BlockMetadata)
     }
 }
 
-impl<Block: block::Block> Default for BlockMetadataRef<Block> {
+impl Default for BlockMetadataRef {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<Block: block::Block> Clone for BlockMetadataRef<Block> {
+impl Clone for BlockMetadataRef {
     fn clone(&self) -> Self {
         Self(Weak::clone(&self.0))
     }
 }
 
-impl<Block: block::Block> PartialEq for BlockMetadataRef<Block> {
+impl PartialEq for BlockMetadataRef {
     fn eq(&self, other: &Self) -> bool {
         self.0.as_ptr() == other.0.as_ptr()
     }
 }
 
-impl<Block: block::Block> Eq for BlockMetadataRef<Block> {}
+impl Eq for BlockMetadataRef {}
 
-impl<Block: block::Block> Hash for BlockMetadataRef<Block> {
+impl Hash for BlockMetadataRef {
     fn hash<T: Hasher>(&self, state: &mut T) {
         ptr::hash(self.0.as_ptr(), state);
     }

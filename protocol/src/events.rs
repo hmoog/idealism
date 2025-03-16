@@ -3,11 +3,9 @@ use std::fmt::Debug;
 use blockdag::BlockMetadata;
 use indexmap::IndexSet;
 
-use crate::block::Block;
-
 pub struct BlocksOrderedEvent {
     pub current_height: u64,
-    pub ordered_blocks: Vec<IndexSet<BlockMetadata<Block>>>,
+    pub ordered_blocks: Vec<IndexSet<BlockMetadata>>,
 }
 
 impl Debug for BlocksOrderedEvent {

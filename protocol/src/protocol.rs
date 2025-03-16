@@ -1,14 +1,13 @@
 use std::sync::Arc;
 
-use blockdag::{Accepted, Block as _, BlockMetadata};
+use blockdag::{Accepted, BlockMetadata};
 use indexmap::IndexSet;
-use types::IssuerID;
+use types::{Block, IssuerID, NetworkBlock};
 use utils::rx::ResourceGuard;
 use virtual_voting::{Config, Vote};
 use zero::{Clone0, Deref0};
 
 use crate::{
-    block::{Block, NetworkBlock},
     error::{Error, Result},
     events::BlocksOrderedEvent,
     protocol_data::ProtocolData,
@@ -29,9 +28,9 @@ impl<C: Config> Protocol<C> {
         let process_block = {
             let this = self.clone();
 
-            move |b: &ResourceGuard<BlockMetadata<Block>>| {
+            move |b: &ResourceGuard<BlockMetadata>| {
                 let _ = this
-                    .process_block(b.block())
+                    .process_block(&b.block)
                     .inspect_err(|err| this.error.trigger(err));
             }
         };
@@ -111,7 +110,7 @@ impl<C: Config> Protocol<C> {
         &self,
         current_height: u64,
         accepted_milestones: Vec<Vote<C>>,
-    ) -> Result<Vec<IndexSet<BlockMetadata<Block>>>> {
+    ) -> Result<Vec<IndexSet<BlockMetadata>>> {
         let mut accepted_blocks = Vec::with_capacity(accepted_milestones.len());
 
         for (height_index, accepted_milestone) in accepted_milestones.iter().rev().enumerate() {

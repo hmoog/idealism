@@ -1,4 +1,3 @@
-mod block;
 mod error;
 mod events;
 mod protocol;
