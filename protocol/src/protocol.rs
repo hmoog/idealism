@@ -33,7 +33,7 @@ impl<C: Config> Protocol<C> {
 
             move |b: &ResourceGuard<BlockMetadata<C>>| {
                 let _ = this
-                    .process_block(&b.block)
+                    .process_block(b)
                     .inspect_err(|err| this.error.trigger(err));
             }
         };
@@ -48,17 +48,20 @@ impl<C: Config> Protocol<C> {
         }));
     }
 
-    fn process_block(&self, block: &Block) -> Result<()> {
-        match block {
+    fn process_block(&self, metadata: &ResourceGuard<BlockMetadata<C>>) -> Result<()> {
+        match &metadata.block {
             Block::NetworkBlock(id, network_block) => {
                 let vote = Vote::new(
                     id.clone(),
                     &network_block.issuer_id,
                     0,
-                    self.votes(block.parents())?,
+                    self.votes(metadata.block.parents())?,
                 )?;
 
-                self.process_vote(block, vote)
+                self.process_vote(&metadata.block, vote.clone())
+                    .map(move |_| {
+                        metadata.vote.set(vote);
+                    })
             }
             _ => Err(Error::UnsupportedBlockType),
         }
