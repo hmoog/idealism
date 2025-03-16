@@ -2,19 +2,21 @@ use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
 };
+
 use types::{Block, BlockID};
 use utils::rx::{Callback, Callbacks, Countdown, Event, ResourceGuard, Subscription};
+use virtual_voting::Config;
 
 use crate::{block_address::BlockAddress, block_metadata::BlockMetadata};
 
-pub struct BlockDAG(Arc<BlockDAGData>);
+pub struct BlockDAG<C: Config>(Arc<BlockDAGData<C>>);
 
-struct BlockDAGData {
-    blocks: Mutex<HashMap<BlockID, BlockAddress>>,
-    ready_event: Event<ResourceGuard<BlockMetadata>>,
+struct BlockDAGData<C: Config> {
+    blocks: Mutex<HashMap<BlockID, BlockAddress<C>>>,
+    ready_event: Event<ResourceGuard<BlockMetadata<C>>>,
 }
 
-impl BlockDAG {
+impl<C: Config> BlockDAG<C> {
     pub fn new() -> Self {
         Self(Arc::new(BlockDAGData {
             blocks: Mutex::new(HashMap::new()),
@@ -28,12 +30,12 @@ impl BlockDAG {
 
     pub fn on_ready(
         &self,
-        callback: impl Callback<ResourceGuard<BlockMetadata>>,
-    ) -> Subscription<Callbacks<ResourceGuard<BlockMetadata>>> {
+        callback: impl Callback<ResourceGuard<BlockMetadata<C>>>,
+    ) -> Subscription<Callbacks<ResourceGuard<BlockMetadata<C>>>> {
         self.0.ready_event.subscribe(callback)
     }
 
-    pub fn get(&self, block_id: &BlockID) -> Option<BlockMetadata> {
+    pub fn get(&self, block_id: &BlockID) -> Option<BlockMetadata<C>> {
         self.0
             .blocks
             .lock()
@@ -42,7 +44,7 @@ impl BlockDAG {
             .and_then(|a| a.data().get().as_ref().cloned())
     }
 
-    fn address(&self, block_id: &BlockID) -> BlockAddress {
+    fn address(&self, block_id: &BlockID) -> BlockAddress<C> {
         self.0
             .blocks
             .lock()
@@ -56,7 +58,7 @@ impl BlockDAG {
             .clone()
     }
 
-    fn monitor_address(&self, new_address: &BlockAddress) {
+    fn monitor_address(&self, new_address: &BlockAddress<C>) {
         let block_dag = self.clone();
 
         new_address
@@ -78,7 +80,7 @@ impl BlockDAG {
 
     fn on_all_parents_processed(
         &self,
-        metadata: &BlockMetadata,
+        metadata: &BlockMetadata<C>,
         callback: impl Fn() + Send + Sync + 'static,
     ) {
         let parents = metadata.block.parents();
@@ -101,13 +103,13 @@ impl BlockDAG {
     }
 }
 
-impl Default for BlockDAG {
+impl<C: Config> Default for BlockDAG<C> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl Clone for BlockDAG {
+impl<C: Config> Clone for BlockDAG<C> {
     fn clone(&self) -> Self {
         Self(Arc::clone(&self.0))
     }

@@ -28,7 +28,7 @@ impl<C: Config> Protocol<C> {
         let process_block = {
             let this = self.clone();
 
-            move |b: &ResourceGuard<BlockMetadata>| {
+            move |b: &ResourceGuard<BlockMetadata<C>>| {
                 let _ = this
                     .process_block(&b.block)
                     .inspect_err(|err| this.error.trigger(err));
@@ -110,7 +110,7 @@ impl<C: Config> Protocol<C> {
         &self,
         current_height: u64,
         accepted_milestones: Vec<Vote<C>>,
-    ) -> Result<Vec<IndexSet<BlockMetadata>>> {
+    ) -> Result<Vec<IndexSet<BlockMetadata<C>>>> {
         let mut accepted_blocks = Vec::with_capacity(accepted_milestones.len());
 
         for (height_index, accepted_milestone) in accepted_milestones.iter().rev().enumerate() {

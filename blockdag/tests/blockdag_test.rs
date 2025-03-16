@@ -1,9 +1,10 @@
-use blockdag::{BlockDAG};
+use blockdag::BlockDAG;
 use types::{Block, NetworkBlock};
+use virtual_voting::builtin::DefaultConfig;
 
 #[test]
 fn test_block_dag() {
-    let block_dag = BlockDAG::new();
+    let block_dag: BlockDAG<DefaultConfig> = BlockDAG::new();
 
     block_dag
         .on_ready(|metadata| {

@@ -17,11 +17,11 @@ use crate::{
 
 pub struct ProtocolData<C: Config> {
     pub error: Event<Error>,
-    pub blocks_ordered: Event<BlocksOrderedEvent>,
-    pub(crate) blocks: BlockDAG,
+    pub blocks_ordered: Event<BlocksOrderedEvent<C>>,
+    pub(crate) blocks: BlockDAG<C>,
     pub(crate) votes: Mutex<HashMap<BlockID, Vote<C>>>,
     pub(crate) latest_accepted_milestone: Variable<Vote<C>>,
-    pub(crate) tips: Tips,
+    pub(crate) tips: Tips<C>,
 }
 
 impl<C: Config> ProtocolData<C> {
@@ -44,7 +44,7 @@ impl<C: Config> ProtocolData<C> {
         }
     }
 
-    pub fn block(&self, block_id: &BlockID) -> Option<BlockMetadata> {
+    pub fn block(&self, block_id: &BlockID) -> Option<BlockMetadata<C>> {
         self.blocks.get(block_id)
     }
 
@@ -72,11 +72,11 @@ impl<C: Config> ProtocolData<C> {
         Ok(range)
     }
 
-    pub fn past_cone<F: Fn(&BlockMetadata) -> bool>(
+    pub fn past_cone<F: Fn(&BlockMetadata<C>) -> bool>(
         &self,
-        start: BlockMetadata,
+        start: BlockMetadata<C>,
         should_visit: F,
-    ) -> Result<IndexSet<BlockMetadata>> {
+    ) -> Result<IndexSet<BlockMetadata<C>>> {
         let mut past_cone = IndexSet::new();
 
         if should_visit(&start) && past_cone.insert(start.clone()) {

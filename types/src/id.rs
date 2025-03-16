@@ -1,5 +1,12 @@
-use std::{fmt::Debug, hash, hash::Hash, marker::PhantomData, ops::Deref, sync::Arc};
-use std::fmt::Display;
+use std::{
+    fmt::{Debug, Display},
+    hash,
+    hash::Hash,
+    marker::PhantomData,
+    ops::Deref,
+    sync::Arc,
+};
+
 use crate::{hashable::Hashable, hasher::Hasher};
 
 pub struct Id<H: Hasher>(Arc<[u8; 32]>, PhantomData<H>);
@@ -38,7 +45,14 @@ impl<T: Hasher> Debug for Id<T> {
 
 impl<T: Hasher> Display for Id<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "0x{}", self.0.iter().map(|b| format!("{:02x}", b)).collect::<String>())
+        write!(
+            f,
+            "0x{}",
+            self.0
+                .iter()
+                .map(|b| format!("{:02x}", b))
+                .collect::<String>()
+        )
     }
 }
 
