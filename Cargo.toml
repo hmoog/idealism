@@ -1,4 +1,4 @@
 [workspace]
 resolver = "2"
 
-members = ["blockdag", "protocol", "types", "utils", "virtual-voting", "zero"]
+members = ["blockdag", "protocol", "types", "virtual-voting", "zero"]

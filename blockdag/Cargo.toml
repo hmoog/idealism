@@ -5,5 +5,4 @@ edition = "2024"
 
 [dependencies]
 types = { path = "../types" }
-utils = { path = "../utils" }
 virtual-voting = { path = "../virtual-voting" }

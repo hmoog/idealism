@@ -14,6 +14,11 @@ pub mod blocks {
     pub use block::Block;
     pub use network_block::NetworkBlock;
 }
+pub mod collections {
+    mod max_set;
+
+    pub use max_set::MaxSet;
+}
 pub mod hash {
     mod blake2b;
     mod hashable;
