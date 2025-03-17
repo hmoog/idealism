@@ -1,7 +1,4 @@
-use std::{
-    collections::{HashMap, VecDeque},
-    sync::Mutex,
-};
+use std::collections::VecDeque;
 
 use blockdag::{BlockDAG, BlockMetadata};
 use indexmap::IndexSet;
@@ -13,7 +10,11 @@ use types::{
 use virtual_voting::{Config, Vote, Votes};
 
 use crate::{
-    error::{Error, Error::VoteNotFound, Result},
+    error::{
+        Error,
+        Error::{BlockNotFound, VoteNotFound},
+        Result,
+    },
     events::BlocksOrderedEvent,
     tips::Tips,
 };
@@ -22,7 +23,6 @@ pub struct ProtocolData<C: Config> {
     pub error: Event<Error>,
     pub blocks_ordered: Event<BlocksOrderedEvent<C>>,
     pub(crate) blocks: BlockDAG<C>,
-    pub(crate) votes: Mutex<HashMap<BlockID, Vote<C>>>,
     pub(crate) latest_accepted_milestone: Variable<Vote<C>>,
     pub(crate) tips: Tips<C>,
 }
@@ -36,10 +36,6 @@ impl<C: Config> ProtocolData<C> {
 
         Self {
             blocks,
-            votes: Mutex::new(HashMap::from([(
-                genesis_vote.block_id.clone(),
-                genesis_vote,
-            )])),
             error: Event::new(),
             latest_accepted_milestone: Variable::new(),
             blocks_ordered: Event::new(),
@@ -52,11 +48,15 @@ impl<C: Config> ProtocolData<C> {
     }
 
     pub fn votes(&self, block_ids: &[BlockID]) -> Result<Votes<C>> {
-        let locked_votes = self.votes.lock().expect("failed to lock votes");
-
         let mut result = Votes::default();
         for block_id in block_ids {
-            result.insert(locked_votes.get(block_id).ok_or(VoteNotFound)?.clone());
+            match self.blocks.get(block_id) {
+                Some(block) => match &*block.vote.get() {
+                    Some(vote) => result.insert(vote.clone()),
+                    None => return Err(VoteNotFound),
+                },
+                None => return Err(BlockNotFound),
+            };
         }
 
         Ok(result)

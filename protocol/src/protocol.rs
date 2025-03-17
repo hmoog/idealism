@@ -58,23 +58,16 @@ impl<C: Config> Protocol<C> {
                     self.votes(metadata.block.parents())?,
                 )?;
 
-                self.process_vote(&metadata.block, vote.clone())
-                    .map(move |_| {
-                        metadata.vote.set(vote);
-                    })
-            }
+                if let Some(milestone) = &vote.milestone {
+                    self.process_milestone(Vote::try_from(&milestone.accepted)?)?;
+                }
+
+                metadata.vote.set(vote);
+
+                Ok(())
+            },
             _ => Err(Error::UnsupportedBlockType),
         }
-    }
-
-    fn process_vote(&self, block: &Block, vote: Vote<C>) -> Result<()> {
-        if let Some(milestone) = &vote.milestone {
-            self.process_milestone(Vote::try_from(&milestone.accepted)?)?;
-        }
-
-        self.votes.lock().unwrap().insert(block.id().clone(), vote);
-
-        Ok(())
     }
 
     fn process_milestone(&self, new: Vote<C>) -> Result<()> {
