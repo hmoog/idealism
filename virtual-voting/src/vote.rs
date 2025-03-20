@@ -58,6 +58,19 @@ impl<C: Config> Vote<C> {
         self.milestone.as_ref().ok_or(NoMilestone)
     }
 
+    pub fn milestone_range(&self, amount: u64) -> Result<Vec<Vote<C>>> {
+        let mut range = Vec::with_capacity(amount as usize);
+
+        let mut current_milestone = self.clone();
+        for _ in 0..amount {
+            let next = Vote::try_from(current_milestone.prev_milestone()?)?;
+            range.push(current_milestone);
+            current_milestone = next;
+        }
+
+        Ok(range)
+    }
+
     pub fn weight(&self) -> (u64, u64, u64) {
         (
             self.cumulative_slot_weight,

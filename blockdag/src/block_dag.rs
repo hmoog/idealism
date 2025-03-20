@@ -34,7 +34,7 @@ impl<C: Config> BlockDAG<C> {
         self.address(block.id()).publish(block)
     }
 
-    pub fn on_ready(
+    pub fn on_block_ready(
         &self,
         callback: impl Callback<ResourceGuard<BlockMetadata<C>>>,
     ) -> Subscription<Callbacks<ResourceGuard<BlockMetadata<C>>>> {

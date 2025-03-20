@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use blockdag::{Accepted, BlockMetadata};
+use blockdag::{Accepted, BlockMetadata, Error::BlockNotFound};
 use indexmap::IndexSet;
 use types::{
     blocks::{Block, NetworkBlock},
     ids::IssuerID,
-    rx::ResourceGuard,
+    rx::{Callback, Callbacks, ResourceGuard, Subscription},
 };
 use virtual_voting::{Config, Vote};
 use zero::{Clone0, Deref0};
@@ -22,23 +22,27 @@ pub struct Protocol<C: Config>(Arc<ProtocolData<C>>);
 impl<C: Config> Protocol<C> {
     pub fn new(config: C) -> Self {
         let protocol = Self(Arc::new(ProtocolData::new(config)));
-        protocol.run();
+
+        protocol
+            .on_block_ready({
+                let protocol = protocol.clone();
+
+                move |block_metadata| {
+                    if let Err(err) = protocol.process_block(block_metadata) {
+                        protocol.error.trigger(&err);
+                    }
+                }
+            })
+            .forever();
 
         protocol
     }
 
-    pub fn run(&self) {
-        let process_block = {
-            let this = self.clone();
-
-            move |b: &ResourceGuard<BlockMetadata<C>>| {
-                let _ = this
-                    .process_block(b)
-                    .inspect_err(|err| this.error.trigger(err));
-            }
-        };
-
-        self.blocks.on_ready(process_block).forever();
+    pub fn on_block_ready(
+        &self,
+        callback: impl Callback<ResourceGuard<BlockMetadata<C>>>,
+    ) -> Subscription<Callbacks<ResourceGuard<BlockMetadata<C>>>> {
+        self.blocks.on_block_ready(callback)
     }
 
     pub fn issue_block(&self, issuer: &IssuerID) {
@@ -55,7 +59,7 @@ impl<C: Config> Protocol<C> {
                     id.clone(),
                     &network_block.issuer_id,
                     0,
-                    self.referenced_votes(metadata.get())?,
+                    metadata.referenced_votes()?,
                 )?;
 
                 if let Some(milestone) = &vote.milestone {
@@ -86,7 +90,7 @@ impl<C: Config> Protocol<C> {
                 match new_height.checked_sub(current_height) {
                     None | Some(0) => self.process_reorg(),
                     Some(accepted_height) => {
-                        let accepted_milestones = self.milestone_range(&new, accepted_height)?;
+                        let accepted_milestones = new.milestone_range(accepted_height)?;
                         match *accepted_milestones.last().expect("must exist") == current {
                             false => self.process_reorg(),
                             true => self.blocks_ordered.trigger(&BlocksOrderedEvent {
@@ -116,9 +120,10 @@ impl<C: Config> Protocol<C> {
 
         for (height_index, accepted_milestone) in accepted_milestones.iter().rev().enumerate() {
             let milestone_block = self
-                .block(&accepted_milestone.block_id)
-                .ok_or(Error::BlockNotFound)?;
-            let past_cone = self.past_cone(milestone_block, |b| !b.is_accepted(0))?;
+                .blocks
+                .get(&accepted_milestone.block_id)
+                .ok_or(Error::BlockDagErr(BlockNotFound))?;
+            let past_cone = milestone_block.past_cone(|b| !b.is_accepted(0))?;
 
             for (round_index, block) in past_cone.iter().rev().enumerate() {
                 block.accepted.set(Accepted {

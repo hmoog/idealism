@@ -1,20 +1,23 @@
 use std::{
-    fmt::Debug,
-    hash::{Hash, Hasher},
-    ops::Deref,
-    ptr,
-    sync::{Arc, Mutex, MutexGuard, Weak},
+    collections::VecDeque,
+    sync::{Arc, Mutex, MutexGuard},
 };
 
+use indexmap::IndexSet;
 use types::{
     blocks::Block,
     rx::{CallbackOnce, CallbacksOnce, Signal, Subscription},
 };
-use virtual_voting::{Config, Vote};
+use virtual_voting::{Config, Vote, Votes};
 
-use crate::accepted::Accepted;
+use crate::{
+    BlockMetadataRef,
+    Error::{BlockNotFound, VoteNotFound},
+    accepted::Accepted,
+    error::Result,
+};
 
-pub struct BlockMetadata<C: Config>(Arc<Inner<C>>);
+pub struct BlockMetadata<C: Config>(pub(crate) Arc<Inner<C>>);
 
 pub struct Inner<C: Config> {
     parents: Mutex<Vec<BlockMetadataRef<C>>>,
@@ -27,7 +30,7 @@ pub struct Inner<C: Config> {
 impl<C: Config> BlockMetadata<C> {
     pub fn new(block: Block) -> Self {
         Self(Arc::new(Inner {
-            parents: Mutex::new(vec![BlockMetadataRef::new(); block.parents().len()]),
+            parents: Mutex::new(vec![BlockMetadataRef::default(); block.parents().len()]),
             processed: Signal::new(),
             block,
             accepted: Signal::new(),
@@ -37,6 +40,44 @@ impl<C: Config> BlockMetadata<C> {
 
     pub fn parents(&self) -> MutexGuard<Vec<BlockMetadataRef<C>>> {
         self.0.parents.lock().expect("failed to lock parents")
+    }
+
+    pub fn past_cone<F: Fn(&BlockMetadata<C>) -> bool>(
+        &self,
+        should_visit: F,
+    ) -> Result<IndexSet<BlockMetadata<C>>> {
+        let mut past_cone = IndexSet::new();
+
+        if should_visit(self) && past_cone.insert(self.clone()) {
+            let mut queue = VecDeque::from([self.clone()]);
+
+            while let Some(current) = queue.pop_front() {
+                for parent_ref in current.parents().iter() {
+                    let parent_block = parent_ref.upgrade().ok_or(BlockNotFound)?;
+
+                    if should_visit(&parent_block) && past_cone.insert(parent_block.clone()) {
+                        queue.push_back(parent_block);
+                    }
+                }
+            }
+        }
+
+        Ok(past_cone)
+    }
+
+    pub fn referenced_votes(&self) -> Result<Votes<C>> {
+        let mut result = Votes::default();
+        for block_ref in self.parents().iter() {
+            match block_ref.upgrade() {
+                Some(block) => match &*block.vote.get() {
+                    Some(vote) => result.insert(vote.clone()),
+                    None => return Err(VoteNotFound),
+                },
+                None => return Err(BlockNotFound),
+            };
+        }
+
+        Ok(result)
     }
 
     pub fn is_accepted(&self, chain_id: u64) -> bool {
@@ -65,76 +106,52 @@ impl<C: Config> BlockMetadata<C> {
     }
 }
 
-impl<C: Config> Deref for BlockMetadata<C> {
-    type Target = Inner<C>;
+mod traits {
+    use std::{
+        fmt::Debug,
+        hash::{Hash, Hasher},
+        ops::Deref,
+        ptr,
+        sync::Arc,
+    };
 
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
+    use virtual_voting::Config;
 
-impl<C: Config> Clone for BlockMetadata<C> {
-    fn clone(&self) -> Self {
-        Self(Arc::clone(&self.0))
-    }
-}
+    use crate::{BlockMetadata, Inner};
 
-impl<C: Config> PartialEq for BlockMetadata<C> {
-    fn eq(&self, other: &Self) -> bool {
-        Arc::ptr_eq(&self.0, &other.0)
-    }
-}
+    impl<C: Config> Deref for BlockMetadata<C> {
+        type Target = Inner<C>;
 
-impl<C: Config> Eq for BlockMetadata<C> {}
-
-impl<C: Config> Hash for BlockMetadata<C> {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        ptr::hash(Arc::as_ptr(&self.0), state);
-    }
-}
-
-impl<C: Config> Debug for BlockMetadata<C> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("BlockMetadata")
-            .field("block", &self.block)
-            .finish()
-    }
-}
-
-pub struct BlockMetadataRef<C: Config>(Weak<Inner<C>>);
-
-impl<C: Config> BlockMetadataRef<C> {
-    pub fn new() -> Self {
-        Self(Weak::new())
+        fn deref(&self) -> &Self::Target {
+            &self.0
+        }
     }
 
-    pub fn upgrade(&self) -> Option<BlockMetadata<C>> {
-        self.0.upgrade().map(BlockMetadata)
+    impl<C: Config> Clone for BlockMetadata<C> {
+        fn clone(&self) -> Self {
+            Self(Arc::clone(&self.0))
+        }
     }
-}
 
-impl<C: Config> Default for BlockMetadataRef<C> {
-    fn default() -> Self {
-        Self::new()
+    impl<C: Config> PartialEq for BlockMetadata<C> {
+        fn eq(&self, other: &Self) -> bool {
+            Arc::ptr_eq(&self.0, &other.0)
+        }
     }
-}
 
-impl<C: Config> Clone for BlockMetadataRef<C> {
-    fn clone(&self) -> Self {
-        Self(Weak::clone(&self.0))
+    impl<C: Config> Eq for BlockMetadata<C> {}
+
+    impl<C: Config> Hash for BlockMetadata<C> {
+        fn hash<H: Hasher>(&self, state: &mut H) {
+            ptr::hash(Arc::as_ptr(&self.0), state);
+        }
     }
-}
 
-impl<C: Config> PartialEq for BlockMetadataRef<C> {
-    fn eq(&self, other: &Self) -> bool {
-        self.0.as_ptr() == other.0.as_ptr()
-    }
-}
-
-impl<C: Config> Eq for BlockMetadataRef<C> {}
-
-impl<C: Config> Hash for BlockMetadataRef<C> {
-    fn hash<T: Hasher>(&self, state: &mut T) {
-        ptr::hash(self.0.as_ptr(), state);
+    impl<C: Config> Debug for BlockMetadata<C> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.debug_struct("BlockMetadata")
+                .field("block", &self.block)
+                .finish()
+        }
     }
 }

@@ -1,10 +1,10 @@
 use std::{collections::HashSet, sync::Mutex};
 
-use blockdag::BlockMetadata;
+use blockdag::{BlockMetadata, Error::BlockNotFound};
 use types::{ids::BlockID, rx::Variable};
 use virtual_voting::Config;
 
-use crate::error::{Error, Result};
+use crate::error::Result;
 
 pub struct Tips<C: Config> {
     tips: Mutex<HashSet<BlockMetadata<C>>>,
@@ -34,7 +34,7 @@ impl<C: Config> Tips<C> {
                 None => {
                     tips.extend(removed_tips.into_iter());
 
-                    return Err(Error::BlockNotFound);
+                    return Err(BlockNotFound.into());
                 }
             }
         }
