@@ -32,14 +32,18 @@ impl<C: Config> ProtocolData<C> {
         let genesis_vote = Vote::new_genesis(config);
 
         let blocks = BlockDAG::new();
-        blocks.queue(Block::GenesisBlock(genesis_vote.block_id.clone()));
+        let genesis_metadata = blocks.queue(Block::GenesisBlock(genesis_vote.block_id.clone()));
+        genesis_metadata.vote.set(genesis_vote);
+
+        let tips = Tips::new();
+        let _ = tips.register(&genesis_metadata);
 
         Self {
             blocks,
             error: Event::new(),
             latest_accepted_milestone: Variable::new(),
             blocks_ordered: Event::new(),
-            tips: Tips::new(),
+            tips,
         }
     }
 
@@ -47,10 +51,10 @@ impl<C: Config> ProtocolData<C> {
         self.blocks.get(block_id)
     }
 
-    pub fn votes(&self, block_ids: &[BlockID]) -> Result<Votes<C>> {
+    pub fn referenced_votes(&self, block_metadata: &BlockMetadata<C>) -> Result<Votes<C>> {
         let mut result = Votes::default();
-        for block_id in block_ids {
-            match self.blocks.get(block_id) {
+        for block_ref in block_metadata.parents().iter() {
+            match block_ref.upgrade() {
                 Some(block) => match &*block.vote.get() {
                     Some(vote) => result.insert(vote.clone()),
                     None => return Err(VoteNotFound),

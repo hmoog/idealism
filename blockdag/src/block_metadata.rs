@@ -3,7 +3,7 @@ use std::{
     hash::{Hash, Hasher},
     ops::Deref,
     ptr,
-    sync::{Arc, Mutex, Weak},
+    sync::{Arc, Mutex, MutexGuard, Weak},
 };
 
 use types::{
@@ -35,6 +35,10 @@ impl<C: Config> BlockMetadata<C> {
         }))
     }
 
+    pub fn parents(&self) -> MutexGuard<Vec<BlockMetadataRef<C>>> {
+        self.0.parents.lock().expect("failed to lock parents")
+    }
+
     pub fn is_accepted(&self, chain_id: u64) -> bool {
         self.0
             .accepted
@@ -52,11 +56,8 @@ impl<C: Config> BlockMetadata<C> {
     }
 
     pub(crate) fn register_parent(&self, index: usize, parent: BlockMetadataRef<C>) {
-        self.0
-            .parents
-            .lock()
-            .expect("failed to lock parents")
-            .insert(index, parent);
+        let mut parents = self.parents();
+        parents[index] = parent;
     }
 
     pub(crate) fn mark_processed(&self) {

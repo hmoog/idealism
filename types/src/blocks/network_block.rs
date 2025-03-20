@@ -14,5 +14,6 @@ impl Hashable for NetworkBlock {
         for parent in &self.parents {
             hasher.update(parent.as_slice());
         }
+        hasher.update(self.issuer_id.as_slice());
     }
 }

@@ -55,7 +55,7 @@ impl<C: Config> Protocol<C> {
                     id.clone(),
                     &network_block.issuer_id,
                     0,
-                    self.votes(metadata.block.parents())?,
+                    self.referenced_votes(metadata.get())?,
                 )?;
 
                 if let Some(milestone) = &vote.milestone {
@@ -64,8 +64,10 @@ impl<C: Config> Protocol<C> {
 
                 metadata.vote.set(vote);
 
+                self.tips.register(metadata)?;
+
                 Ok(())
-            },
+            }
             _ => Err(Error::UnsupportedBlockType),
         }
     }

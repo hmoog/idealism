@@ -1,5 +1,8 @@
 use std::{
-    collections::HashMap,
+    collections::{
+        HashMap,
+        hash_map::Entry::{Occupied, Vacant},
+    },
     sync::{Arc, Mutex},
 };
 
@@ -27,8 +30,8 @@ impl<C: Config> BlockDAG<C> {
         }))
     }
 
-    pub fn queue(&self, block: Block) {
-        self.address(block.id()).publish(block);
+    pub fn queue(&self, block: Block) -> BlockMetadata<C> {
+        self.address(block.id()).publish(block)
     }
 
     pub fn on_ready(
@@ -39,26 +42,27 @@ impl<C: Config> BlockDAG<C> {
     }
 
     pub fn get(&self, block_id: &BlockID) -> Option<BlockMetadata<C>> {
-        self.0
-            .blocks
-            .lock()
-            .unwrap()
+        let addresses = self.0.blocks.lock().unwrap();
+        addresses
             .get(block_id)
             .and_then(|a| a.data().get().as_ref().cloned())
     }
 
     fn address(&self, block_id: &BlockID) -> BlockAddress<C> {
-        self.0
-            .blocks
-            .lock()
-            .unwrap()
-            .entry(block_id.clone())
-            .or_insert_with(|| {
-                let new_address = BlockAddress::new();
-                self.monitor_address(&new_address);
-                new_address
-            })
-            .clone()
+        let (block_address, is_new) = match self.0.blocks.lock().unwrap().entry(block_id.clone()) {
+            Occupied(entry) => (entry.get().clone(), false),
+            Vacant(entry) => {
+                let addr = BlockAddress::new();
+                entry.insert(addr.clone());
+                (addr, true)
+            }
+        };
+
+        if is_new {
+            self.monitor_address(&block_address);
+        }
+
+        block_address
     }
 
     fn monitor_address(&self, new_address: &BlockAddress<C>) {
