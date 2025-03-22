@@ -5,7 +5,7 @@ use indexmap::IndexSet;
 use types::{
     blocks::{Block, NetworkBlock},
     ids::IssuerID,
-    rx::{Callback, Callbacks, ResourceGuard, Subscription},
+    rx::ResourceGuard,
 };
 use virtual_voting::{Config, Vote};
 use zero::{Clone0, Deref0};
@@ -24,6 +24,7 @@ impl<C: Config> Protocol<C> {
         let protocol = Self(Arc::new(ProtocolData::new(config)));
 
         protocol
+            .block_dag
             .on_block_ready({
                 let protocol = protocol.clone();
 
@@ -38,18 +39,11 @@ impl<C: Config> Protocol<C> {
         protocol
     }
 
-    pub fn on_block_ready(
-        &self,
-        callback: impl Callback<ResourceGuard<BlockMetadata<C>>>,
-    ) -> Subscription<Callbacks<ResourceGuard<BlockMetadata<C>>>> {
-        self.blocks.on_block_ready(callback)
-    }
-
-    pub fn issue_block(&self, issuer: &IssuerID) {
-        self.blocks.queue(Block::from(NetworkBlock {
+    pub fn new_block(&self, issuer: &IssuerID) -> Block {
+        Block::from(NetworkBlock {
             parents: self.tips.get(),
             issuer_id: issuer.clone(),
-        }));
+        })
     }
 
     fn process_block(&self, metadata: &ResourceGuard<BlockMetadata<C>>) -> Result<()> {
@@ -120,7 +114,7 @@ impl<C: Config> Protocol<C> {
 
         for (height_index, accepted_milestone) in accepted_milestones.iter().rev().enumerate() {
             let milestone_block = self
-                .blocks
+                .block_dag
                 .get(&accepted_milestone.block_id)
                 .ok_or(Error::BlockDagErr(BlockNotFound))?;
             let past_cone = milestone_block.past_cone(|b| !b.is_accepted(0))?;

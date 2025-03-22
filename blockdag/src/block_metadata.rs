@@ -38,6 +38,10 @@ impl<C: Config> BlockMetadata<C> {
         }))
     }
 
+    pub fn vote(&self) -> Result<Vote<C>> {
+        self.vote.get().as_ref().cloned().ok_or(VoteNotFound)
+    }
+
     pub fn parents(&self) -> MutexGuard<Vec<BlockMetadataRef<C>>> {
         self.0.parents.lock().expect("failed to lock parents")
     }

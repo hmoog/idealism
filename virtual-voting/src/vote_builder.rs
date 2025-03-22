@@ -154,7 +154,7 @@ impl<C: Config> VoteBuilder<C> {
             });
 
             // update cumulative slot weight
-            let prev_accepted_slot = Vote::try_from(heaviest_tip.accepted_milestone()?)?.slot;
+            let prev_accepted_slot = heaviest_tip.accepted_milestone()?.slot;
             self.cumulative_slot_weight += accepted.slot_weight_since(prev_accepted_slot)?;
 
             // build milestone vote and insert into referenced milestones

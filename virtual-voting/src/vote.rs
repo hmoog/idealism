@@ -30,8 +30,8 @@ impl<C: Config> Vote<C> {
         Ok(&self.milestone()?.prev)
     }
 
-    pub fn accepted_milestone(&self) -> Result<&VoteRef<C>> {
-        Ok(&self.milestone()?.accepted)
+    pub fn accepted_milestone(&self) -> Result<Vote<C>> {
+        Vote::try_from(&self.milestone()?.accepted)
     }
 
     pub fn confirmed_milestone(&self) -> Result<&VoteRef<C>> {

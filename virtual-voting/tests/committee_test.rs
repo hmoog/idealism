@@ -33,6 +33,7 @@ fn test_committee() {
     assert_eq!(committee1.member_weight(&member_id_1), 10);
     assert!(committee1.is_member_online(&member_id_2));
     assert_eq!(committee1.member_weight(&member_id_2), 20);
+    assert_ne!(committee.commitment(), committee1.commitment());
 
     // original committee is not changed
     assert_eq!(committee.total_weight(), 30);
@@ -42,7 +43,13 @@ fn test_committee() {
     assert!(!committee.is_member_online(&member_id_2));
     assert_eq!(committee.member_weight(&member_id_2), 20);
 
-    // set member 2 online again (no change / same underlying data)
-    // let committee2 = committee1.set_online(&ArcKey::new(2), true);
-    // assert!(Arc::ptr_eq(&committee1.0, &committee2.0));
+    // set member 2 offline again
+    let committee2 = committee.set_online(&member_id_2, false);
+    assert_eq!(committee2.total_weight(), 30);
+    assert_eq!(committee2.online_weight(), 10);
+    assert!(committee2.is_member_online(&member_id_1));
+    assert_eq!(committee2.member_weight(&member_id_1), 10);
+    assert!(!committee2.is_member_online(&member_id_2));
+    assert_eq!(committee2.member_weight(&member_id_2), 20);
+    assert_eq!(committee.commitment(), committee2.commitment());
 }

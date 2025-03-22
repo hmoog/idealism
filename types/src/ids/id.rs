@@ -7,8 +7,11 @@ use std::{
     sync::Arc,
 };
 
+use serde::{Deserialize, Serialize};
+
 use crate::hash::{Hashable, Hasher};
 
+#[derive(Deserialize, Serialize)]
 pub struct Id<H: Hasher>(Arc<[u8; 32]>, PhantomData<H>);
 
 impl<H: Hasher> Id<H> {

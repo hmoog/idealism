@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 
 pub enum Error {
     BlockDagErr(blockdag::Error),
@@ -27,5 +27,11 @@ impl Display for Error {
             Error::VoteFailed(error) => write!(f, "Virtual voting error: {}", error),
             Error::UnsupportedBlockType => write!(f, "Unsupported block type"),
         }
+    }
+}
+
+impl Debug for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Display::fmt(self, f)
     }
 }

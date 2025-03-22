@@ -12,12 +12,12 @@ fn test_block_dag() {
         })
         .forever();
 
-    block_dag.queue(Block::from(NetworkBlock {
+    block_dag.attach(Block::from(NetworkBlock {
         parents: vec![],
         issuer_id: Default::default(),
     }));
 
-    block_dag.queue(Block::from(NetworkBlock {
+    block_dag.attach(Block::from(NetworkBlock {
         parents: vec![],
         issuer_id: Default::default(),
     }));

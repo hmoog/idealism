@@ -30,7 +30,7 @@ impl<C: Config> BlockDAG<C> {
         }))
     }
 
-    pub fn queue(&self, block: Block) -> BlockMetadata<C> {
+    pub fn attach(&self, block: Block) -> BlockMetadata<C> {
         self.address(block.id()).publish(block)
     }
 

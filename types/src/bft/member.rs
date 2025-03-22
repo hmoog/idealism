@@ -1,5 +1,8 @@
+use serde::{Deserialize, Serialize};
+
 use crate::ids::IssuerID;
 
+#[derive(Deserialize, Serialize)]
 pub struct Member {
     id: IssuerID,
     index: u64,
