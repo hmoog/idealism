@@ -2,6 +2,7 @@ use std::sync::{Mutex, MutexGuard};
 
 use crate::rx::{
     Event,
+    UpdateType::{Notify, Retain},
     callback::{Callback, Callbacks},
     subscription::Subscription,
 };
@@ -20,11 +21,33 @@ impl<T> Variable<T> {
     }
 
     pub fn set(&self, new_value: T) {
-        drop(self.compute(|value| self.process_update(value, Some(new_value))));
+        let _ = self.compute::<(), _>(|value| Notify {
+            old: value,
+            new: Some(new_value),
+        });
+    }
+
+    pub fn set_if_none_or<F: FnOnce(&T, &T) -> bool>(&self, new: T, cond: F) {
+        let _ = self.compute::<(), _>(move |current| match current {
+            Some(old) if !cond(&old, &new) => Retain(Some(old)),
+            _ => Notify {
+                old: current,
+                new: Some(new),
+            },
+        });
     }
 
     pub fn unset(&self) {
-        drop(self.compute(|value| self.process_update(value, None)));
+        let _ = self.compute::<(), _>(|value| {
+            if value.is_none() {
+                Retain(value)
+            } else {
+                Notify {
+                    old: value,
+                    new: None,
+                }
+            }
+        });
     }
 
     pub fn get(&self) -> MutexGuard<Option<T>> {
@@ -52,14 +75,27 @@ impl<T> Variable<T> {
         self.event.subscribe(callback)
     }
 
-    fn compute<F: FnOnce(Option<T>) -> Option<T>>(&self, compute: F) -> MutexGuard<Option<T>> {
-        let mut value = self.get();
-        *value = compute(if value.is_none() {
-            None
-        } else {
-            Some(value.take().unwrap())
-        });
-        value
+    pub fn compute<E, F: FnOnce(Option<T>) -> UpdateType<T, E>>(
+        &self,
+        compute: F,
+    ) -> Result<(), E> {
+        let mut error = None;
+        let mut locked_value = self.get();
+
+        *locked_value = match compute(locked_value.take()) {
+            Retain(value) => value,
+            Notify { old, new } => self.process_update(old, new),
+            UpdateType::Error { old, err } => {
+                error = Some(err);
+                old
+            },
+        };
+
+        if let Some(err) = error {
+            return Err(err);
+        }
+
+        Ok(())
     }
 
     fn compute_if_some<F: FnOnce(T) -> Option<T>>(&self, compute: F) -> MutexGuard<Option<T>> {
@@ -85,8 +121,26 @@ impl<T> Variable<T> {
     }
 }
 
+impl<T: Ord> Variable<T> {
+    pub fn track_max(&self, new: T) {
+        let _ = self.compute::<(), _>(move |current| match current {
+            Some(old) if old >= new => Retain(Some(old)),
+            _ => Notify {
+                old: current,
+                new: Some(new),
+            },
+        });
+    }
+}
+
 impl<T> Default for Variable<T> {
     fn default() -> Self {
         Self::new()
     }
+}
+
+pub enum UpdateType<T, E> {
+    Retain(Option<T>),
+    Notify { old: Option<T>, new: Option<T> },
+    Error { old: Option<T>, err: E },
 }

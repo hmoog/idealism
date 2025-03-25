@@ -7,12 +7,14 @@ use types::{
     ids::IssuerID,
     rx::ResourceGuard,
 };
+use types::rx::UpdateType;
+use types::rx::UpdateType::{Notify, Retain};
 use virtual_voting::{Config, Vote};
 use zero::{Clone0, Deref0};
 
 use crate::{
     error::{Error, Result},
-    events::BlocksOrderedEvent,
+    events::BlocksOrdered,
     protocol_data::ProtocolData,
 };
 
@@ -30,7 +32,7 @@ impl<C: Config> Protocol<C> {
 
                 move |block_metadata| {
                     if let Err(err) = protocol.process_block(block_metadata) {
-                        protocol.error.trigger(&err);
+                        protocol.events.error.trigger(&err);
                     }
                 }
             })
@@ -57,12 +59,14 @@ impl<C: Config> Protocol<C> {
                 )?;
 
                 if let Some(milestone) = &vote.milestone {
-                    self.process_milestone(Vote::try_from(&milestone.accepted)?)?;
+                    self.track_acceptance(Vote::try_from(&milestone.accepted)?)?;
+
+                    self.state.heaviest_milestone.track_max(vote.clone());
                 }
 
-                metadata.vote.set(vote);
-
                 self.tips.register(metadata)?;
+
+                metadata.vote.set(vote);
 
                 Ok(())
             }
@@ -70,42 +74,53 @@ impl<C: Config> Protocol<C> {
         }
     }
 
-    fn process_milestone(&self, new: Vote<C>) -> Result<()> {
-        let mut guard = self.latest_accepted_milestone.get();
-        *guard = Some('update: {
-            if let Some(current) = guard.take() {
-                if current >= new {
-                    break 'update current;
+    fn track_acceptance(&self, new: Vote<C>) -> Result<()> {
+        Ok(self.latest_accepted_milestone.compute::<Error, _>(|old| match old {
+            Some(old) => {
+                macro_rules! abort_if_err {
+            ($expr:expr) => {
+                match $expr {
+                    Ok(val) => val,
+                    Err(err) => return UpdateType::Error { old: Some(old), err: err.into() },
+                }
+            };
+        }
+
+                if old >= new {
+                    return Retain(Some(old));
                 }
 
-                let current_height = current.height()?;
-                let new_height = new.height()?;
+                let current_height = abort_if_err!(old.height());
+                let new_height = abort_if_err!(new.height());
 
                 match new_height.checked_sub(current_height) {
                     None | Some(0) => self.process_reorg(),
                     Some(accepted_height) => {
-                        let accepted_milestones = new.milestone_range(accepted_height)?;
-                        match *accepted_milestones.last().expect("must exist") == current {
+                        let accepted_milestones = abort_if_err!(new.milestone_range(accepted_height));
+
+                        match *accepted_milestones.last().expect("must exist") == old {
                             false => self.process_reorg(),
-                            true => self.blocks_ordered.trigger(&BlocksOrderedEvent {
-                                current_height,
-                                ordered_blocks: self
-                                    .advance_acceptance(current_height, accepted_milestones)?,
-                            }),
+                            true => {
+                                let ordered_blocks = abort_if_err!(self.accepted_blocks(current_height, accepted_milestones));
+
+                                self.events.blocks_ordered.trigger(&BlocksOrdered {
+                                    current_height,
+                                    ordered_blocks,
+                                })
+                            },
                         }
                     }
-                }
-            }
+                };
 
-            new
-        });
-
-        Ok(())
+                Notify { old: Some(old), new: Some(new) }
+            },
+            _ => Notify { old, new: Some(new) }
+        })?)
     }
 
     fn process_reorg(&self) {}
 
-    fn advance_acceptance(
+    fn accepted_blocks(
         &self,
         current_height: u64,
         accepted_milestones: Vec<Vote<C>>,

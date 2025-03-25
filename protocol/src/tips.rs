@@ -1,21 +1,19 @@
 use std::{collections::HashSet, sync::Mutex};
 
 use blockdag::{BlockMetadata, Error::BlockNotFound};
-use types::{ids::BlockID, rx::Variable};
+use types::ids::BlockID;
 use virtual_voting::Config;
 
 use crate::error::Result;
 
 pub struct Tips<C: Config> {
     tips: Mutex<HashSet<BlockMetadata<C>>>,
-    _heaviest: Variable<BlockMetadata<C>>,
 }
 
 impl<C: Config> Tips<C> {
     pub fn new() -> Self {
         Self {
             tips: Mutex::new(HashSet::new()),
-            _heaviest: Variable::new(),
         }
     }
 

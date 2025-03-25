@@ -9,11 +9,37 @@ fn test_protocol() -> Result<()> {
     let protocol = Protocol::new(DefaultConfig::new());
 
     protocol
+        .state
+        .heaviest_milestone
+        .subscribe(|update| {
+            println!("heaviest_milestone: {:?} => {:?}", update.0, update.1);
+        })
+        .forever();
+
+    protocol
+        .state
+        .round
+        .subscribe(|update| {
+            println!("round: {:?} => {:?}", update.0, update.1);
+        })
+        .forever();
+
+    protocol
+        .state
+        .committee
+        .subscribe(|update| {
+            println!("committee: {:?} => {:?}", update.0.as_ref().map(|x| x.commitment()), update.1.as_ref().map(|x| x.commitment()));
+        })
+        .forever();
+
+    protocol
+        .events
         .blocks_ordered
         .subscribe(|event| println!("Blocks ordered: {:?}", event))
         .forever();
 
     protocol
+        .events
         .error
         .subscribe(|event| println!("Error: {}", event))
         .forever();
