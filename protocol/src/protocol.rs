@@ -5,10 +5,11 @@ use indexmap::IndexSet;
 use types::{
     blocks::{Block, NetworkBlock},
     ids::IssuerID,
-    rx::ResourceGuard,
+    rx::{
+        ResourceGuard, UpdateType,
+        UpdateType::{Notify, Retain},
+    },
 };
-use types::rx::UpdateType;
-use types::rx::UpdateType::{Notify, Retain};
 use virtual_voting::{Config, Vote};
 use zero::{Clone0, Deref0};
 
@@ -75,57 +76,72 @@ impl<C: Config> Protocol<C> {
     }
 
     fn track_acceptance(&self, new: Vote<C>) -> Result<()> {
-        Ok(self.latest_accepted_milestone.compute::<Error, _>(|old| match old {
-            Some(old) => {
-                macro_rules! abort_if_err {
-            ($expr:expr) => {
-                match $expr {
-                    Ok(val) => val,
-                    Err(err) => return UpdateType::Error { old: Some(old), err: err.into() },
-                }
-            };
-        }
-
-                if old >= new {
-                    return Retain(Some(old));
-                }
-
-                let current_height = abort_if_err!(old.height());
-                let new_height = abort_if_err!(new.height());
-
-                match new_height.checked_sub(current_height) {
-                    None | Some(0) => self.process_reorg(),
-                    Some(accepted_height) => {
-                        let accepted_milestones = abort_if_err!(new.milestone_range(accepted_height));
-
-                        match *accepted_milestones.last().expect("must exist") == old {
-                            false => self.process_reorg(),
-                            true => {
-                                let ordered_blocks = abort_if_err!(self.accepted_blocks(current_height, accepted_milestones));
-
-                                self.events.blocks_ordered.trigger(&BlocksOrdered {
-                                    current_height,
-                                    ordered_blocks,
-                                })
-                            },
-                        }
+        self.latest_accepted_milestone
+            .compute::<Error, _>(|old| match old {
+                Some(old) => {
+                    macro_rules! abort_if_err {
+                        ($expr:expr) => {
+                            match $expr {
+                                Ok(val) => val,
+                                Err(err) => {
+                                    return UpdateType::Error {
+                                        old: Some(old),
+                                        err: err.into(),
+                                    }
+                                }
+                            }
+                        };
                     }
-                };
 
-                Notify { old: Some(old), new: Some(new) }
-            },
-            _ => Notify { old, new: Some(new) }
-        })?)
+                    if old >= new {
+                        return Retain(Some(old));
+                    }
+
+                    let current_height = abort_if_err!(old.height());
+                    let new_height = abort_if_err!(new.height());
+
+                    match new_height.checked_sub(current_height) {
+                        None | Some(0) => panic!("TODO: implement reorg"),
+                        Some(accepted_height) => {
+                            let accepted_milestones =
+                                abort_if_err!(new.milestone_range(accepted_height));
+
+                            match *accepted_milestones.last().expect("must exist") == old {
+                                false => panic!("TODO: implement reorg"),
+                                true => {
+                                    let ordered_blocks = abort_if_err!(
+                                        self.ordered_blocks(current_height, accepted_milestones)
+                                    );
+
+                                    self.events.blocks_ordered.trigger(&BlocksOrdered {
+                                        current_height,
+                                        ordered_blocks,
+                                    })
+                                }
+                            }
+                        }
+                    };
+
+                    Notify {
+                        old: Some(old),
+                        new: Some(new),
+                    }
+                }
+                _ => Notify {
+                    old,
+                    new: Some(new),
+                },
+            })?;
+
+        Ok(())
     }
 
-    fn process_reorg(&self) {}
-
-    fn accepted_blocks(
+    fn ordered_blocks(
         &self,
         current_height: u64,
         accepted_milestones: Vec<Vote<C>>,
     ) -> Result<Vec<IndexSet<BlockMetadata<C>>>> {
-        let mut accepted_blocks = Vec::with_capacity(accepted_milestones.len());
+        let mut ordered_blocks = Vec::with_capacity(accepted_milestones.len());
 
         for (height_index, accepted_milestone) in accepted_milestones.iter().rev().enumerate() {
             let milestone_block = self
@@ -142,9 +158,9 @@ impl<C: Config> Protocol<C> {
                 });
             }
 
-            accepted_blocks.push(past_cone);
+            ordered_blocks.push(past_cone);
         }
 
-        Ok(accepted_blocks)
+        Ok(ordered_blocks)
     }
 }

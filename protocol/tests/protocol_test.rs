@@ -2,8 +2,6 @@ use protocol::{Protocol, Result};
 use types::ids::IssuerID;
 use virtual_voting::builtin::DefaultConfig;
 
-fn assert_milestone() {}
-
 #[test]
 fn test_protocol() -> Result<()> {
     let protocol = Protocol::new(DefaultConfig::new());
@@ -28,7 +26,11 @@ fn test_protocol() -> Result<()> {
         .state
         .committee
         .subscribe(|update| {
-            println!("committee: {:?} => {:?}", update.0.as_ref().map(|x| x.commitment()), update.1.as_ref().map(|x| x.commitment()));
+            println!(
+                "committee: {:?} => {:?}",
+                update.0.as_ref().map(|x| x.commitment()),
+                update.1.as_ref().map(|x| x.commitment())
+            );
         })
         .forever();
 
@@ -51,8 +53,8 @@ fn test_protocol() -> Result<()> {
 
     let block1_metadata = protocol.block_dag.attach(block_1);
     let block2_metadata = protocol.block_dag.attach(block_2);
-    let block3_metadata = protocol.block_dag.attach(block_3);
-    let block4_metadata = protocol.block_dag.attach(block_4);
+    let _block3_metadata = protocol.block_dag.attach(block_3);
+    let _block4_metadata = protocol.block_dag.attach(block_4);
 
     println!("{}", block1_metadata.vote()?.milestone()?.height);
     println!(

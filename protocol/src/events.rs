@@ -14,6 +14,12 @@ pub struct Events<C: Config> {
 
 impl<C: Config> Events<C> {
     pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl<C: Config> Default for Events<C> {
+    fn default() -> Self {
         Self {
             error: Event::new(),
             blocks_ordered: Event::new(),

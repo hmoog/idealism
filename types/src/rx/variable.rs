@@ -88,7 +88,7 @@ impl<T> Variable<T> {
             UpdateType::Error { old, err } => {
                 error = Some(err);
                 old
-            },
+            }
         };
 
         if let Some(err) = error {

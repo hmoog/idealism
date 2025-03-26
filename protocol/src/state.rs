@@ -12,12 +12,7 @@ pub struct State<C: Config> {
 
 impl<C: Config> State<C> {
     pub fn new() -> Self {
-        let state = Self {
-            chain_index: Variable::new(),
-            heaviest_milestone: Variable::new(),
-            round: Arc::new(Variable::new()),
-            committee: Arc::new(Variable::new()),
-        };
+        let state = Self::default();
 
         state
             .heaviest_milestone
@@ -39,5 +34,16 @@ impl<C: Config> State<C> {
             .forever();
 
         state
+    }
+}
+
+impl<C: Config> Default for State<C> {
+    fn default() -> Self {
+        Self {
+            chain_index: Variable::new(),
+            heaviest_milestone: Variable::new(),
+            round: Arc::new(Variable::new()),
+            committee: Arc::new(Variable::new()),
+        }
     }
 }
