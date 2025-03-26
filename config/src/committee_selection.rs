@@ -1,6 +1,5 @@
 use types::bft::Committee;
-
-use crate::{Config, Vote};
+use virtual_voting::{Config, Vote};
 
 pub enum CommitteeSelection<C: Config> {
     FixedCommittee(Committee),

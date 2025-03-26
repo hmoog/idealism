@@ -2,21 +2,19 @@ use types::{
     bft::{Committee, Member},
     ids::IssuerID,
 };
+use virtual_voting::{Vote, VoteBuilder};
 
-use crate::{
-    Config, Vote, VoteBuilder,
-    builtin::{CommitteeSelection, LeaderRotation, SlotDuration},
-};
+use crate::{CommitteeSelection, LeaderRotation, SlotDuration};
 
-pub struct DefaultConfig {
+pub struct Config {
     genesis_time: u64,
-    committee_selection: CommitteeSelection<DefaultConfig>,
+    committee_selection: CommitteeSelection<Config>,
     leader_rotation: LeaderRotation,
     slot_duration: SlotDuration,
     offline_threshold: u64,
 }
 
-impl DefaultConfig {
+impl Config {
     pub fn new() -> Self {
         let issuer_id_1 = IssuerID::from([1u8; 32]);
         let issuer_id_2 = IssuerID::from([2u8; 32]);
@@ -61,7 +59,7 @@ impl DefaultConfig {
     }
 }
 
-impl Config for DefaultConfig {
+impl virtual_voting::Config for Config {
     fn genesis_time(&self) -> u64 {
         self.genesis_time
     }
@@ -89,7 +87,7 @@ impl Config for DefaultConfig {
     }
 }
 
-impl Default for DefaultConfig {
+impl Default for Config {
     fn default() -> Self {
         Self::new()
     }

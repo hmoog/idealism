@@ -7,3 +7,6 @@ edition = "2024"
 indexmap = "2.7.1"
 types = { path = "../types" }
 virtual-voting = { path = "../virtual-voting" }
+
+[dev-dependencies]
+config = { path = "../config" }

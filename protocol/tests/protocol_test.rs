@@ -1,10 +1,10 @@
+use config::Config;
 use protocol::{Protocol, Result};
 use types::ids::IssuerID;
-use virtual_voting::builtin::DefaultConfig;
 
 #[test]
 fn test_protocol() -> Result<()> {
-    let protocol = Protocol::new(DefaultConfig::new());
+    let protocol = Protocol::new(Config::new());
 
     protocol
         .state

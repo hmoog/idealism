@@ -6,3 +6,6 @@ edition = "2024"
 [dependencies]
 types = { path = "../types" }
 zero = { path = "../zero" }
+
+[dev-dependencies]
+config = { path = "../config" }
