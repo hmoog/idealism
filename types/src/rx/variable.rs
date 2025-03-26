@@ -21,19 +21,13 @@ impl<T> Variable<T> {
     }
 
     pub fn set(&self, new_value: T) {
-        let _ = self.compute::<(), _>(|value| Notify {
-            old: value,
-            new: Some(new_value),
-        });
+        let _ = self.compute::<(), _>(|value| Notify(value, Some(new_value)));
     }
 
     pub fn set_if_none_or<F: FnOnce(&T, &T) -> bool>(&self, new: T, cond: F) {
         let _ = self.compute::<(), _>(move |current| match current {
             Some(old) if !cond(&old, &new) => Retain(Some(old)),
-            _ => Notify {
-                old: current,
-                new: Some(new),
-            },
+            _ => Notify(current, Some(new)),
         });
     }
 
@@ -42,10 +36,7 @@ impl<T> Variable<T> {
             if value.is_none() {
                 Retain(value)
             } else {
-                Notify {
-                    old: value,
-                    new: None,
-                }
+                Notify(value, None)
             }
         });
     }
@@ -84,8 +75,8 @@ impl<T> Variable<T> {
 
         *locked_value = match compute(locked_value.take()) {
             Retain(value) => value,
-            Notify { old, new } => self.process_update(old, new),
-            UpdateType::Error { old, err } => {
+            Notify(old, new) => self.process_update(old, new),
+            UpdateType::Error(old, err) => {
                 error = Some(err);
                 old
             }
@@ -125,10 +116,7 @@ impl<T: Ord> Variable<T> {
     pub fn track_max(&self, new: T) {
         let _ = self.compute::<(), _>(move |current| match current {
             Some(old) if old >= new => Retain(Some(old)),
-            _ => Notify {
-                old: current,
-                new: Some(new),
-            },
+            _ => Notify(current, Some(new)),
         });
     }
 }
@@ -141,6 +129,6 @@ impl<T> Default for Variable<T> {
 
 pub enum UpdateType<T, E> {
     Retain(Option<T>),
-    Notify { old: Option<T>, new: Option<T> },
-    Error { old: Option<T>, err: E },
+    Notify(Option<T>, Option<T>),
+    Error(Option<T>, E),
 }

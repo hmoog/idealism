@@ -60,7 +60,16 @@ impl<C: Config> Protocol<C> {
                 )?;
 
                 if let Some(milestone) = &vote.milestone {
-                    self.track_acceptance(Vote::try_from(&milestone.accepted)?)?;
+                    let new_accepted = Vote::try_from(&milestone.accepted)?;
+
+                    self.latest_accepted_milestone.compute::<Error, _>(|old| match old {
+                        Some(old_accepted) if old_accepted >= new_accepted => Retain(Some(old_accepted)),
+                        Some(old_accepted) => match self.advance_acceptance(&old_accepted, &new_accepted) {
+                            Err(err) => UpdateType::Error(Some(old_accepted), err.into()),
+                            _ => Notify(Some(old_accepted), Some(new_accepted)),
+                        },
+                        _ => Notify(old, Some(new_accepted)),
+                    })?;
 
                     self.state.heaviest_milestone.track_max(vote.clone());
                 }
@@ -75,63 +84,29 @@ impl<C: Config> Protocol<C> {
         }
     }
 
-    fn track_acceptance(&self, new: Vote<C>) -> Result<()> {
-        self.latest_accepted_milestone
-            .compute::<Error, _>(|old| match old {
-                Some(old) => {
-                    macro_rules! abort_if_err {
-                        ($expr:expr) => {
-                            match $expr {
-                                Ok(val) => val,
-                                Err(err) => {
-                                    return UpdateType::Error {
-                                        old: Some(old),
-                                        err: err.into(),
-                                    }
-                                }
-                            }
-                        };
-                    }
+    pub fn advance_acceptance(&self, old: &Vote<C>, new: &Vote<C>) -> Result<()> {
+        let current_height = old.height()?;
+        let new_height = new.height()?;
 
-                    if old >= new {
-                        return Retain(Some(old));
-                    }
+        match new_height.checked_sub(current_height) {
+            None | Some(0) => panic!("TODO: implement reorg"),
+            Some(accepted_height) => {
+                let accepted_milestones =
+                    new.milestone_range(accepted_height)?;
 
-                    let current_height = abort_if_err!(old.height());
-                    let new_height = abort_if_err!(new.height());
+                match accepted_milestones.last().expect("must exist") == old {
+                    false => panic!("TODO: implement reorg"),
+                    true => {
+                        let ordered_blocks = self.ordered_blocks(current_height, accepted_milestones)?;
 
-                    match new_height.checked_sub(current_height) {
-                        None | Some(0) => panic!("TODO: implement reorg"),
-                        Some(accepted_height) => {
-                            let accepted_milestones =
-                                abort_if_err!(new.milestone_range(accepted_height));
-
-                            match *accepted_milestones.last().expect("must exist") == old {
-                                false => panic!("TODO: implement reorg"),
-                                true => {
-                                    let ordered_blocks = abort_if_err!(
-                                        self.ordered_blocks(current_height, accepted_milestones)
-                                    );
-
-                                    self.events.blocks_ordered.trigger(&BlocksOrdered {
-                                        current_height,
-                                        ordered_blocks,
-                                    })
-                                }
-                            }
-                        }
-                    };
-
-                    Notify {
-                        old: Some(old),
-                        new: Some(new),
+                        self.events.blocks_ordered.trigger(&BlocksOrdered {
+                            current_height,
+                            ordered_blocks,
+                        })
                     }
                 }
-                _ => Notify {
-                    old,
-                    new: Some(new),
-                },
-            })?;
+            }
+        }
 
         Ok(())
     }
