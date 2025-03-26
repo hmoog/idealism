@@ -22,7 +22,7 @@ use crate::{
     tips::Tips,
 };
 
-#[derive(Deref0, Clone0)]
+#[derive(Deref0, Clone0, Default)]
 pub struct Protocol<C: Config>(Arc<Data<C>>);
 
 #[derive(Default)]
@@ -33,26 +33,58 @@ pub struct Data<C: Config> {
     pub tips: Tips<C>,
 }
 
+#[derive(Default)]
+pub struct State<C: Config> {
+    pub chain_index: Variable<u64>,
+    pub round: Arc<Variable<u64>>,
+    pub committee: Arc<Variable<Committee>>,
+    pub heaviest_milestone: Variable<Vote<C>>,
+    pub latest_accepted_milestone: Variable<Vote<C>>,
+}
+
 impl<C: Config> Protocol<C> {
     pub fn new(config: C) -> Self {
-        let protocol = Self(Arc::new(Data::default()));
+        let protocol = Self::default();
+        protocol.init(Vote::new_genesis(config));
+        protocol.start();
+        protocol
+    }
 
-        let genesis_vote = Vote::new_genesis(config);
-        let genesis_metadata = protocol
-            .block_dag
-            .attach(Block::GenesisBlock(genesis_vote.block_id.clone()));
+    pub fn new_block(&self, issuer: &IssuerID) -> Block {
+        Block::from(NetworkBlock {
+            parents: self.tips.get(),
+            issuer_id: issuer.clone(),
+        })
+    }
 
-        genesis_metadata.vote.set(genesis_vote);
+    fn init(&self, genesis: Vote<C>) {
+        let genesis_block = Block::GenesisBlock(genesis.block_id.clone());
+        let genesis_metadata = self.block_dag.attach(genesis_block);
+        genesis_metadata.vote.set(genesis);
 
-        let _ = protocol.tips.register(&genesis_metadata);
+        self.tips.register(&genesis_metadata).expect("must succeed");
+    }
+
+    fn start(&self) {
+        // derive state from block_dag
+        self.block_dag
+            .on_block_ready({
+                let protocol = self.clone();
+
+                move |block_metadata| {
+                    if let Err(err) = protocol.process_block(block_metadata) {
+                        protocol.events.error.trigger(&err);
+                    }
+                }
+            })
+            .forever();
 
         // derive committee and round from the heaviest milestone
-        protocol
-            .state
+        self.state
             .heaviest_milestone
             .subscribe({
-                let round = protocol.state.round.clone();
-                let committee = protocol.state.committee.clone();
+                let round = self.state.round.clone();
+                let committee = self.state.committee.clone();
 
                 move |update| {
                     if let Some(heaviest_milestone) = &update.1 {
@@ -66,29 +98,6 @@ impl<C: Config> Protocol<C> {
                 }
             })
             .forever();
-
-        // derive state from block_dag
-        protocol
-            .block_dag
-            .on_block_ready({
-                let protocol = protocol.clone();
-
-                move |block_metadata| {
-                    if let Err(err) = protocol.process_block(block_metadata) {
-                        protocol.events.error.trigger(&err);
-                    }
-                }
-            })
-            .forever();
-
-        protocol
-    }
-
-    pub fn new_block(&self, issuer: &IssuerID) -> Block {
-        Block::from(NetworkBlock {
-            parents: self.tips.get(),
-            issuer_id: issuer.clone(),
-        })
     }
 
     fn process_block(&self, metadata: &ResourceGuard<BlockMetadata<C>>) -> Result<()> {
@@ -134,7 +143,7 @@ impl<C: Config> Protocol<C> {
         }
     }
 
-    pub fn advance_acceptance(&self, old: &Vote<C>, new: &Vote<C>) -> Result<()> {
+    fn advance_acceptance(&self, old: &Vote<C>, new: &Vote<C>) -> Result<()> {
         let current_height = old.height()?;
         let new_height = new.height()?;
 
@@ -188,13 +197,4 @@ impl<C: Config> Protocol<C> {
 
         Ok(ordered_blocks)
     }
-}
-
-#[derive(Default)]
-pub struct State<C: Config> {
-    pub chain_index: Variable<u64>,
-    pub round: Arc<Variable<u64>>,
-    pub committee: Arc<Variable<Committee>>,
-    pub heaviest_milestone: Variable<Vote<C>>,
-    pub latest_accepted_milestone: Variable<Vote<C>>,
 }
