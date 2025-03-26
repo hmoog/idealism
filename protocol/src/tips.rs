@@ -11,12 +11,6 @@ pub struct Tips<C: Config> {
 }
 
 impl<C: Config> Tips<C> {
-    pub fn new() -> Self {
-        Self {
-            tips: Mutex::new(HashSet::new()),
-        }
-    }
-
     pub fn register(&self, metadata: &BlockMetadata<C>) -> Result<Vec<BlockMetadata<C>>> {
         let parent_refs = metadata.parents();
         let mut removed_tips = Vec::with_capacity(parent_refs.len());
@@ -49,5 +43,13 @@ impl<C: Config> Tips<C> {
             .map(|x| x.block.id())
             .cloned()
             .collect()
+    }
+}
+
+impl<C: Config> Default for Tips<C> {
+    fn default() -> Self {
+        Self {
+            tips: Mutex::new(HashSet::new()),
+        }
     }
 }
