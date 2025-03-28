@@ -11,15 +11,15 @@ use types::{
 use virtual_voting::{Vote, Votes};
 
 use crate::{
-    BlockMetadataRef, Config,
+    BlockDAGConfig, BlockMetadataRef,
     Error::{BlockNotFound, VoteNotFound},
     accepted::Accepted,
     error::Result,
 };
 
-pub struct BlockMetadata<C: Config>(pub(crate) Arc<Inner<C>>);
+pub struct BlockMetadata<C: BlockDAGConfig>(pub(crate) Arc<Inner<C>>);
 
-pub struct Inner<C: Config> {
+pub struct Inner<C: BlockDAGConfig> {
     parents: Mutex<Vec<BlockMetadataRef<C>>>,
     processed: Signal<()>,
     pub block: Block,
@@ -28,7 +28,7 @@ pub struct Inner<C: Config> {
     pub error: Signal<C::ErrorType>,
 }
 
-impl<C: Config> BlockMetadata<C> {
+impl<C: BlockDAGConfig> BlockMetadata<C> {
     pub fn new(block: Block) -> Self {
         Self(Arc::new(Inner {
             parents: Mutex::new(vec![BlockMetadataRef::default(); block.parents().len()]),
@@ -121,9 +121,9 @@ mod traits {
         sync::Arc,
     };
 
-    use crate::{BlockMetadata, Config, Inner};
+    use crate::{BlockDAGConfig, BlockMetadata, Inner};
 
-    impl<C: Config> Deref for BlockMetadata<C> {
+    impl<C: BlockDAGConfig> Deref for BlockMetadata<C> {
         type Target = Inner<C>;
 
         fn deref(&self) -> &Self::Target {
@@ -131,27 +131,27 @@ mod traits {
         }
     }
 
-    impl<C: Config> Clone for BlockMetadata<C> {
+    impl<C: BlockDAGConfig> Clone for BlockMetadata<C> {
         fn clone(&self) -> Self {
             Self(Arc::clone(&self.0))
         }
     }
 
-    impl<C: Config> PartialEq for BlockMetadata<C> {
+    impl<C: BlockDAGConfig> PartialEq for BlockMetadata<C> {
         fn eq(&self, other: &Self) -> bool {
             Arc::ptr_eq(&self.0, &other.0)
         }
     }
 
-    impl<C: Config> Eq for BlockMetadata<C> {}
+    impl<C: BlockDAGConfig> Eq for BlockMetadata<C> {}
 
-    impl<C: Config> Hash for BlockMetadata<C> {
+    impl<C: BlockDAGConfig> Hash for BlockMetadata<C> {
         fn hash<H: Hasher>(&self, state: &mut H) {
             ptr::hash(Arc::as_ptr(&self.0), state);
         }
     }
 
-    impl<C: Config> Debug for BlockMetadata<C> {
+    impl<C: BlockDAGConfig> Debug for BlockMetadata<C> {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             f.debug_struct("BlockMetadata")
                 .field("block", &self.block)

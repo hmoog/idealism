@@ -9,23 +9,19 @@ use types::{
 use virtual_voting::Vote;
 use zero::{Clone0, Deref0};
 
-use crate::{
-    Config, State,
-    error::{Error, Result},
-    tips::Tips,
-};
+use crate::{Error, ProtocolConfig, Result, State, Tips};
 
 #[derive(Deref0, Clone0, Default)]
-pub struct Protocol<C: Config>(Arc<ProtocolData<C>>);
+pub struct Protocol<C: ProtocolConfig>(Arc<ProtocolData<C>>);
 
 #[derive(Default)]
-pub struct ProtocolData<C: Config> {
+pub struct ProtocolData<C: ProtocolConfig> {
     pub block_dag: BlockDAG<C>,
     pub state: State<C>,
     pub tips: Tips<C>,
 }
 
-impl<C: Config> Protocol<C> {
+impl<C: ProtocolConfig> Protocol<C> {
     pub fn init(self, config: C) -> Self {
         let genesis_block = Block::GenesisBlock(config.genesis_block_id());
         self.block_dag.init(genesis_block, config);

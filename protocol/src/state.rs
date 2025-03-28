@@ -12,10 +12,10 @@ use types::{
 };
 use virtual_voting::Vote;
 
-use crate::{Config, Result};
+use crate::{ProtocolConfig, Result};
 
 #[derive(Default)]
-pub struct State<C: Config> {
+pub struct State<C: ProtocolConfig> {
     pub chain_index: Variable<u64>,
     pub heaviest_milestone: Variable<Vote<C>>,
     pub latest_accepted_milestone: Variable<Vote<C>>,
@@ -24,7 +24,7 @@ pub struct State<C: Config> {
     pub accepted_blocks: Event<AcceptedBlocks<C>>,
 }
 
-impl<C: Config> State<C> {
+impl<C: ProtocolConfig> State<C> {
     pub fn init(&self, genesis: Vote<C>) {
         let derived_round = self.round.clone();
         let derived_committee = self.committee.clone();
@@ -106,12 +106,12 @@ impl<C: Config> State<C> {
     }
 }
 
-pub struct AcceptedBlocks<C: Config> {
+pub struct AcceptedBlocks<C: ProtocolConfig> {
     pub height: u64,
     pub rounds: Vec<IndexSet<BlockMetadata<C>>>,
 }
 
-impl<C: Config> Debug for AcceptedBlocks<C> {
+impl<C: ProtocolConfig> Debug for AcceptedBlocks<C> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("BlocksOrderedEvent")
             .field("current_height", &self.height)

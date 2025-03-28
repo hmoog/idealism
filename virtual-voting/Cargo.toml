@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 types = { path = "../types" }
 zero = { path = "../zero" }
+thiserror = "2.0.12"
 
 [dev-dependencies]
 blockdag = { path = "../blockdag" }

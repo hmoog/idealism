@@ -60,7 +60,7 @@ impl Config {
     }
 }
 
-impl blockdag::Config for Config {
+impl blockdag::BlockDAGConfig for Config {
     type ErrorType = protocol::Error;
 
     fn genesis_block_id(&self) -> BlockID {
@@ -68,9 +68,9 @@ impl blockdag::Config for Config {
     }
 }
 
-impl protocol::Config for Config {}
+impl protocol::ProtocolConfig for Config {}
 
-impl virtual_voting::Config for Config {
+impl virtual_voting::VirtualVotingConfig for Config {
     type Source = BlockMetadataRef<Self>;
 
     fn genesis_time(&self) -> u64 {

@@ -3,12 +3,12 @@ use std::collections::HashMap;
 use types::{bft::Committee, ids::IssuerID};
 use zero::{Default0, Deref0, FromIterator0, IntoIterator0};
 
-use crate::{Config, VoteRef, VoteRefs, VotesByIssuer};
+use crate::{VirtualVotingConfig, VoteRef, VoteRefs, VotesByIssuer};
 
 #[derive(Default0, Deref0, FromIterator0, IntoIterator0)]
-pub struct VoteRefsByIssuer<C: Config>(HashMap<IssuerID, VoteRefs<C>>);
+pub struct VoteRefsByIssuer<C: VirtualVotingConfig>(HashMap<IssuerID, VoteRefs<C>>);
 
-impl<C: Config> VoteRefsByIssuer<C> {
+impl<C: VirtualVotingConfig> VoteRefsByIssuer<C> {
     pub fn from_committee(committee: &Committee, target: &VoteRef<C>) -> VoteRefsByIssuer<C> {
         let mut vote_refs_by_issuer = VoteRefsByIssuer::default();
         for member in committee.iter() {
@@ -31,15 +31,15 @@ impl<C: Config> VoteRefsByIssuer<C> {
 }
 
 mod traits {
-    use crate::{Config, VoteRefsByIssuer, VotesByIssuer};
+    use crate::{VirtualVotingConfig, VoteRefsByIssuer, VotesByIssuer};
 
-    impl<C: Config> From<VotesByIssuer<C>> for VoteRefsByIssuer<C> {
+    impl<C: VirtualVotingConfig> From<VotesByIssuer<C>> for VoteRefsByIssuer<C> {
         fn from(src: VotesByIssuer<C>) -> VoteRefsByIssuer<C> {
             VoteRefsByIssuer::from_votes_by_issuer(&src)
         }
     }
 
-    impl<C: Config> From<&VotesByIssuer<C>> for VoteRefsByIssuer<C> {
+    impl<C: VirtualVotingConfig> From<&VotesByIssuer<C>> for VoteRefsByIssuer<C> {
         fn from(src: &VotesByIssuer<C>) -> VoteRefsByIssuer<C> {
             VoteRefsByIssuer::from_votes_by_issuer(src)
         }

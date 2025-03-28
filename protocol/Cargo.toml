@@ -9,6 +9,7 @@ indexmap = "2.7.1"
 types = { path = "../types" }
 virtual-voting = { path = "../virtual-voting" }
 zero = { path = "../zero" }
+thiserror = "2.0.12"
 
 [dev-dependencies]
 config = { path = "../config" }

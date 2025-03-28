@@ -1,4 +1,4 @@
-use virtual_voting::Config as _;
+use virtual_voting::VirtualVotingConfig as _;
 
 use crate::Config;
 

@@ -1,12 +1,12 @@
 use types::bft::Committee;
-use virtual_voting::{Config, Vote};
+use virtual_voting::{VirtualVotingConfig, Vote};
 
-pub enum CommitteeSelection<C: Config> {
+pub enum CommitteeSelection<C: VirtualVotingConfig> {
     FixedCommittee(Committee),
     Custom(CustomStrategy<C>),
 }
 
-impl<C: Config> CommitteeSelection<C> {
+impl<C: VirtualVotingConfig> CommitteeSelection<C> {
     pub fn dispatch(&self, config: &C, vote: Option<&Vote<C>>) -> Committee {
         match self {
             Self::FixedCommittee(committee) => fixed_committee(committee, vote),
@@ -15,7 +15,10 @@ impl<C: Config> CommitteeSelection<C> {
     }
 }
 
-fn fixed_committee<C: Config>(committee: &Committee, vote: Option<&Vote<C>>) -> Committee {
+fn fixed_committee<C: VirtualVotingConfig>(
+    committee: &Committee,
+    vote: Option<&Vote<C>>,
+) -> Committee {
     match vote {
         Some(vote) => vote.committee.clone(),
         None => (*committee).clone(),

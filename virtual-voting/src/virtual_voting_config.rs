@@ -2,7 +2,7 @@ use types::bft::Committee;
 
 use crate::{Vote, VoteBuilder};
 
-pub trait Config: Default + Sync + Send + 'static {
+pub trait VirtualVotingConfig: Default + Sync + Send + 'static {
     type Source: Send + Sync;
 
     fn genesis_time(&self) -> u64;

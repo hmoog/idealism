@@ -3,14 +3,14 @@ use std::{collections::HashSet, sync::Mutex};
 use blockdag::{BlockMetadata, Error::BlockNotFound};
 use types::ids::BlockID;
 
-use crate::{Config, error::Result};
+use crate::{ProtocolConfig, Result};
 
 #[derive(Default)]
-pub struct Tips<C: Config> {
+pub struct Tips<C: ProtocolConfig> {
     tips: Mutex<HashSet<BlockMetadata<C>>>,
 }
 
-impl<C: Config> Tips<C> {
+impl<C: ProtocolConfig> Tips<C> {
     pub fn init(&self, genesis: BlockMetadata<C>) {
         let mut tips = self.tips.lock().expect("failed to lock");
         tips.insert(genesis);

@@ -13,17 +13,17 @@ use types::{
 };
 use virtual_voting::Vote;
 
-use crate::{Config, block_address::BlockAddress, block_metadata::BlockMetadata};
+use crate::{BlockDAGConfig, block_address::BlockAddress, block_metadata::BlockMetadata};
 
-pub struct BlockDAG<C: Config>(Arc<BlockDAGData<C>>);
+pub struct BlockDAG<C: BlockDAGConfig>(Arc<BlockDAGData<C>>);
 
-struct BlockDAGData<C: Config> {
+struct BlockDAGData<C: BlockDAGConfig> {
     genesis: Variable<BlockMetadata<C>>,
     blocks: Mutex<HashMap<BlockID, BlockAddress<C>>>,
     ready_event: Event<ResourceGuard<BlockMetadata<C>>>,
 }
 
-impl<C: Config> BlockDAG<C> {
+impl<C: BlockDAGConfig> BlockDAG<C> {
     pub fn init(&self, genesis: Block, config: C) {
         let genesis_metadata = self.attach(genesis);
         let genesis_vote = Vote::new_genesis(genesis_metadata.downgrade(), config);
@@ -121,7 +121,7 @@ impl<C: Config> BlockDAG<C> {
     }
 }
 
-impl<C: Config> Default for BlockDAG<C> {
+impl<C: BlockDAGConfig> Default for BlockDAG<C> {
     fn default() -> Self {
         Self(Arc::new(BlockDAGData {
             genesis: Variable::new(),
@@ -131,7 +131,7 @@ impl<C: Config> Default for BlockDAG<C> {
     }
 }
 
-impl<C: Config> Clone for BlockDAG<C> {
+impl<C: BlockDAGConfig> Clone for BlockDAG<C> {
     fn clone(&self) -> Self {
         Self(Arc::clone(&self.0))
     }

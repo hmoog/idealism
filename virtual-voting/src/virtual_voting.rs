@@ -2,15 +2,17 @@ use std::{cmp::max, collections::HashMap};
 
 use types::bft::Committee;
 
-use crate::{Config, Error, Result, Vote, Votes, VotesByIssuer, VotesByRound, WeightTracker};
+use crate::{
+    Error, Result, VirtualVotingConfig, Vote, Votes, VotesByIssuer, VotesByRound, WeightTracker,
+};
 
-pub struct VirtualVoting<C: Config> {
+pub struct VirtualVoting<C: VirtualVotingConfig> {
     children: HashMap<Vote<C>, Votes<C>>,
     weight_tracker: WeightTracker<C>,
     consensus_threshold: u64,
 }
 
-impl<C: Config> VirtualVoting<C> {
+impl<C: VirtualVotingConfig> VirtualVoting<C> {
     pub fn run(
         votes: VotesByIssuer<C>,
         committee: &Committee,

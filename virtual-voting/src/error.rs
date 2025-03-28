@@ -1,30 +1,27 @@
-use std::fmt::Display;
+use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum Error {
+    #[error("Referenced vote evicted")]
     ReferencedVoteEvicted,
+
+    #[error("Votes must not be empty")]
     VotesMustNotBeEmpty,
+
+    #[error("No accepted milestone in past cone")]
     NoAcceptedMilestoneInPastCone,
+
+    #[error("No confirmed milestone in past cone")]
     NoConfirmedMilestoneInPastCone,
+
+    #[error("No commitment exists")]
     NoCommitmentExists,
+
+    #[error("No milestone")]
     NoMilestone,
+
+    #[error("Time must increase")]
     TimeMustIncrease,
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
-
-impl Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Error::ReferencedVoteEvicted => write!(f, "Referenced vote evicted"),
-            Error::VotesMustNotBeEmpty => write!(f, "Votes must not be empty"),
-            Error::NoAcceptedMilestoneInPastCone => write!(f, "No accepted milestone in past cone"),
-            Error::NoConfirmedMilestoneInPastCone => {
-                write!(f, "No confirmed milestone in past cone")
-            }
-            Error::NoCommitmentExists => write!(f, "No commitment exists"),
-            Error::NoMilestone => write!(f, "No milestone"),
-            Error::TimeMustIncrease => write!(f, "Time must increase"),
-        }
-    }
-}

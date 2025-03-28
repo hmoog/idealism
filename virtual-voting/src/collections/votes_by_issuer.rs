@@ -3,16 +3,16 @@ use std::collections::HashMap;
 use types::ids::IssuerID;
 use zero::{Clone0, Default0, Deref0, FromIterator0, IntoIterator0};
 
-use crate::{Config, Votes};
+use crate::{VirtualVotingConfig, Votes};
 
 /// A collection of votes indexed by committee member ID.
 ///
 /// This structure maintains votes from different committee members, ensuring proper handling of
 /// voting rounds and vote updates.
 #[derive(Default0, Deref0, IntoIterator0, FromIterator0, Clone0)]
-pub struct VotesByIssuer<C: Config>(HashMap<IssuerID, Votes<C>>);
+pub struct VotesByIssuer<C: VirtualVotingConfig>(HashMap<IssuerID, Votes<C>>);
 
-impl<C: Config> VotesByIssuer<C> {
+impl<C: VirtualVotingConfig> VotesByIssuer<C> {
     /// Inserts or updates votes for a committee member based on the voting round.
     ///
     /// - Clears existing votes if the new entry's round is greater.
@@ -50,9 +50,9 @@ type Entry<C> = (IssuerID, Votes<C>);
 
 mod traits {
     use super::{Entry, VotesByIssuer};
-    use crate::{Config, Error, Vote, VoteRefsByIssuer, Votes};
+    use crate::{Error, VirtualVotingConfig, Vote, VoteRefsByIssuer, Votes};
 
-    impl<C: Config> TryFrom<Votes<C>> for VotesByIssuer<C> {
+    impl<C: VirtualVotingConfig> TryFrom<Votes<C>> for VotesByIssuer<C> {
         type Error = Error;
         fn try_from(votes: Votes<C>) -> Result<VotesByIssuer<C>, Self::Error> {
             let mut votes_by_issuer: VotesByIssuer<C> = VotesByIssuer::default();
@@ -63,7 +63,7 @@ mod traits {
         }
     }
 
-    impl<C: Config> TryFrom<&VoteRefsByIssuer<C>> for VotesByIssuer<C> {
+    impl<C: VirtualVotingConfig> TryFrom<&VoteRefsByIssuer<C>> for VotesByIssuer<C> {
         type Error = Error;
         fn try_from(src: &VoteRefsByIssuer<C>) -> Result<VotesByIssuer<C>, Self::Error> {
             Ok(VotesByIssuer(
@@ -82,7 +82,7 @@ mod traits {
         }
     }
 
-    impl<C: Config> Extend<Entry<C>> for VotesByIssuer<C> {
+    impl<C: VirtualVotingConfig> Extend<Entry<C>> for VotesByIssuer<C> {
         fn extend<T: IntoIterator<Item = Entry<C>>>(&mut self, entries: T) {
             for entry in entries {
                 self.insert_or_update(entry);

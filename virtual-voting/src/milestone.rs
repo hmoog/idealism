@@ -1,6 +1,6 @@
-use crate::{Config, VoteRef};
+use crate::{VirtualVotingConfig, VoteRef};
 
-pub struct Milestone<C: Config> {
+pub struct Milestone<C: VirtualVotingConfig> {
     pub height: u64,
     pub leader_weight: u64,
     pub accepted: VoteRef<C>,

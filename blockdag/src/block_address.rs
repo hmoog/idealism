@@ -5,17 +5,17 @@ use types::{
     rx::{CallbackOnce, CallbacksOnce, Signal, Subscription},
 };
 
-use crate::{BlockMetadata, Config};
+use crate::{BlockDAGConfig, BlockMetadata};
 
 /// BlockAddress is a helper struct that allows to publish and subscribe to
 /// block metadata.
-pub(crate) struct BlockAddress<C: Config> {
+pub(crate) struct BlockAddress<C: BlockDAGConfig> {
     /// Signal that holds the block metadata.
     data: Arc<Signal<BlockMetadata<C>>>,
 }
 
 /// Implementation of BlockAddress.
-impl<C: Config> BlockAddress<C> {
+impl<C: BlockDAGConfig> BlockAddress<C> {
     /// Creates a new BlockAddress.
     pub fn new() -> Self {
         Self {
@@ -45,7 +45,7 @@ impl<C: Config> BlockAddress<C> {
 }
 
 /// Clone implementation for BlockAddress.
-impl<C: Config> Clone for BlockAddress<C> {
+impl<C: BlockDAGConfig> Clone for BlockAddress<C> {
     /// Clones the BlockAddress.
     fn clone(&self) -> Self {
         Self {

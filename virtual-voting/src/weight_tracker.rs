@@ -2,15 +2,15 @@ use std::collections::{HashMap, HashSet};
 
 use types::{bft::Committee, ids::IssuerID};
 
-use crate::{Config, Vote, Votes};
+use crate::{VirtualVotingConfig, Vote, Votes};
 
-pub struct WeightTracker<C: Config> {
+pub struct WeightTracker<C: VirtualVotingConfig> {
     committee: Committee,
     weights: HashMap<Vote<C>, u64>,
     seen_issuers: HashMap<Vote<C>, HashSet<IssuerID>>,
 }
 
-impl<C: Config> WeightTracker<C> {
+impl<C: VirtualVotingConfig> WeightTracker<C> {
     pub fn new(committee: Committee) -> Self {
         Self {
             committee,

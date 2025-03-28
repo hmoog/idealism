@@ -6,13 +6,12 @@ use types::{
 };
 
 use crate::{
-    Config,
     Error::{TimeMustIncrease, VotesMustNotBeEmpty},
-    Issuer, Milestone, Result, VirtualVoting, Vote, VoteRef, VoteRefs, VoteRefsByIssuer, Votes,
-    VotesByIssuer,
+    Issuer, Milestone, Result, VirtualVoting, VirtualVotingConfig, Vote, VoteRef, VoteRefs,
+    VoteRefsByIssuer, Votes, VotesByIssuer,
 };
 
-pub struct VoteBuilder<T: Config> {
+pub struct VoteBuilder<T: VirtualVotingConfig> {
     pub source: T::Source,
     pub config: Arc<T>,
     pub issuer: Issuer,
@@ -26,7 +25,7 @@ pub struct VoteBuilder<T: Config> {
     pub milestone: Option<Milestone<T>>,
 }
 
-impl<C: Config> VoteBuilder<C> {
+impl<C: VirtualVotingConfig> VoteBuilder<C> {
     pub(crate) fn build(
         source: C::Source,
         issuer: &IssuerID,
