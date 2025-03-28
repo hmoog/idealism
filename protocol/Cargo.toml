@@ -5,8 +5,10 @@ edition = "2024"
 
 [dependencies]
 blockdag = { path = "../blockdag" }
-config = { path = "../config" }
 indexmap = "2.7.1"
 types = { path = "../types" }
 virtual-voting = { path = "../virtual-voting" }
 zero = { path = "../zero" }
+
+[dev-dependencies]
+config = { path = "../config" }

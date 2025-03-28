@@ -1,3 +1,4 @@
+use blockdag::BlockMetadataRef;
 use config::Config;
 use types::{
     hash::{Hashable, Hasher},
@@ -29,33 +30,31 @@ impl BlockIDGenerator {
 
 #[test]
 fn test_consensus() -> virtual_voting::Result<()> {
-    let mut block_id = BlockIDGenerator::new();
-
-    let genesis = Vote::new_genesis(Config::new());
+    let genesis = Vote::new_genesis(BlockMetadataRef::default(), Config::new());
     let members = genesis.committee.members();
 
     println!("FIRST ROUND - VOTE FOR GENESIS");
 
     let vote1_1 = Vote::new(
-        block_id.next_id(),
+        BlockMetadataRef::default(),
         members[0].key(),
         1,
         Votes::from_iter(vec![genesis.clone()]),
     )?;
     let vote2_1 = Vote::new(
-        block_id.next_id(),
+        BlockMetadataRef::default(),
         members[1].key(),
         1,
         Votes::from_iter(vec![genesis.clone()]),
     )?;
     let vote3_1 = Vote::new(
-        block_id.next_id(),
+        BlockMetadataRef::default(),
         members[2].key(),
         1,
         Votes::from_iter(vec![genesis.clone()]),
     )?;
     let vote4_1 = Vote::new(
-        block_id.next_id(),
+        BlockMetadataRef::default(),
         members[3].key(),
         1,
         Votes::from_iter(vec![genesis.clone()]),
@@ -72,25 +71,25 @@ fn test_consensus() -> virtual_voting::Result<()> {
     println!("SECOND ROUND");
 
     let vote1_2 = Vote::new(
-        block_id.next_id(),
+        BlockMetadataRef::default(),
         members[0].key(),
         2,
         Votes::from_iter(vec![vote1_1.clone(), vote2_1.clone(), vote3_1.clone()]),
     )?;
     let vote2_2 = Vote::new(
-        block_id.next_id(),
+        BlockMetadataRef::default(),
         members[1].key(),
         2,
         Votes::from_iter(vec![vote1_1.clone(), vote2_1.clone(), vote3_1.clone()]),
     )?;
     let vote3_2 = Vote::new(
-        block_id.next_id(),
+        BlockMetadataRef::default(),
         members[2].key(),
         2,
         Votes::from_iter(vec![vote1_1.clone(), vote2_1.clone(), vote3_1.clone()]),
     )?;
     let vote4_2 = Vote::new(
-        block_id.next_id(),
+        BlockMetadataRef::default(),
         members[3].key(),
         2,
         Votes::from_iter(vec![
@@ -112,7 +111,7 @@ fn test_consensus() -> virtual_voting::Result<()> {
     println!("THIRD ROUND");
 
     let vote1_3 = Vote::new(
-        block_id.next_id(),
+        BlockMetadataRef::default(),
         members[0].key(),
         3,
         Votes::from_iter(vec![
@@ -123,7 +122,7 @@ fn test_consensus() -> virtual_voting::Result<()> {
         ]),
     )?;
     let vote2_3 = Vote::new(
-        block_id.next_id(),
+        BlockMetadataRef::default(),
         members[1].key(),
         3,
         Votes::from_iter(vec![
@@ -134,7 +133,7 @@ fn test_consensus() -> virtual_voting::Result<()> {
         ]),
     )?;
     let vote3_3 = Vote::new(
-        block_id.next_id(),
+        BlockMetadataRef::default(),
         members[2].key(),
         3,
         Votes::from_iter(vec![
@@ -151,19 +150,19 @@ fn test_consensus() -> virtual_voting::Result<()> {
     println!("FOURTH ROUND");
 
     let member1_vote_4 = Vote::new(
-        block_id.next_id(),
+        BlockMetadataRef::default(),
         members[0].key(),
         4,
         Votes::from_iter(vec![vote1_3.clone(), vote2_3.clone(), vote3_3.clone()]),
     )?;
     let member2_vote_4 = Vote::new(
-        block_id.next_id(),
+        BlockMetadataRef::default(),
         members[0].key(),
         4,
         Votes::from_iter(vec![vote1_3.clone(), vote2_3.clone(), vote3_3.clone()]),
     )?;
     let member3_vote_4 = Vote::new(
-        block_id.next_id(),
+        BlockMetadataRef::default(),
         members[0].key(),
         4,
         Votes::from_iter(vec![vote1_3.clone(), vote2_3.clone(), vote3_3.clone()]),

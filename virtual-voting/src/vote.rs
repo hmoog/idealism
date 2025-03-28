@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use types::ids::{BlockID, IssuerID};
+use types::ids::IssuerID;
 use zero::{Clone0, Deref0};
 
 use crate::{Config, Error::NoMilestone, Milestone, Result, VoteBuilder, VoteRef, Votes};
@@ -10,16 +10,16 @@ pub struct Vote<C: Config>(Arc<VoteBuilder<C>>);
 
 impl<C: Config> Vote<C> {
     pub fn new(
-        block_id: BlockID,
+        source: C::Source,
         issuer: &IssuerID,
         time: u64,
         latest: Votes<C>,
     ) -> Result<Vote<C>> {
-        VoteBuilder::build(block_id, issuer, time, &latest)
+        VoteBuilder::build(source, issuer, time, &latest)
     }
 
-    pub fn new_genesis(config: C) -> Self {
-        VoteBuilder::build_genesis(config)
+    pub fn new_genesis(source: C::Source, config: C) -> Self {
+        VoteBuilder::build_genesis(source, config)
     }
 
     pub fn height(&self) -> Result<u64> {

@@ -8,4 +8,5 @@ types = { path = "../types" }
 zero = { path = "../zero" }
 
 [dev-dependencies]
+blockdag = { path = "../blockdag" }
 config = { path = "../config" }

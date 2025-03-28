@@ -4,7 +4,7 @@ use types::ids::IssuerID;
 
 #[test]
 fn test_protocol() -> Result<()> {
-    let protocol = Protocol::new(Config::new());
+    let protocol = Protocol::default().init(Config::new());
 
     protocol
         .state
@@ -57,23 +57,14 @@ fn test_protocol() -> Result<()> {
     let _block4_metadata = protocol.block_dag.attach(block_4);
 
     println!("{}", block1_metadata.vote()?.milestone()?.height);
-    println!(
-        "{}",
-        block2_metadata
-            .vote
-            .get()
-            .as_ref()
-            .unwrap()
-            .milestone()
-            .is_ok()
-    );
+    println!("{}", block2_metadata.vote()?.milestone().is_ok());
 
     let block_1_1 = protocol.new_block(&IssuerID::from([1u8; 32]));
     let block_1_1_metadata = protocol.block_dag.attach(block_1_1);
 
     println!(
         "{}",
-        block_1_1_metadata.vote()?.accepted_milestone()?.block_id
+        block_1_1_metadata.vote()?.accepted_milestone()?.height()?
     );
 
     Ok(())

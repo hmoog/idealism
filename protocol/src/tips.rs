@@ -11,7 +11,7 @@ pub struct Tips<C: Config> {
 }
 
 impl<C: Config> Tips<C> {
-    pub fn register(&self, metadata: &BlockMetadata<C>) -> Result<Vec<BlockMetadata<C>>> {
+    pub fn apply(&self, metadata: &BlockMetadata<C>) -> Result<Vec<BlockMetadata<C>>> {
         let parent_refs = metadata.parents();
         let mut removed_tips = Vec::with_capacity(parent_refs.len());
 

@@ -4,7 +4,7 @@ use types::blocks::{Block, NetworkBlock};
 
 #[test]
 fn test_block_dag() {
-    let block_dag: BlockDAG<Config> = BlockDAG::new();
+    let block_dag: BlockDAG<Config> = BlockDAG::default();
 
     block_dag
         .on_block_ready(|metadata| {

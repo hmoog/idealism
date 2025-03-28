@@ -1,6 +1,7 @@
+use blockdag::BlockMetadataRef;
 use types::{
     bft::{Committee, Member},
-    ids::IssuerID,
+    ids::{BlockID, IssuerID},
 };
 use virtual_voting::{Vote, VoteBuilder};
 
@@ -59,7 +60,15 @@ impl Config {
     }
 }
 
+impl protocol::Config for Config {}
+
 impl virtual_voting::Config for Config {
+    type Source = BlockMetadataRef<Self>;
+
+    fn genesis_block_id(&self) -> BlockID {
+        BlockID::default()
+    }
+
     fn genesis_time(&self) -> u64 {
         self.genesis_time
     }

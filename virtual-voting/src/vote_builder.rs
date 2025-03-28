@@ -2,7 +2,7 @@ use std::{cmp::max, collections::HashSet, sync::Arc};
 
 use types::{
     bft::{Committee, Member},
-    ids::{BlockID, IssuerID},
+    ids::IssuerID,
 };
 
 use crate::{
@@ -13,7 +13,7 @@ use crate::{
 };
 
 pub struct VoteBuilder<T: Config> {
-    pub block_id: BlockID,
+    pub source: T::Source,
     pub config: Arc<T>,
     pub issuer: Issuer,
     pub time: u64,
@@ -28,7 +28,7 @@ pub struct VoteBuilder<T: Config> {
 
 impl<C: Config> VoteBuilder<C> {
     pub(crate) fn build(
-        block_id: BlockID,
+        source: C::Source,
         issuer: &IssuerID,
         time: u64,
         votes: &Votes<C>,
@@ -40,7 +40,7 @@ impl<C: Config> VoteBuilder<C> {
 
         // copy perception of heaviest vote
         let mut builder = VoteBuilder {
-            block_id,
+            source,
             issuer: Issuer::User(issuer.clone()),
             time,
             slot: heaviest_vote.slot,
@@ -79,12 +79,12 @@ impl<C: Config> VoteBuilder<C> {
         Ok(Vote::from(Arc::new(builder)))
     }
 
-    pub(crate) fn build_genesis(config: C) -> Vote<C> {
+    pub(crate) fn build_genesis(source: C::Source, config: C) -> Vote<C> {
         Vote::from(Arc::new_cyclic(|me| {
             let committee = config.select_committee(None);
 
             Self {
-                block_id: BlockID::default(),
+                source,
                 issuer: Issuer::Genesis,
                 time: config.genesis_time(),
                 slot: 0,
