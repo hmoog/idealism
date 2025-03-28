@@ -24,7 +24,7 @@ pub struct State<C: Config> {
 }
 
 impl<C: Config> State<C> {
-    pub fn init(&self, genesis: &Vote<C>) {
+    pub fn init(&self, genesis: Vote<C>) {
         let derived_round = self.round.clone();
         let derived_committee = self.committee.clone();
 
@@ -40,10 +40,10 @@ impl<C: Config> State<C> {
             .forever();
 
         self.heaviest_milestone.set(genesis.clone());
-        self.latest_accepted_milestone.set(genesis.clone());
+        self.latest_accepted_milestone.set(genesis);
     }
 
-    pub fn apply(&self, vote: &Vote<C>) -> Result<()> {
+    pub fn apply(&self, vote: Vote<C>) -> Result<()> {
         if let Some(milestone) = &vote.milestone {
             let new = Vote::try_from(&milestone.accepted)?;
             let advance_acceptance = |old| match old {
@@ -56,7 +56,7 @@ impl<C: Config> State<C> {
             };
 
             self.latest_accepted_milestone.compute(advance_acceptance)?;
-            self.heaviest_milestone.track_max(vote.clone());
+            self.heaviest_milestone.track_max(vote);
         };
 
         Ok(())

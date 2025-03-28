@@ -16,10 +16,10 @@ use crate::{
 };
 
 #[derive(Deref0, Clone0, Default)]
-pub struct Protocol<C: Config>(Arc<Data<C>>);
+pub struct Protocol<C: Config>(Arc<ProtocolData<C>>);
 
 #[derive(Default)]
-pub struct Data<C: Config> {
+pub struct ProtocolData<C: Config> {
     pub events: Events<C>,
     pub block_dag: BlockDAG<C>,
     pub state: State<C>,
@@ -28,15 +28,13 @@ pub struct Data<C: Config> {
 
 impl<C: Config> Protocol<C> {
     pub fn init(self, config: C) -> Self {
-        self.block_dag
-            .init(Block::GenesisBlock(config.genesis_block_id()), config);
+        let genesis_block = Block::GenesisBlock(config.genesis_block_id());
+        self.block_dag.init(genesis_block, config);
 
-        self.state
-            .init(&self.block_dag.genesis().vote().expect("must exist"));
-
-        self.tips
-            .apply(&self.block_dag.genesis())
-            .expect("must succeed");
+        let genesis_metadata = self.block_dag.genesis();
+        let genesis_vote = genesis_metadata.vote().expect("must exist");
+        self.state.init(genesis_vote);
+        self.tips.init(genesis_metadata);
 
         self.block_dag
             .on_block_ready({
@@ -70,7 +68,7 @@ impl<C: Config> Protocol<C> {
                     metadata.referenced_votes()?,
                 )?;
 
-                self.state.apply(&vote)?;
+                self.state.apply(vote.clone())?;
                 self.tips.apply(metadata)?;
 
                 metadata.vote.set(vote);

@@ -6,12 +6,18 @@ use virtual_voting::Config;
 
 use crate::error::Result;
 
+#[derive(Default)]
 pub struct Tips<C: Config> {
     tips: Mutex<HashSet<BlockMetadata<C>>>,
 }
 
 impl<C: Config> Tips<C> {
-    pub fn apply(&self, metadata: &BlockMetadata<C>) -> Result<Vec<BlockMetadata<C>>> {
+    pub fn init(&self, genesis: BlockMetadata<C>) {
+        let mut tips = self.tips.lock().expect("failed to lock");
+        tips.insert(genesis);
+    }
+
+    pub fn apply(&self, metadata: &BlockMetadata<C>) -> Result<()> {
         let parent_refs = metadata.parents();
         let mut removed_tips = Vec::with_capacity(parent_refs.len());
 
@@ -32,7 +38,7 @@ impl<C: Config> Tips<C> {
         }
         tips.insert(metadata.clone());
 
-        Ok(removed_tips)
+        Ok(())
     }
 
     pub fn get(&self) -> Vec<BlockID> {
@@ -43,13 +49,5 @@ impl<C: Config> Tips<C> {
             .map(|x| x.block.id())
             .cloned()
             .collect()
-    }
-}
-
-impl<C: Config> Default for Tips<C> {
-    fn default() -> Self {
-        Self {
-            tips: Mutex::new(HashSet::new()),
-        }
     }
 }
