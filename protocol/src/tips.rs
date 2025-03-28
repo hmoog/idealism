@@ -2,9 +2,8 @@ use std::{collections::HashSet, sync::Mutex};
 
 use blockdag::{BlockMetadata, Error::BlockNotFound};
 use types::ids::BlockID;
-use virtual_voting::Config;
 
-use crate::error::Result;
+use crate::{Config, error::Result};
 
 #[derive(Default)]
 pub struct Tips<C: Config> {

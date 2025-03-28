@@ -1,6 +1,7 @@
-use std::sync::Arc;
+use std::{fmt::Debug, sync::Arc};
 
-use blockdag::{Accepted, Error::BlockNotFound};
+use blockdag::{Accepted, BlockMetadata, Error::BlockNotFound};
+use indexmap::IndexSet;
 use types::{
     bft::Committee,
     rx::{
@@ -11,7 +12,7 @@ use types::{
 };
 use virtual_voting::Vote;
 
-use crate::{AcceptedBlocks, Config, Result};
+use crate::{Config, Result};
 
 #[derive(Default)]
 pub struct State<C: Config> {
@@ -102,5 +103,19 @@ impl<C: Config> State<C> {
         }
 
         Ok(accepted_blocks)
+    }
+}
+
+pub struct AcceptedBlocks<C: Config> {
+    pub height: u64,
+    pub rounds: Vec<IndexSet<BlockMetadata<C>>>,
+}
+
+impl<C: Config> Debug for AcceptedBlocks<C> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("BlocksOrderedEvent")
+            .field("current_height", &self.height)
+            .field("ordered_blocks", &self.rounds)
+            .finish()
     }
 }

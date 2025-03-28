@@ -10,7 +10,7 @@ use virtual_voting::Vote;
 use zero::{Clone0, Deref0};
 
 use crate::{
-    Config, Events, State,
+    Config, State,
     error::{Error, Result},
     tips::Tips,
 };
@@ -20,7 +20,6 @@ pub struct Protocol<C: Config>(Arc<ProtocolData<C>>);
 
 #[derive(Default)]
 pub struct ProtocolData<C: Config> {
-    pub events: Events<C>,
     pub block_dag: BlockDAG<C>,
     pub state: State<C>,
     pub tips: Tips<C>,
@@ -36,14 +35,11 @@ impl<C: Config> Protocol<C> {
         self.state.init(genesis_vote);
         self.tips.init(genesis_metadata);
 
+        let protocol = self.clone();
         self.block_dag
-            .on_block_ready({
-                let protocol = self.clone();
-
-                move |block_metadata| {
-                    if let Err(err) = protocol.process_block(block_metadata) {
-                        protocol.events.error.trigger(&err);
-                    }
+            .on_block_ready(move |block_metadata| {
+                if let Err(err) = protocol.process_block(block_metadata) {
+                    block_metadata.error.set(err);
                 }
             })
             .forever();

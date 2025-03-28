@@ -4,9 +4,8 @@ use types::{
     blocks::Block,
     rx::{CallbackOnce, CallbacksOnce, Signal, Subscription},
 };
-use virtual_voting::Config;
 
-use crate::BlockMetadata;
+use crate::{BlockMetadata, Config};
 
 /// BlockAddress is a helper struct that allows to publish and subscribe to
 /// block metadata.

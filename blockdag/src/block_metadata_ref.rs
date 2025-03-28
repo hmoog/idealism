@@ -1,8 +1,6 @@
 use std::sync::Weak;
 
-use virtual_voting::Config;
-
-use crate::{BlockMetadata, Inner};
+use crate::{BlockMetadata, Config, Inner};
 
 pub struct BlockMetadataRef<C: Config>(pub(crate) Weak<Inner<C>>);
 
@@ -23,9 +21,7 @@ mod traits {
         sync::Weak,
     };
 
-    use virtual_voting::Config;
-
-    use crate::BlockMetadataRef;
+    use crate::{BlockMetadataRef, Config};
 
     impl<C: Config> Default for BlockMetadataRef<C> {
         fn default() -> Self {

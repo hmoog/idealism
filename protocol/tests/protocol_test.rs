@@ -35,15 +35,9 @@ fn test_protocol() -> Result<()> {
         .forever();
 
     protocol
-        .events
-        .blocks_ordered
+        .state
+        .accepted_blocks
         .subscribe(|event| println!("Blocks ordered: {:?}", event))
-        .forever();
-
-    protocol
-        .events
-        .error
-        .subscribe(|event| println!("Error: {}", event))
         .forever();
 
     let block_1 = protocol.new_block(&IssuerID::from([1u8; 32]));

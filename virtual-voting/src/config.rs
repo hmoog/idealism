@@ -1,14 +1,9 @@
-use types::{bft::Committee, ids::BlockID};
+use types::bft::Committee;
 
 use crate::{Vote, VoteBuilder};
 
-pub trait Config: Default + Sync + Send + 'static
-where
-    Self::Source: Send + Sync,
-{
-    type Source;
-
-    fn genesis_block_id(&self) -> BlockID;
+pub trait Config: Default + Sync + Send + 'static {
+    type Source: Send + Sync;
 
     fn genesis_time(&self) -> u64;
 

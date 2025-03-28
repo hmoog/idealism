@@ -11,21 +11,19 @@ use types::{
     ids::BlockID,
     rx::{Callback, Callbacks, Countdown, Event, ResourceGuard, Subscription, Variable},
 };
-use virtual_voting::{Config, Vote};
+use virtual_voting::Vote;
 
-use crate::{block_address::BlockAddress, block_metadata::BlockMetadata, block_metadata_ref};
+use crate::{Config, block_address::BlockAddress, block_metadata::BlockMetadata};
 
-pub struct BlockDAG<C: Config<Source = block_metadata_ref::BlockMetadataRef<C>>>(
-    Arc<BlockDAGData<C>>,
-);
+pub struct BlockDAG<C: Config>(Arc<BlockDAGData<C>>);
 
-struct BlockDAGData<C: Config<Source = block_metadata_ref::BlockMetadataRef<C>>> {
+struct BlockDAGData<C: Config> {
     genesis: Variable<BlockMetadata<C>>,
     blocks: Mutex<HashMap<BlockID, BlockAddress<C>>>,
     ready_event: Event<ResourceGuard<BlockMetadata<C>>>,
 }
 
-impl<C: Config<Source = block_metadata_ref::BlockMetadataRef<C>>> BlockDAG<C> {
+impl<C: Config> BlockDAG<C> {
     pub fn init(&self, genesis: Block, config: C) {
         let genesis_metadata = self.attach(genesis);
         let genesis_vote = Vote::new_genesis(genesis_metadata.downgrade(), config);
@@ -123,7 +121,7 @@ impl<C: Config<Source = block_metadata_ref::BlockMetadataRef<C>>> BlockDAG<C> {
     }
 }
 
-impl<C: Config<Source = block_metadata_ref::BlockMetadataRef<C>>> Default for BlockDAG<C> {
+impl<C: Config> Default for BlockDAG<C> {
     fn default() -> Self {
         Self(Arc::new(BlockDAGData {
             genesis: Variable::new(),
@@ -133,7 +131,7 @@ impl<C: Config<Source = block_metadata_ref::BlockMetadataRef<C>>> Default for Bl
     }
 }
 
-impl<C: Config<Source = block_metadata_ref::BlockMetadataRef<C>>> Clone for BlockDAG<C> {
+impl<C: Config> Clone for BlockDAG<C> {
     fn clone(&self) -> Self {
         Self(Arc::clone(&self.0))
     }

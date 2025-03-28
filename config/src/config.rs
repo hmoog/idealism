@@ -60,14 +60,18 @@ impl Config {
     }
 }
 
-impl protocol::Config for Config {}
-
-impl virtual_voting::Config for Config {
-    type Source = BlockMetadataRef<Self>;
+impl blockdag::Config for Config {
+    type ErrorType = protocol::Error;
 
     fn genesis_block_id(&self) -> BlockID {
         BlockID::default()
     }
+}
+
+impl protocol::Config for Config {}
+
+impl virtual_voting::Config for Config {
+    type Source = BlockMetadataRef<Self>;
 
     fn genesis_time(&self) -> u64 {
         self.genesis_time

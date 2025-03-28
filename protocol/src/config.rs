@@ -1,3 +1,3 @@
-use blockdag::BlockMetadataRef;
+use crate::Error;
 
-pub trait Config: virtual_voting::Config<Source = BlockMetadataRef<Self>> {}
+pub trait Config: virtual_voting::Config + blockdag::Config<ErrorType = Error> {}

@@ -8,10 +8,10 @@ use types::{
     blocks::Block,
     rx::{CallbackOnce, CallbacksOnce, Signal, Subscription},
 };
-use virtual_voting::{Config, Vote, Votes};
+use virtual_voting::{Vote, Votes};
 
 use crate::{
-    BlockMetadataRef,
+    BlockMetadataRef, Config,
     Error::{BlockNotFound, VoteNotFound},
     accepted::Accepted,
     error::Result,
@@ -25,6 +25,7 @@ pub struct Inner<C: Config> {
     pub block: Block,
     pub accepted: Signal<Accepted>,
     pub vote: Signal<Vote<C>>,
+    pub error: Signal<C::ErrorType>,
 }
 
 impl<C: Config> BlockMetadata<C> {
@@ -35,6 +36,7 @@ impl<C: Config> BlockMetadata<C> {
             block,
             accepted: Signal::new(),
             vote: Signal::new(),
+            error: Signal::new(),
         }))
     }
 
@@ -119,9 +121,7 @@ mod traits {
         sync::Arc,
     };
 
-    use virtual_voting::Config;
-
-    use crate::{BlockMetadata, Inner};
+    use crate::{BlockMetadata, Config, Inner};
 
     impl<C: Config> Deref for BlockMetadata<C> {
         type Target = Inner<C>;
