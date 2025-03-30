@@ -45,6 +45,14 @@ impl<T> Variable<T> {
         self.value.lock().unwrap()
     }
 
+    pub fn read(&self, f: impl FnOnce(Option<&T>)) {
+        f(self.value.lock().unwrap().as_ref())
+    }
+
+    pub fn must_read(&self, f: impl FnOnce(&T)) {
+        f(self.value.lock().unwrap().as_ref().unwrap())
+    }
+
     pub fn get_or_insert(&self, default: T) -> MutexGuard<Option<T>> {
         self.compute_if_none(|| self.process_update(None, Some(default)))
     }

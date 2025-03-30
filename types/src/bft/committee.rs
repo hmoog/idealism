@@ -88,6 +88,22 @@ impl Committee {
         new_committee
     }
 
+    pub fn consensus_threshold(&self) -> (u64, bool) {
+        // calculate acceptance and confirmation thresholds
+        let online_weight = self.online_weight();
+        let total_weight = self.total_weight();
+        let acceptance_threshold = online_weight - online_weight / 3;
+        let confirmation_threshold = total_weight - total_weight / 3;
+
+        // ebb and flow between acceptance and confirmation thresholds
+        match self.online_weight() >= confirmation_threshold {
+            // if we have enough online weight to confirm, use confirmation threshold
+            true => (confirmation_threshold, true),
+            // otherwise use acceptance threshold
+            false => (acceptance_threshold, false),
+        }
+    }
+
     pub fn iter(&self) -> impl Iterator<Item = &Member> {
         self.0.1.members_by_id.values().map(|member| &**member)
     }

@@ -1,16 +1,17 @@
-use std::{fmt::Debug, sync::Arc};
+use std::{collections::HashSet, fmt::Debug, sync::Arc};
 
 use blockdag::{Accepted, BlockMetadata, Error::BlockNotFound};
 use indexmap::IndexSet;
 use types::{
-    bft::Committee,
+    bft::{Committee, Member},
+    ids::IssuerID,
     rx::{
         Event, UpdateType,
         UpdateType::{Notify, Retain},
         Variable,
     },
 };
-use virtual_voting::Vote;
+use virtual_voting::{Issuer, Vote};
 
 use crate::{ProtocolConfig, Result};
 
@@ -19,12 +20,71 @@ pub struct State<C: ProtocolConfig> {
     pub chain_index: Variable<u64>,
     pub heaviest_milestone: Variable<Vote<C>>,
     pub latest_accepted_milestone: Variable<Vote<C>>,
-    pub round: Arc<Variable<u64>>,
     pub committee: Arc<Variable<Committee>>,
+    pub round: Arc<Variable<u64>>,
+    pub finalizable_round: Arc<Variable<u64>>,
+    pub round_participants: Variable<HashSet<IssuerID>>,
+    pub round_weight: Arc<Variable<u64>>,
     pub accepted_blocks: Event<AcceptedBlocks<C>>,
 }
 
 impl<C: ProtocolConfig> State<C> {
+    pub fn analyze_vote(&self, new: &Vote<C>) {
+        match &new.issuer {
+            Issuer::User(issuer) => self.committee.must_read(|committee| {
+                if let Some(member) = committee.member(issuer) {
+                    self.round.must_read(|round| {
+                        if new.round == *round {
+                            self.update_round_participants(new, committee, member);
+                        }
+                    });
+
+                    self.latest_accepted_milestone.must_read(|accepted| {
+                        if new.round > accepted.round + 1 {
+                            println!("TODO: track optimistic acceptance");
+                        }
+                    });
+                }
+            }),
+            Issuer::Genesis => {
+                // TODO: GENESIS
+            }
+        };
+    }
+
+    fn update_round_participants(&self, vote: &Vote<C>, committee: &Committee, member: &Member) {
+        self.round_participants
+            .compute::<(), _>(|participants| {
+                let mut participants = participants.unwrap_or_default();
+
+                if participants.insert(member.id().clone()) {
+                    self.update_round_weight(
+                        vote.round,
+                        member.weight(),
+                        committee.consensus_threshold().0,
+                    );
+                }
+
+                Notify(None, Some(participants))
+            })
+            .expect("must not fail");
+    }
+
+    fn update_round_weight(&self, round: u64, weight: u64, threshold: u64) {
+        self.round_weight
+            .compute::<(), _>(|old| {
+                let new = old.unwrap_or(0) + weight;
+                if new > threshold {
+                    self.finalizable_round.track_max(round);
+                    // TODO: trigger event
+                    println!("Round weight exceeded threshold {}", round);
+                }
+
+                Notify(old, Some(new))
+            })
+            .expect("must not fail");
+    }
+
     pub fn init(&self, genesis: Vote<C>) {
         let derived_round = self.round.clone();
         let derived_committee = self.committee.clone();
@@ -57,7 +117,8 @@ impl<C: ProtocolConfig> State<C> {
             };
 
             self.latest_accepted_milestone.compute(advance_acceptance)?;
-            self.heaviest_milestone.track_max(vote);
+            self.heaviest_milestone.track_max(vote.clone());
+            self.analyze_vote(&vote);
         };
 
         Ok(())

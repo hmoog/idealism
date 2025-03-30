@@ -117,7 +117,7 @@ impl<C: VirtualVotingConfig> VoteBuilder<C> {
         self.committee = self.committee.set_online(validator.key(), true);
 
         // determine consensus threshold (switch between confirmation and acceptance)
-        let (threshold, does_confirm) = self.consensus_threshold();
+        let (threshold, does_confirm) = self.committee.consensus_threshold();
 
         // check if we can commit (haven't voted yet for this round or have enough weight)
         if votes.get(validator.key()).is_none_or(|validator_votes| {
@@ -214,21 +214,5 @@ impl<C: VirtualVotingConfig> VoteBuilder<C> {
             })
             .map(|member| member.key().clone())
             .collect()
-    }
-
-    fn consensus_threshold(&self) -> (u64, bool) {
-        // calculate acceptance and confirmation thresholds
-        let online_weight = self.committee.online_weight();
-        let total_weight = self.committee.total_weight();
-        let acceptance_threshold = online_weight - online_weight / 3;
-        let confirmation_threshold = total_weight - total_weight / 3;
-
-        // ebb and flow between acceptance and confirmation thresholds
-        match self.committee.online_weight() >= confirmation_threshold {
-            // if we have enough online weight to confirm, use confirmation threshold
-            true => (confirmation_threshold, true),
-            // otherwise use acceptance threshold
-            false => (acceptance_threshold, false),
-        }
     }
 }

@@ -24,6 +24,14 @@ fn test_protocol() -> Result<()> {
 
     protocol
         .state
+        .finalizable_round
+        .subscribe(|update| {
+            println!("finalizable_round: {:?} => {:?}", update.0, update.1);
+        })
+        .forever();
+
+    protocol
+        .state
         .committee
         .subscribe(|update| {
             println!(
