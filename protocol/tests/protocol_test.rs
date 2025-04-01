@@ -1,37 +1,37 @@
 use config::Config;
 use protocol::{Protocol, Result};
+use protocol_plugins::{consensus::Consensus, consensus_round::ConsensusRound};
 use types::ids::IssuerID;
 
 #[test]
 fn test_protocol() -> Result<()> {
-    let protocol = Protocol::default().init(Config::new());
+    let mut protocol = Protocol::default();
+    let consensus = protocol.load_plugin::<Consensus<Config>>();
+    let consensus_round = protocol.load_plugin::<ConsensusRound<Config>>();
+    protocol = protocol.init(Config::new());
 
-    protocol
-        .state
-        .heaviest_milestone
+    consensus
+        .heaviest_milestone_vote
         .subscribe(|update| {
             println!("heaviest_milestone: {:?} => {:?}", update.0, update.1);
         })
         .forever();
 
-    protocol
-        .state
-        .round
+    consensus_round
+        .started
         .subscribe(|update| {
-            println!("round: {:?} => {:?}", update.0, update.1);
+            println!("round::started: {:?} => {:?}", update.0, update.1);
         })
         .forever();
 
-    protocol
-        .state
-        .finalizable_round
+    consensus_round
+        .completed
         .subscribe(|update| {
-            println!("finalizable_round: {:?} => {:?}", update.0, update.1);
+            println!("round::completed: {:?} => {:?}", update.0, update.1);
         })
         .forever();
 
-    protocol
-        .state
+    consensus
         .committee
         .subscribe(|update| {
             println!(
@@ -42,8 +42,7 @@ fn test_protocol() -> Result<()> {
         })
         .forever();
 
-    protocol
-        .state
+    consensus
         .accepted_blocks
         .subscribe(|event| println!("Blocks ordered: {:?}", event))
         .forever();

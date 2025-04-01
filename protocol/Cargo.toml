@@ -13,3 +13,4 @@ thiserror = "2.0.12"
 
 [dev-dependencies]
 config = { path = "../config" }
+protocol-plugins = { path = "../protocol-plugins" }

@@ -3,7 +3,7 @@ use std::{collections::HashSet, sync::Mutex};
 use blockdag::{BlockMetadata, Error::BlockNotFound};
 use types::ids::BlockID;
 
-use crate::{ProtocolConfig, Result};
+use crate::{Protocol, ProtocolConfig, Result};
 
 #[derive(Default)]
 pub struct Tips<C: ProtocolConfig> {
@@ -11,12 +11,12 @@ pub struct Tips<C: ProtocolConfig> {
 }
 
 impl<C: ProtocolConfig> Tips<C> {
-    pub fn init(&self, genesis: BlockMetadata<C>) {
+    pub fn init(&self, protocol: &Protocol<C>) {
         let mut tips = self.tips.lock().expect("failed to lock");
-        tips.insert(genesis);
+        tips.insert(protocol.block_dag.genesis().clone());
     }
 
-    pub fn apply(&self, metadata: &BlockMetadata<C>) -> Result<()> {
+    pub fn process_vote(&self, metadata: &BlockMetadata<C>) -> Result<()> {
         let parent_refs = metadata.parents();
         let mut removed_tips = Vec::with_capacity(parent_refs.len());
 

@@ -37,6 +37,13 @@ pub mod ids {
     pub use id::Id;
     pub use issuer_id::IssuerID;
 }
+pub mod plugins {
+    mod manager;
+    mod plugin;
+
+    pub use manager::Manager as PluginManager;
+    pub use plugin::Plugin;
+}
 pub mod rx {
     mod callback;
     mod countdown;

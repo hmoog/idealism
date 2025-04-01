@@ -1,15 +1,19 @@
-use std::sync::Arc;
+use std::{
+    any::Any,
+    sync::{Arc, RwLock},
+};
 
 use blockdag::{BlockDAG, BlockMetadata};
 use types::{
     blocks::{Block, NetworkBlock},
     ids::IssuerID,
+    plugins::{Plugin, PluginManager},
     rx::ResourceGuard,
 };
 use virtual_voting::Vote;
 use zero::{Clone0, Deref0};
 
-use crate::{Error, ProtocolConfig, Result, State, Tips};
+use crate::{Error, ProtocolConfig, ProtocolPlugin, Result, Tips};
 
 #[derive(Deref0, Clone0, Default)]
 pub struct Protocol<C: ProtocolConfig>(Arc<ProtocolData<C>>);
@@ -17,30 +21,40 @@ pub struct Protocol<C: ProtocolConfig>(Arc<ProtocolData<C>>);
 #[derive(Default)]
 pub struct ProtocolData<C: ProtocolConfig> {
     pub block_dag: BlockDAG<C>,
-    pub state: State<C>,
     pub tips: Tips<C>,
+    pub plugins: RwLock<PluginManager<dyn ProtocolPlugin<C>>>,
 }
 
 impl<C: ProtocolConfig> Protocol<C> {
     pub fn init(self, config: C) -> Self {
-        let genesis_block = Block::GenesisBlock(config.genesis_block_id());
-        self.block_dag.init(genesis_block, config);
-
-        let genesis_metadata = self.block_dag.genesis();
-        let genesis_vote = genesis_metadata.vote().expect("must exist");
-        self.state.init(genesis_vote);
-        self.tips.init(genesis_metadata);
-
-        let protocol = self.clone();
         self.block_dag
-            .on_block_ready(move |block_metadata| {
-                if let Err(err) = protocol.process_block(block_metadata) {
-                    block_metadata.error.set(err);
+            .init(Block::GenesisBlock(config.genesis_block_id()), config);
+
+        for plugin in self.plugins.read().unwrap().iter() {
+            plugin.init(&self);
+        }
+
+        self.tips.init(&self);
+
+        self.block_dag
+            .on_block_ready({
+                let protocol = self.clone();
+                move |block_metadata| {
+                    if let Err(err) = protocol.process_block(block_metadata) {
+                        block_metadata.error.set(err);
+                    }
                 }
             })
             .forever();
 
         self
+    }
+
+    pub fn load_plugin<U: Any + Send + Sync + Plugin<dyn ProtocolPlugin<C>> + 'static>(
+        &self,
+    ) -> Arc<U> {
+        let mut plugins = self.plugins.write().unwrap();
+        plugins.load::<U>()
     }
 
     pub fn new_block(&self, issuer: &IssuerID) -> Block {
@@ -60,8 +74,11 @@ impl<C: ProtocolConfig> Protocol<C> {
                     metadata.referenced_votes()?,
                 )?;
 
-                self.state.apply(vote.clone())?;
-                self.tips.apply(metadata)?;
+                self.tips.process_vote(metadata)?;
+
+                for plugin in self.plugins.read().unwrap().iter() {
+                    plugin.process_vote(self, &vote)?;
+                }
 
                 metadata.vote.set(vote);
 
