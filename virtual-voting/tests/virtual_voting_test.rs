@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use blockdag::BlockMetadataRef;
 use common::{
     hash::{Hashable, Hasher},
@@ -30,7 +32,7 @@ impl BlockIDGenerator {
 
 #[test]
 fn test_consensus() -> virtual_voting::Result<()> {
-    let genesis = Vote::new_genesis(BlockMetadataRef::default(), Config::new());
+    let genesis = Vote::new_genesis(BlockMetadataRef::default(), Arc::new(Config::new()));
     let members = genesis.committee.members();
 
     println!("FIRST ROUND - VOTE FOR GENESIS");

@@ -7,11 +7,11 @@ use protocol_plugins::{
 
 #[test]
 fn test_protocol() -> Result<()> {
-    let mut protocol = Protocol::default();
-    let consensus = protocol.load_plugin::<Consensus<Config>>();
-    let consensus_round = protocol.load_plugin::<ConsensusRound<Config>>();
-    let block_factory = protocol.load_plugin::<BlockFactory<Config>>();
-    protocol = protocol.init(Config::new());
+    let protocol = Protocol::new(Config::new());
+    let consensus = protocol.plugins.load::<Consensus<Config>>();
+    let consensus_round = protocol.plugins.load::<ConsensusRound<Config>>();
+    let block_factory = protocol.plugins.load::<BlockFactory<Config>>();
+    protocol.init();
 
     consensus
         .heaviest_milestone_vote

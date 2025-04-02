@@ -1,15 +1,16 @@
 use std::{collections::HashSet, sync::Arc};
 
+use blockdag::BlockMetadata;
 use common::{
     bft::Member,
     ids::IssuerID,
-    plugins::{Plugin, PluginManager},
+    plugins::{Plugin, PluginRegistry},
     rx::{
         UpdateType::{Notify, Retain},
         Variable,
     },
 };
-use protocol::{Protocol, ProtocolConfig, ProtocolPlugin, Result};
+use protocol::{ProtocolConfig, ProtocolPlugin, Result};
 use virtual_voting::{Issuer, Vote};
 
 use crate::consensus::Consensus;
@@ -24,7 +25,9 @@ pub struct ConsensusRound<C: ProtocolConfig> {
 }
 
 impl<C: ProtocolConfig> ProtocolPlugin<C> for ConsensusRound<C> {
-    fn process_vote(&self, _protocol: &Protocol<C>, vote: &Vote<C>) -> Result<()> {
+    fn process_block(&self, block: &BlockMetadata<C>) -> Result<()> {
+        let vote = &block.vote()?;
+
         if vote.milestone.is_some() {
             match &vote.issuer {
                 Issuer::User(issuer) => self.consensus.committee.must_read(|committee| {
@@ -105,7 +108,7 @@ impl<C: ProtocolConfig> ConsensusRound<C> {
 }
 
 impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin<C>> for ConsensusRound<C> {
-    fn construct(dependencies: &mut PluginManager<dyn ProtocolPlugin<C>>) -> Arc<Self> {
+    fn construct(dependencies: &mut PluginRegistry<dyn ProtocolPlugin<C>>) -> Arc<Self> {
         Arc::new(Self {
             started: Default::default(),
             completed: Default::default(),

@@ -9,38 +9,19 @@ use std::{
 use common::{
     blocks::Block,
     ids::BlockID,
-    rx::{Callback, Callbacks, Countdown, Event, ResourceGuard, Subscription, Variable},
+    rx::{Callback, Callbacks, Countdown, Event, ResourceGuard, Subscription},
 };
-use virtual_voting::Vote;
 
 use crate::{BlockDAGConfig, block_address::BlockAddress, block_metadata::BlockMetadata};
 
 pub struct BlockDAG<C: BlockDAGConfig>(Arc<BlockDAGData<C>>);
 
 struct BlockDAGData<C: BlockDAGConfig> {
-    genesis: Variable<BlockMetadata<C>>,
     blocks: Mutex<HashMap<BlockID, BlockAddress<C>>>,
     ready_event: Event<ResourceGuard<BlockMetadata<C>>>,
 }
 
 impl<C: BlockDAGConfig> BlockDAG<C> {
-    pub fn init(&self, genesis: Block, config: C) {
-        let genesis_metadata = self.attach(genesis);
-        let genesis_vote = Vote::new_genesis(genesis_metadata.downgrade(), config);
-        genesis_metadata.vote.set(genesis_vote);
-
-        self.0.genesis.set(genesis_metadata);
-    }
-
-    pub fn genesis(&self) -> BlockMetadata<C> {
-        self.0
-            .genesis
-            .get()
-            .as_ref()
-            .cloned()
-            .expect("genesis must be initialized")
-    }
-
     pub fn attach(&self, block: Block) -> BlockMetadata<C> {
         self.address(block.id()).publish(block)
     }
@@ -124,7 +105,6 @@ impl<C: BlockDAGConfig> BlockDAG<C> {
 impl<C: BlockDAGConfig> Default for BlockDAG<C> {
     fn default() -> Self {
         Self(Arc::new(BlockDAGData {
-            genesis: Variable::new(),
             blocks: Mutex::new(HashMap::new()),
             ready_event: Event::new(),
         }))

@@ -1,14 +1,7 @@
-use std::{
-    any::Any,
-    sync::{Arc, RwLock},
-};
+use std::sync::Arc;
 
 use blockdag::{BlockDAG, BlockMetadata};
-use common::{
-    blocks::Block,
-    plugins::{Plugin, PluginManager},
-    rx::ResourceGuard,
-};
+use common::{blocks::Block, plugins::PluginManager, rx::ResourceGuard};
 use virtual_voting::Vote;
 use zero::{Clone0, Deref0};
 
@@ -19,12 +12,21 @@ pub struct Protocol<C: ProtocolConfig>(Arc<ProtocolData<C>>);
 
 #[derive(Default)]
 pub struct ProtocolData<C: ProtocolConfig> {
+    pub config: Arc<C>,
     pub block_dag: BlockDAG<C>,
-    pub plugins: RwLock<PluginManager<dyn ProtocolPlugin<C>>>,
+    pub plugins: PluginManager<dyn ProtocolPlugin<C>>,
 }
 
 impl<C: ProtocolConfig> Protocol<C> {
-    pub fn init(self, config: C) -> Self {
+    pub fn new(config: C) -> Self {
+        Self(Arc::new(ProtocolData {
+            config: Arc::new(config),
+            block_dag: BlockDAG::default(),
+            plugins: PluginManager::default(),
+        }))
+    }
+
+    pub fn init(&self) {
         self.block_dag
             .on_block_ready({
                 let protocol = self.clone();
@@ -36,50 +38,22 @@ impl<C: ProtocolConfig> Protocol<C> {
             })
             .forever();
 
-        self.block_dag
-            .init(Block::GenesisBlock(config.genesis_block_id()), config);
-
-        self
-    }
-
-    pub fn load_plugin<U: Any + Send + Sync + Plugin<dyn ProtocolPlugin<C>> + 'static>(
-        &self,
-    ) -> Arc<U> {
-        let mut plugins = self.plugins.write().unwrap();
-        plugins.load::<U>()
+        let genesis_block = Block::GenesisBlock(self.config.genesis_block_id());
+        self.block_dag.attach(genesis_block);
     }
 
     fn process_block(&self, metadata: &ResourceGuard<BlockMetadata<C>>) -> Result<()> {
-        match &metadata.block {
-            Block::NetworkBlock(_id, network_block) => {
-                let vote = Vote::new(
-                    metadata.downgrade(),
-                    &network_block.issuer_id,
-                    0,
-                    metadata.referenced_votes()?,
-                )?;
+        metadata.vote.set(match &metadata.block {
+            Block::NetworkBlock(_, network_block) => Vote::new(
+                metadata.downgrade(),
+                &network_block.issuer_id,
+                0,
+                metadata.referenced_votes()?,
+            )?,
+            _ => Vote::new_genesis(metadata.downgrade(), self.config.clone()),
+        });
 
-                metadata.vote.set(vote.clone());
-
-                for plugin in self.plugins.read().unwrap().iter() {
-                    plugin.process_vote(self, &vote)?;
-                }
-            }
-            _ => {
-                metadata
-                    .vote
-                    .subscribe({
-                        let protocol = self.clone();
-                        move |vote| {
-                            for plugin in protocol.plugins.read().unwrap().iter() {
-                                let _err = plugin.process_vote(&protocol, vote);
-                            }
-                        }
-                    })
-                    .forever();
-            }
-        }
-
-        Ok(())
+        self.plugins
+            .for_each(|plugin| plugin.process_block(metadata))
     }
 }

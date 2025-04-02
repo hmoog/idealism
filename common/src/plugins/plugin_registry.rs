@@ -6,12 +6,12 @@ use std::{
 
 use crate::plugins::Plugin;
 
-pub struct Manager<Trait: ?Sized + 'static> {
+pub struct PluginRegistry<Trait: ?Sized + 'static> {
     instances: HashMap<TypeId, Arc<dyn Any + Send + Sync>>,
     trait_objects: Vec<Arc<Trait>>,
 }
 
-impl<Trait: ?Sized + 'static> Manager<Trait> {
+impl<Trait: ?Sized + 'static> PluginRegistry<Trait> {
     pub fn load<U: Any + Send + Sync + Plugin<Trait> + 'static>(&mut self) -> Arc<U> {
         let type_id = TypeId::of::<U>();
 
@@ -41,7 +41,7 @@ impl<Trait: ?Sized + 'static> Manager<Trait> {
     }
 }
 
-impl<Trait: ?Sized + 'static> Default for Manager<Trait> {
+impl<Trait: ?Sized + 'static> Default for PluginRegistry<Trait> {
     fn default() -> Self {
         Self {
             instances: HashMap::new(),

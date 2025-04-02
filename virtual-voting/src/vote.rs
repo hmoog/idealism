@@ -20,7 +20,7 @@ impl<C: VirtualVotingConfig> Vote<C> {
         VoteBuilder::build(source, issuer, time, &latest)
     }
 
-    pub fn new_genesis(source: C::Source, config: C) -> Self {
+    pub fn new_genesis(source: C::Source, config: Arc<C>) -> Self {
         VoteBuilder::build_genesis(source, config)
     }
 

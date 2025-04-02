@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
+use blockdag::BlockMetadata;
 use common::{
     blocks::{Block, NetworkBlock},
     ids::IssuerID,
-    plugins::{Plugin, PluginManager},
+    plugins::{Plugin, PluginRegistry},
 };
-use protocol::{Protocol, ProtocolConfig, ProtocolPlugin};
-use virtual_voting::Vote;
+use protocol::{ProtocolConfig, ProtocolPlugin};
 
 use crate::tip_selection::TipSelection;
 
@@ -24,13 +24,13 @@ impl<C: ProtocolConfig> BlockFactory<C> {
 }
 
 impl<C: ProtocolConfig> ProtocolPlugin<C> for BlockFactory<C> {
-    fn process_vote(&self, _protocol: &Protocol<C>, _vote: &Vote<C>) -> protocol::Result<()> {
+    fn process_block(&self, _block: &BlockMetadata<C>) -> protocol::Result<()> {
         Ok(())
     }
 }
 
 impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin<C>> for BlockFactory<C> {
-    fn construct(dependencies: &mut PluginManager<dyn ProtocolPlugin<C>>) -> Arc<Self> {
+    fn construct(dependencies: &mut PluginRegistry<dyn ProtocolPlugin<C>>) -> Arc<Self> {
         Arc::new(Self {
             tip_selection: dependencies.load(),
         })

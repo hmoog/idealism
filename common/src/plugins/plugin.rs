@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
-use crate::plugins::manager::Manager;
+use crate::plugins::plugin_registry::PluginRegistry;
 
 pub trait Plugin<Trait: ?Sized>: Sized {
-    fn construct(manager: &mut Manager<Trait>) -> Arc<Self>;
+    fn construct(manager: &mut PluginRegistry<Trait>) -> Arc<Self>;
 
     fn plugin(arc: Arc<Self>) -> Arc<Trait>;
 }

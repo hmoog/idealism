@@ -3,16 +3,12 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use blockdag::{
-    BlockMetadata,
-    Error::{BlockNotFound, VoteNotFound},
-};
+use blockdag::{BlockMetadata, Error::BlockNotFound};
 use common::{
     ids::BlockID,
-    plugins::{Plugin, PluginManager},
+    plugins::{Plugin, PluginRegistry},
 };
-use protocol::{Protocol, ProtocolConfig, ProtocolPlugin, Result};
-use virtual_voting::Vote;
+use protocol::{ProtocolConfig, ProtocolPlugin, Result};
 
 #[derive(Default)]
 pub struct TipSelection<C: ProtocolConfig> {
@@ -20,8 +16,8 @@ pub struct TipSelection<C: ProtocolConfig> {
 }
 
 impl<C: ProtocolConfig> ProtocolPlugin<C> for TipSelection<C> {
-    fn process_vote(&self, _protocol: &Protocol<C>, vote: &Vote<C>) -> Result<()> {
-        let metadata = vote.source.upgrade().ok_or(VoteNotFound)?;
+    fn process_block(&self, block: &BlockMetadata<C>) -> Result<()> {
+        let metadata = block;
 
         let parent_refs = metadata.parents();
         let mut removed_tips = Vec::with_capacity(parent_refs.len());
@@ -59,7 +55,7 @@ impl<C: ProtocolConfig> TipSelection<C> {
 }
 
 impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin<C>> for TipSelection<C> {
-    fn construct(_: &mut PluginManager<dyn ProtocolPlugin<C>>) -> Arc<Self> {
+    fn construct(_: &mut PluginRegistry<dyn ProtocolPlugin<C>>) -> Arc<Self> {
         Arc::new(Self::default())
     }
 

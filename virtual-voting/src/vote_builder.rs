@@ -78,7 +78,7 @@ impl<C: VirtualVotingConfig> VoteBuilder<C> {
         Ok(Vote::from(Arc::new(builder)))
     }
 
-    pub(crate) fn build_genesis(source: C::Source, config: C) -> Vote<C> {
+    pub(crate) fn build_genesis(source: C::Source, config: Arc<C>) -> Vote<C> {
         Vote::from(Arc::new_cyclic(|me| {
             let committee = config.select_committee(None);
 
@@ -88,7 +88,7 @@ impl<C: VirtualVotingConfig> VoteBuilder<C> {
                 time: config.genesis_time(),
                 slot: 0,
                 committee: committee.clone(),
-                config: Arc::new(config),
+                config,
                 cumulative_slot_weight: 0,
                 round: 0,
                 referenced_round_weight: u64::MAX,

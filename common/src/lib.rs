@@ -38,11 +38,13 @@ pub mod ids {
     pub use issuer_id::IssuerID;
 }
 pub mod plugins {
-    mod manager;
     mod plugin;
+    mod plugin_manager;
+    mod plugin_registry;
 
-    pub use manager::Manager as PluginManager;
     pub use plugin::Plugin;
+    pub use plugin_manager::PluginManager;
+    pub use plugin_registry::PluginRegistry;
 }
 pub mod rx {
     mod callback;

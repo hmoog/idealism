@@ -1,7 +1,7 @@
-use virtual_voting::Vote;
+use blockdag::BlockMetadata;
 
-use crate::{Protocol, ProtocolConfig, Result};
+use crate::{ProtocolConfig, Result};
 
 pub trait ProtocolPlugin<C: ProtocolConfig>: Send + Sync {
-    fn process_vote(&self, protocol: &Protocol<C>, vote: &Vote<C>) -> Result<()>;
+    fn process_block(&self, block: &BlockMetadata<C>) -> Result<()>;
 }

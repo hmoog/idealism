@@ -1,16 +1,16 @@
 use std::sync::Arc;
 
-use blockdag::{Accepted, Error::BlockNotFound};
+use blockdag::{Accepted, BlockMetadata, Error::BlockNotFound};
 use common::{
     bft::Committee,
-    plugins::{Plugin, PluginManager},
+    plugins::{Plugin, PluginRegistry},
     rx::{
         Event, UpdateType,
         UpdateType::{Notify, Retain},
         Variable,
     },
 };
-use protocol::{Protocol, ProtocolConfig, ProtocolPlugin, Result};
+use protocol::{ProtocolConfig, ProtocolPlugin, Result};
 use virtual_voting::Vote;
 
 use crate::consensus::AcceptedBlocks;
@@ -25,7 +25,9 @@ pub struct Consensus<C: ProtocolConfig> {
 }
 
 impl<C: ProtocolConfig> ProtocolPlugin<C> for Consensus<C> {
-    fn process_vote(&self, _protocol: &Protocol<C>, vote: &Vote<C>) -> Result<()> {
+    fn process_block(&self, vote: &BlockMetadata<C>) -> Result<()> {
+        let vote = &vote.vote()?;
+
         if vote.milestone.is_some() {
             self.update_heaviest_milestone_vote(vote)?;
             self.update_latest_accepted_milestone(vote)?;
@@ -112,7 +114,7 @@ impl<C: ProtocolConfig> Consensus<C> {
 }
 
 impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin<C>> for Consensus<C> {
-    fn construct(_manager: &mut PluginManager<dyn ProtocolPlugin<C>>) -> Arc<Self> {
+    fn construct(_manager: &mut PluginRegistry<dyn ProtocolPlugin<C>>) -> Arc<Self> {
         Arc::new(Self::default())
     }
 
