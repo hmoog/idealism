@@ -3,11 +3,11 @@ use std::{
     sync::{Arc, Mutex, MutexGuard},
 };
 
-use indexmap::IndexSet;
-use types::{
+use common::{
     blocks::Block,
     rx::{CallbackOnce, CallbacksOnce, Signal, Subscription},
 };
+use indexmap::IndexSet;
 use virtual_voting::{Vote, Votes};
 
 use crate::{

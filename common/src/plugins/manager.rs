@@ -19,7 +19,7 @@ impl<Trait: ?Sized + 'static> Manager<Trait> {
             return existing.clone().downcast_arc::<U>().unwrap();
         }
 
-        let instance = Arc::new(U::construct(self));
+        let instance = U::construct(self);
         self.instances
             .insert(type_id, instance.clone() as Arc<dyn Any + Send + Sync>);
 

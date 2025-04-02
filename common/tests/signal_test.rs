@@ -1,6 +1,5 @@
+use common::rx::Signal;
 use std::sync::{Arc, atomic, atomic::AtomicU64};
-
-use types::rx::Signal;
 
 #[test]
 fn test_signal() {

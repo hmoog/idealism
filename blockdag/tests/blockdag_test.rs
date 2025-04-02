@@ -1,6 +1,7 @@
+use common::blocks::{Block, NetworkBlock};
+
 use blockdag::BlockDAG;
 use config::Config;
-use types::blocks::{Block, NetworkBlock};
 
 #[test]
 fn test_block_dag() {

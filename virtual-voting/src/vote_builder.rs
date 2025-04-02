@@ -1,6 +1,6 @@
 use std::{cmp::max, collections::HashSet, sync::Arc};
 
-use types::{
+use common::{
     bft::{Committee, Member},
     ids::IssuerID,
 };

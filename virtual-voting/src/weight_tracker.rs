@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use types::{bft::Committee, ids::IssuerID};
+use common::{bft::Committee, ids::IssuerID};
 
 use crate::{VirtualVotingConfig, Vote, Votes};
 

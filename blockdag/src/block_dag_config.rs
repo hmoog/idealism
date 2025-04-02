@@ -1,4 +1,4 @@
-use types::ids::BlockID;
+use common::ids::BlockID;
 
 use crate::BlockMetadataRef;
 

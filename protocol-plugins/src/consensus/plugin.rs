@@ -1,8 +1,7 @@
 use std::sync::Arc;
 
 use blockdag::{Accepted, Error::BlockNotFound};
-use protocol::{Protocol, ProtocolConfig, ProtocolPlugin, Result};
-use types::{
+use common::{
     bft::Committee,
     plugins::{Plugin, PluginManager},
     rx::{
@@ -11,6 +10,7 @@ use types::{
         Variable,
     },
 };
+use protocol::{Protocol, ProtocolConfig, ProtocolPlugin, Result};
 use virtual_voting::Vote;
 
 use crate::consensus::AcceptedBlocks;
@@ -24,28 +24,7 @@ pub struct Consensus<C: ProtocolConfig> {
     pub accepted_blocks: Event<AcceptedBlocks<C>>,
 }
 
-impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin<C>> for Consensus<C> {
-    fn construct(_manager: &mut PluginManager<dyn ProtocolPlugin<C>>) -> Self {
-        Self::default()
-    }
-
-    fn plugin(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin<C>>
-    where
-        Self: Sized,
-    {
-        arc
-    }
-}
-
 impl<C: ProtocolConfig> ProtocolPlugin<C> for Consensus<C> {
-    fn init(&self, protocol: &Protocol<C>) {
-        self.process_vote(
-            protocol,
-            &protocol.block_dag.genesis().vote().expect("must exist"),
-        )
-        .expect("must not fail");
-    }
-
     fn process_vote(&self, _protocol: &Protocol<C>, vote: &Vote<C>) -> Result<()> {
         if vote.milestone.is_some() {
             self.update_heaviest_milestone_vote(vote)?;
@@ -129,5 +108,15 @@ impl<C: ProtocolConfig> Consensus<C> {
         }
 
         Ok(accepted_blocks)
+    }
+}
+
+impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin<C>> for Consensus<C> {
+    fn construct(_manager: &mut PluginManager<dyn ProtocolPlugin<C>>) -> Arc<Self> {
+        Arc::new(Self::default())
+    }
+
+    fn plugin(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin<C>> {
+        arc
     }
 }

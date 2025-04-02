@@ -1,7 +1,6 @@
 use std::{collections::HashSet, sync::Arc};
 
-use protocol::{Protocol, ProtocolConfig, ProtocolPlugin, Result};
-use types::{
+use common::{
     bft::Member,
     ids::IssuerID,
     plugins::{Plugin, PluginManager},
@@ -10,69 +9,21 @@ use types::{
         Variable,
     },
 };
+use protocol::{Protocol, ProtocolConfig, ProtocolPlugin, Result};
 use virtual_voting::{Issuer, Vote};
 
 use crate::consensus::Consensus;
 
 #[derive(Default)]
 pub struct ConsensusRound<C: ProtocolConfig> {
-    pub consensus: Arc<Consensus<C>>,
-    pub started: Arc<Variable<u64>>,
+    pub started: Variable<u64>,
     pub completed: Variable<u64>,
-    pub seen_participants: Arc<Variable<HashSet<IssuerID>>>,
-    pub seen_weight: Arc<Variable<u64>>,
-}
-
-impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin<C>> for ConsensusRound<C> {
-    fn construct(mgr: &mut PluginManager<dyn ProtocolPlugin<C>>) -> Self {
-        let plugin = Self {
-            started: Default::default(),
-            completed: Default::default(),
-            seen_participants: Default::default(),
-            seen_weight: Default::default(),
-            consensus: mgr.load(),
-        };
-
-        plugin
-            .consensus
-            .heaviest_milestone_vote
-            .subscribe({
-                let started = plugin.started.clone();
-                let seen_participants = plugin.seen_participants.clone();
-                let seen_weight = plugin.seen_weight.clone();
-
-                move |(_, new)| {
-                    let Some(new) = new else { return; };
-
-                    started
-                        .compute::<(), _>(|old| match old {
-                            Some(old) if old >= new.round => Retain(Some(old)),
-                            _ => {
-                                seen_participants.set(HashSet::new());
-                                seen_weight.set(0);
-
-                                Notify(old, Some(new.round))
-                            }
-                        })
-                        .expect("must not fail");
-                }
-            })
-            .forever();
-
-        plugin
-    }
-
-    fn plugin(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin<C>>
-    where
-        Self: Sized,
-    {
-        arc
-    }
+    pub seen_participants: Variable<HashSet<IssuerID>>,
+    pub seen_weight: Variable<u64>,
+    consensus: Arc<Consensus<C>>,
 }
 
 impl<C: ProtocolConfig> ProtocolPlugin<C> for ConsensusRound<C> {
-    fn init(&self, _protocol: &Protocol<C>) {}
-
     fn process_vote(&self, _protocol: &Protocol<C>, vote: &Vote<C>) -> Result<()> {
         if vote.milestone.is_some() {
             match &vote.issuer {
@@ -82,7 +33,7 @@ impl<C: ProtocolConfig> ProtocolPlugin<C> for ConsensusRound<C> {
 
                         self.started.must_read(|round| {
                             if vote.round == *round {
-                                self.update_seen_participants(&vote, member, threshold);
+                                self.update_seen_participants(vote, member, threshold);
                             }
                         });
                     }
@@ -98,6 +49,34 @@ impl<C: ProtocolConfig> ProtocolPlugin<C> for ConsensusRound<C> {
 }
 
 impl<C: ProtocolConfig> ConsensusRound<C> {
+    fn init(self: Arc<Self>) -> Arc<Self> {
+        self.consensus
+            .heaviest_milestone_vote
+            .subscribe({
+                let plugin = self.clone();
+                move |(_, new)| {
+                    plugin.update_started(new.as_ref().unwrap().round);
+                }
+            })
+            .forever();
+
+        self
+    }
+
+    fn update_started(&self, new: u64) {
+        self.started
+            .compute::<(), _>(|old| match old {
+                Some(old) if old >= new => Retain(Some(old)),
+                _ => {
+                    self.seen_participants.set(HashSet::new());
+                    self.seen_weight.set(0);
+
+                    Notify(old, Some(new))
+                }
+            })
+            .expect("must not fail");
+    }
+
     fn update_seen_participants(&self, vote: &Vote<C>, member: &Member, threshold: u64) {
         self.seen_participants
             .compute::<(), _>(|participants| {
@@ -122,5 +101,22 @@ impl<C: ProtocolConfig> ConsensusRound<C> {
                 Notify(old, Some(new))
             })
             .expect("must not fail");
+    }
+}
+
+impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin<C>> for ConsensusRound<C> {
+    fn construct(dependencies: &mut PluginManager<dyn ProtocolPlugin<C>>) -> Arc<Self> {
+        Arc::new(Self {
+            started: Default::default(),
+            completed: Default::default(),
+            seen_participants: Default::default(),
+            seen_weight: Default::default(),
+            consensus: dependencies.load(),
+        })
+        .init()
+    }
+
+    fn plugin(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin<C>> {
+        arc
     }
 }

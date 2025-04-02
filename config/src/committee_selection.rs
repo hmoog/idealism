@@ -1,4 +1,4 @@
-use types::bft::Committee;
+use common::bft::Committee;
 use virtual_voting::{VirtualVotingConfig, Vote};
 
 pub enum CommitteeSelection<C: VirtualVotingConfig> {

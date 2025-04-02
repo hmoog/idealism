@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use types::ids::IssuerID;
+use common::ids::IssuerID;
 use zero::{Clone0, Deref0};
 
 use crate::{

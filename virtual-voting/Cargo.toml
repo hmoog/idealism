@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-types = { path = "../types" }
+common = { path = "../common" }
 zero = { path = "../zero" }
 thiserror = "2.0.12"
 

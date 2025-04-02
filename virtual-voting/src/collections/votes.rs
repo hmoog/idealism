@@ -1,4 +1,4 @@
-use types::collections::MaxSet;
+use common::collections::MaxSet;
 use zero::{Clone0, Default0, Deref0, FromIterator0, IntoIterator0};
 
 use crate::{VirtualVotingConfig, Vote};

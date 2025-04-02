@@ -7,5 +7,5 @@ edition = "2024"
 blockdag = { path = "../blockdag" }
 indexmap = "2.7.1"
 protocol = { path = "../protocol" }
-types = { path = "../types" }
+common = { path = "../common" }
 virtual-voting = { path = "../virtual-voting" }

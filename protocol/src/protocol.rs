@@ -4,7 +4,7 @@ use std::{
 };
 
 use blockdag::{BlockDAG, BlockMetadata};
-use types::{
+use common::{
     blocks::{Block, NetworkBlock},
     ids::IssuerID,
     plugins::{Plugin, PluginManager},
@@ -28,15 +28,6 @@ pub struct ProtocolData<C: ProtocolConfig> {
 impl<C: ProtocolConfig> Protocol<C> {
     pub fn init(self, config: C) -> Self {
         self.block_dag
-            .init(Block::GenesisBlock(config.genesis_block_id()), config);
-
-        for plugin in self.plugins.read().unwrap().iter() {
-            plugin.init(&self);
-        }
-
-        self.tips.init(&self);
-
-        self.block_dag
             .on_block_ready({
                 let protocol = self.clone();
                 move |block_metadata| {
@@ -46,6 +37,11 @@ impl<C: ProtocolConfig> Protocol<C> {
                 }
             })
             .forever();
+
+        self.block_dag
+            .init(Block::GenesisBlock(config.genesis_block_id()), config);
+
+        self.tips.init(&self);
 
         self
     }

@@ -1,7 +1,7 @@
 use std::{collections::HashSet, sync::Mutex};
 
 use blockdag::{BlockMetadata, Error::BlockNotFound};
-use types::ids::BlockID;
+use common::ids::BlockID;
 
 use crate::{Protocol, ProtocolConfig, Result};
 

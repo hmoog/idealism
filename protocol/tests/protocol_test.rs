@@ -1,7 +1,7 @@
+use common::ids::IssuerID;
 use config::Config;
 use protocol::{Protocol, Result};
 use protocol_plugins::{consensus::Consensus, consensus_round::ConsensusRound};
-use types::ids::IssuerID;
 
 #[test]
 fn test_protocol() -> Result<()> {

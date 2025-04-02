@@ -1,9 +1,10 @@
-use blockdag::BlockMetadataRef;
-use config::Config;
-use types::{
+use common::{
     hash::{Hashable, Hasher},
     ids::BlockID,
 };
+
+use blockdag::BlockMetadataRef;
+use config::Config;
 use virtual_voting::{Vote, Votes};
 
 pub struct Block(u64);

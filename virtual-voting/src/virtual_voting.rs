@@ -1,6 +1,6 @@
 use std::{cmp::max, collections::HashMap};
 
-use types::bft::Committee;
+use common::bft::Committee;
 
 use crate::{
     Error, Result, VirtualVotingConfig, Vote, Votes, VotesByIssuer, VotesByRound, WeightTracker,

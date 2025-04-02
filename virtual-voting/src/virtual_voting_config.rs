@@ -1,4 +1,4 @@
-use types::bft::Committee;
+use common::bft::Committee;
 
 use crate::{Vote, VoteBuilder};
 

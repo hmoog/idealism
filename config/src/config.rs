@@ -1,5 +1,5 @@
 use blockdag::BlockMetadataRef;
-use types::{
+use common::{
     bft::{Committee, Member},
     ids::{BlockID, IssuerID},
 };

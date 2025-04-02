@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use types::{
+use common::{
     blocks::Block,
     rx::{CallbackOnce, CallbacksOnce, Signal, Subscription},
 };

@@ -6,7 +6,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use types::{
+use common::{
     blocks::Block,
     ids::BlockID,
     rx::{Callback, Callbacks, Countdown, Event, ResourceGuard, Subscription, Variable},
