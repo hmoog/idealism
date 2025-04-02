@@ -1,25 +1,30 @@
-use std::{collections::HashSet, sync::Mutex};
+use std::{
+    collections::HashSet,
+    sync::{Arc, Mutex},
+};
 
-use blockdag::{BlockMetadata, Error::BlockNotFound};
-use common::ids::BlockID;
-
-use crate::{Protocol, ProtocolConfig, Result};
+use blockdag::{
+    BlockMetadata,
+    Error::{BlockNotFound, VoteNotFound},
+};
+use common::{
+    ids::BlockID,
+    plugins::{Plugin, PluginManager},
+};
+use protocol::{Protocol, ProtocolConfig, ProtocolPlugin, Result};
+use virtual_voting::Vote;
 
 #[derive(Default)]
-pub struct Tips<C: ProtocolConfig> {
+pub struct TipSelection<C: ProtocolConfig> {
     tips: Mutex<HashSet<BlockMetadata<C>>>,
 }
 
-impl<C: ProtocolConfig> Tips<C> {
-    pub fn init(&self, protocol: &Protocol<C>) {
-        let mut tips = self.tips.lock().expect("failed to lock");
-        tips.insert(protocol.block_dag.genesis().clone());
-    }
+impl<C: ProtocolConfig> ProtocolPlugin<C> for TipSelection<C> {
+    fn process_vote(&self, _protocol: &Protocol<C>, vote: &Vote<C>) -> Result<()> {
+        let metadata = vote.source.upgrade().ok_or(VoteNotFound)?;
 
-    pub fn process_vote(&self, metadata: &BlockMetadata<C>) -> Result<()> {
         let parent_refs = metadata.parents();
         let mut removed_tips = Vec::with_capacity(parent_refs.len());
-
         let mut tips = self.tips.lock().expect("failed to lock");
         for parent_ref in parent_refs.iter() {
             match parent_ref.upgrade() {
@@ -39,7 +44,9 @@ impl<C: ProtocolConfig> Tips<C> {
 
         Ok(())
     }
+}
 
+impl<C: ProtocolConfig> TipSelection<C> {
     pub fn get(&self) -> Vec<BlockID> {
         self.tips
             .lock()
@@ -48,5 +55,15 @@ impl<C: ProtocolConfig> Tips<C> {
             .map(|x| x.block.id())
             .cloned()
             .collect()
+    }
+}
+
+impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin<C>> for TipSelection<C> {
+    fn construct(_: &mut PluginManager<dyn ProtocolPlugin<C>>) -> Arc<Self> {
+        Arc::new(Self::default())
+    }
+
+    fn plugin(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin<C>> {
+        arc
     }
 }

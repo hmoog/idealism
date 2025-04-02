@@ -5,15 +5,14 @@ use std::{
 
 use blockdag::{BlockDAG, BlockMetadata};
 use common::{
-    blocks::{Block, NetworkBlock},
-    ids::IssuerID,
+    blocks::Block,
     plugins::{Plugin, PluginManager},
     rx::ResourceGuard,
 };
 use virtual_voting::Vote;
 use zero::{Clone0, Deref0};
 
-use crate::{Error, ProtocolConfig, ProtocolPlugin, Result, Tips};
+use crate::{ProtocolConfig, ProtocolPlugin, Result};
 
 #[derive(Deref0, Clone0, Default)]
 pub struct Protocol<C: ProtocolConfig>(Arc<ProtocolData<C>>);
@@ -21,7 +20,6 @@ pub struct Protocol<C: ProtocolConfig>(Arc<ProtocolData<C>>);
 #[derive(Default)]
 pub struct ProtocolData<C: ProtocolConfig> {
     pub block_dag: BlockDAG<C>,
-    pub tips: Tips<C>,
     pub plugins: RwLock<PluginManager<dyn ProtocolPlugin<C>>>,
 }
 
@@ -41,8 +39,6 @@ impl<C: ProtocolConfig> Protocol<C> {
         self.block_dag
             .init(Block::GenesisBlock(config.genesis_block_id()), config);
 
-        self.tips.init(&self);
-
         self
     }
 
@@ -51,13 +47,6 @@ impl<C: ProtocolConfig> Protocol<C> {
     ) -> Arc<U> {
         let mut plugins = self.plugins.write().unwrap();
         plugins.load::<U>()
-    }
-
-    pub fn new_block(&self, issuer: &IssuerID) -> Block {
-        Block::from(NetworkBlock {
-            parents: self.tips.get(),
-            issuer_id: issuer.clone(),
-        })
     }
 
     fn process_block(&self, metadata: &ResourceGuard<BlockMetadata<C>>) -> Result<()> {
@@ -70,17 +59,27 @@ impl<C: ProtocolConfig> Protocol<C> {
                     metadata.referenced_votes()?,
                 )?;
 
-                self.tips.process_vote(metadata)?;
+                metadata.vote.set(vote.clone());
 
                 for plugin in self.plugins.read().unwrap().iter() {
                     plugin.process_vote(self, &vote)?;
                 }
-
-                metadata.vote.set(vote);
-
-                Ok(())
             }
-            _ => Err(Error::UnsupportedBlockType),
+            _ => {
+                metadata
+                    .vote
+                    .subscribe({
+                        let protocol = self.clone();
+                        move |vote| {
+                            for plugin in protocol.plugins.read().unwrap().iter() {
+                                let _err = plugin.process_vote(&protocol, vote);
+                            }
+                        }
+                    })
+                    .forever();
+            }
         }
+
+        Ok(())
     }
 }

@@ -1,13 +1,16 @@
 use common::ids::IssuerID;
 use config::Config;
 use protocol::{Protocol, Result};
-use protocol_plugins::{consensus::Consensus, consensus_round::ConsensusRound};
+use protocol_plugins::{
+    block_factory::BlockFactory, consensus::Consensus, consensus_round::ConsensusRound,
+};
 
 #[test]
 fn test_protocol() -> Result<()> {
     let mut protocol = Protocol::default();
     let consensus = protocol.load_plugin::<Consensus<Config>>();
     let consensus_round = protocol.load_plugin::<ConsensusRound<Config>>();
+    let block_factory = protocol.load_plugin::<BlockFactory<Config>>();
     protocol = protocol.init(Config::new());
 
     consensus
@@ -47,10 +50,10 @@ fn test_protocol() -> Result<()> {
         .subscribe(|event| println!("Blocks ordered: {:?}", event))
         .forever();
 
-    let block_1 = protocol.new_block(&IssuerID::from([1u8; 32]));
-    let block_2 = protocol.new_block(&IssuerID::from([2u8; 32]));
-    let block_3 = protocol.new_block(&IssuerID::from([3u8; 32]));
-    let block_4 = protocol.new_block(&IssuerID::from([4u8; 32]));
+    let block_1 = block_factory.new_block(&IssuerID::from([1u8; 32]));
+    let block_2 = block_factory.new_block(&IssuerID::from([2u8; 32]));
+    let block_3 = block_factory.new_block(&IssuerID::from([3u8; 32]));
+    let block_4 = block_factory.new_block(&IssuerID::from([4u8; 32]));
 
     let block1_metadata = protocol.block_dag.attach(block_1);
     let block2_metadata = protocol.block_dag.attach(block_2);
@@ -60,7 +63,7 @@ fn test_protocol() -> Result<()> {
     println!("{}", block1_metadata.vote()?.milestone()?.height);
     println!("{}", block2_metadata.vote()?.milestone().is_ok());
 
-    let block_1_1 = protocol.new_block(&IssuerID::from([1u8; 32]));
+    let block_1_1 = block_factory.new_block(&IssuerID::from([1u8; 32]));
     let block_1_1_metadata = protocol.block_dag.attach(block_1_1);
 
     println!(

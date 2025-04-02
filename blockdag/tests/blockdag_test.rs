@@ -1,6 +1,5 @@
-use common::blocks::{Block, NetworkBlock};
-
 use blockdag::BlockDAG;
+use common::blocks::{Block, NetworkBlock};
 use config::Config;
 
 #[test]
