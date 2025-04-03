@@ -24,7 +24,7 @@ impl<C: ProtocolConfig> BlockFactory<C> {
 }
 
 impl<C: ProtocolConfig> ProtocolPlugin<C> for BlockFactory<C> {
-    fn process_block(&self, _block: &BlockMetadata<C>) -> protocol::Result<()> {
+    fn process_block(&self, _block: &BlockMetadata<C>) -> protocol::ProtocolResult<()> {
         Ok(())
     }
 }

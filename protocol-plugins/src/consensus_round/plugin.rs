@@ -10,7 +10,7 @@ use common::{
         Variable,
     },
 };
-use protocol::{ProtocolConfig, ProtocolPlugin, Result};
+use protocol::{ProtocolConfig, ProtocolPlugin, ProtocolResult};
 use virtual_voting::{Issuer, Vote};
 
 use crate::consensus::Consensus;
@@ -24,10 +24,24 @@ pub struct ConsensusRound<C: ProtocolConfig> {
     consensus: Arc<Consensus<C>>,
 }
 
-impl<C: ProtocolConfig> ProtocolPlugin<C> for ConsensusRound<C> {
-    fn process_block(&self, block: &BlockMetadata<C>) -> Result<()> {
-        let vote = &block.vote()?;
+impl<C: ProtocolConfig> ConsensusRound<C> {
+    fn init_plugin(self) -> Arc<Self> {
+        let plugin = Arc::new(self);
+        plugin
+            .consensus
+            .heaviest_milestone_vote
+            .subscribe({
+                let plugin = plugin.clone();
+                move |(_, new)| {
+                    plugin.update_started(new.as_ref().unwrap().round);
+                }
+            })
+            .retain();
 
+        plugin
+    }
+
+    fn process_vote(&self, vote: &Vote<C>) -> ProtocolResult<()> {
         if vote.milestone.is_some() {
             match &vote.issuer {
                 Issuer::User(issuer) => self.consensus.committee.must_read(|committee| {
@@ -48,22 +62,6 @@ impl<C: ProtocolConfig> ProtocolPlugin<C> for ConsensusRound<C> {
         };
 
         Ok(())
-    }
-}
-
-impl<C: ProtocolConfig> ConsensusRound<C> {
-    fn init(self: Arc<Self>) -> Arc<Self> {
-        self.consensus
-            .heaviest_milestone_vote
-            .subscribe({
-                let plugin = self.clone();
-                move |(_, new)| {
-                    plugin.update_started(new.as_ref().unwrap().round);
-                }
-            })
-            .forever();
-
-        self
     }
 
     fn update_started(&self, new: u64) {
@@ -109,17 +107,23 @@ impl<C: ProtocolConfig> ConsensusRound<C> {
 
 impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin<C>> for ConsensusRound<C> {
     fn construct(dependencies: &mut PluginRegistry<dyn ProtocolPlugin<C>>) -> Arc<Self> {
-        Arc::new(Self {
+        Self {
             started: Default::default(),
             completed: Default::default(),
             seen_participants: Default::default(),
             seen_weight: Default::default(),
             consensus: dependencies.load(),
-        })
-        .init()
+        }
+        .init_plugin()
     }
 
     fn plugin(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin<C>> {
         arc
+    }
+}
+
+impl<C: ProtocolConfig> ProtocolPlugin<C> for ConsensusRound<C> {
+    fn process_block(&self, block: &BlockMetadata<C>) -> ProtocolResult<()> {
+        self.process_vote(&block.vote()?)
     }
 }

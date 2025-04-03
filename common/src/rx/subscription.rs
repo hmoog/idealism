@@ -17,7 +17,7 @@ impl<T: Unsubscribable> Subscription<T> {
         Self { callbacks, id }
     }
 
-    pub fn forever(mut self) {
+    pub fn retain(mut self) {
         self.id = None;
     }
 }

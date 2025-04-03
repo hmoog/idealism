@@ -8,7 +8,7 @@ use common::{
     ids::BlockID,
     plugins::{Plugin, PluginRegistry},
 };
-use protocol::{ProtocolConfig, ProtocolPlugin, Result};
+use protocol::{ProtocolConfig, ProtocolPlugin, ProtocolResult};
 
 #[derive(Default)]
 pub struct TipSelection<C: ProtocolConfig> {
@@ -16,7 +16,7 @@ pub struct TipSelection<C: ProtocolConfig> {
 }
 
 impl<C: ProtocolConfig> ProtocolPlugin<C> for TipSelection<C> {
-    fn process_block(&self, block: &BlockMetadata<C>) -> Result<()> {
+    fn process_block(&self, block: &BlockMetadata<C>) -> ProtocolResult<()> {
         let metadata = block;
 
         let parent_refs = metadata.parents();

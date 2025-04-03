@@ -10,7 +10,7 @@ fn test_block_dag() {
         .on_block_ready(|metadata| {
             println!("Block {} is ready", metadata.block.id());
         })
-        .forever();
+        .retain();
 
     block_dag.attach(Block::from(NetworkBlock {
         parents: vec![],

@@ -41,5 +41,5 @@ fn test_signal() {
                 _ => panic!(),
             }
         })
-        .forever();
+        .retain();
 }

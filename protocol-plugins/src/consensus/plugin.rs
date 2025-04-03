@@ -10,7 +10,7 @@ use common::{
         Variable,
     },
 };
-use protocol::{ProtocolConfig, ProtocolPlugin, Result};
+use protocol::{ProtocolConfig, ProtocolPlugin, ProtocolResult};
 use virtual_voting::Vote;
 
 use crate::consensus::AcceptedBlocks;
@@ -24,10 +24,8 @@ pub struct Consensus<C: ProtocolConfig> {
     pub accepted_blocks: Event<AcceptedBlocks<C>>,
 }
 
-impl<C: ProtocolConfig> ProtocolPlugin<C> for Consensus<C> {
-    fn process_block(&self, vote: &BlockMetadata<C>) -> Result<()> {
-        let vote = &vote.vote()?;
-
+impl<C: ProtocolConfig> Consensus<C> {
+    fn process_vote(&self, vote: &Vote<C>) -> ProtocolResult<()> {
         if vote.milestone.is_some() {
             self.update_heaviest_milestone_vote(vote)?;
             self.update_latest_accepted_milestone(vote)?;
@@ -35,10 +33,8 @@ impl<C: ProtocolConfig> ProtocolPlugin<C> for Consensus<C> {
 
         Ok(())
     }
-}
 
-impl<C: ProtocolConfig> Consensus<C> {
-    fn update_heaviest_milestone_vote(&self, vote: &Vote<C>) -> Result<()> {
+    fn update_heaviest_milestone_vote(&self, vote: &Vote<C>) -> ProtocolResult<()> {
         self.heaviest_milestone_vote.compute(|old| {
             let result = match old {
                 Some(old) if old >= *vote => Retain(Some(old)),
@@ -57,7 +53,7 @@ impl<C: ProtocolConfig> Consensus<C> {
         })
     }
 
-    fn update_latest_accepted_milestone(&self, vote: &Vote<C>) -> Result<()> {
+    fn update_latest_accepted_milestone(&self, vote: &Vote<C>) -> ProtocolResult<()> {
         let new = Vote::try_from(&vote.milestone()?.accepted)?;
 
         self.latest_accepted_milestone.compute(|old| match old {
@@ -70,7 +66,7 @@ impl<C: ProtocolConfig> Consensus<C> {
         })
     }
 
-    fn advance_acceptance(&self, old: &Vote<C>, new: &Vote<C>) -> Result<()> {
+    fn advance_acceptance(&self, old: &Vote<C>, new: &Vote<C>) -> ProtocolResult<()> {
         let height = old.height()?;
         match new.height()?.checked_sub(height) {
             None | Some(0) => panic!("TODO: implement reorg"),
@@ -88,7 +84,11 @@ impl<C: ProtocolConfig> Consensus<C> {
         Ok(())
     }
 
-    fn accepted_blocks(&self, height: u64, milestones: Vec<Vote<C>>) -> Result<AcceptedBlocks<C>> {
+    fn accepted_blocks(
+        &self,
+        height: u64,
+        milestones: Vec<Vote<C>>,
+    ) -> ProtocolResult<AcceptedBlocks<C>> {
         let mut accepted_blocks = AcceptedBlocks {
             height,
             rounds: Vec::with_capacity(milestones.len()),
@@ -120,5 +120,11 @@ impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin<C>> for Consensus<C> {
 
     fn plugin(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin<C>> {
         arc
+    }
+}
+
+impl<C: ProtocolConfig> ProtocolPlugin<C> for Consensus<C> {
+    fn process_block(&self, block: &BlockMetadata<C>) -> ProtocolResult<()> {
+        self.process_vote(&block.vote()?)
     }
 }

@@ -74,7 +74,7 @@ impl<C: BlockDAGConfig> BlockDAG<C> {
                     }
                 })
             })
-            .forever();
+            .retain();
     }
 
     fn on_all_parents_processed(
@@ -95,9 +95,9 @@ impl<C: BlockDAGConfig> BlockDAG<C> {
 
                     parent
                         .on_processed(move |_| pending_parents.decrease())
-                        .forever()
+                        .retain()
                 })
-                .forever();
+                .retain();
         }
     }
 }

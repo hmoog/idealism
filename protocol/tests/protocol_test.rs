@@ -1,38 +1,38 @@
 use common::ids::IssuerID;
 use config::Config;
-use protocol::{Protocol, Result};
+use protocol::{Protocol, ProtocolResult};
 use protocol_plugins::{
     block_factory::BlockFactory, consensus::Consensus, consensus_round::ConsensusRound,
 };
 
 #[test]
-fn test_protocol() -> Result<()> {
+fn test_protocol() -> ProtocolResult<()> {
     let protocol = Protocol::new(Config::new());
-    let consensus = protocol.plugins.load::<Consensus<Config>>();
-    let consensus_round = protocol.plugins.load::<ConsensusRound<Config>>();
-    let block_factory = protocol.plugins.load::<BlockFactory<Config>>();
-    protocol.init();
+
+    let consensus = protocol.plugins.get::<Consensus<Config>>().unwrap();
+    let consensus_round = protocol.plugins.get::<ConsensusRound<Config>>().unwrap();
+    let block_factory = protocol.plugins.get::<BlockFactory<Config>>().unwrap();
 
     consensus
         .heaviest_milestone_vote
         .subscribe(|update| {
             println!("heaviest_milestone: {:?} => {:?}", update.0, update.1);
         })
-        .forever();
+        .retain();
 
     consensus_round
         .started
         .subscribe(|update| {
             println!("round::started: {:?} => {:?}", update.0, update.1);
         })
-        .forever();
+        .retain();
 
     consensus_round
         .completed
         .subscribe(|update| {
             println!("round::completed: {:?} => {:?}", update.0, update.1);
         })
-        .forever();
+        .retain();
 
     consensus
         .committee
@@ -43,12 +43,12 @@ fn test_protocol() -> Result<()> {
                 update.1.as_ref().map(|x| x.commitment())
             );
         })
-        .forever();
+        .retain();
 
     consensus
         .accepted_blocks
         .subscribe(|event| println!("Blocks ordered: {:?}", event))
-        .forever();
+        .retain();
 
     let block_1 = block_factory.new_block(&IssuerID::from([1u8; 32]));
     let block_2 = block_factory.new_block(&IssuerID::from([2u8; 32]));

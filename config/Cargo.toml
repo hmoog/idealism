@@ -6,5 +6,6 @@ edition = "2024"
 [dependencies]
 blockdag = { path = "../blockdag" }
 protocol = { path = "../protocol" }
+protocol-plugins = { path = "../protocol-plugins" }
 common = { path = "../common" }
 virtual-voting = { path = "../virtual-voting" }

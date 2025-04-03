@@ -2,12 +2,15 @@ use blockdag::BlockMetadataRef;
 use common::{
     bft::{Committee, Member},
     ids::{BlockID, IssuerID},
+    plugins::PluginRegistry,
 };
+use protocol::ProtocolPlugin;
 use virtual_voting::{Vote, VoteBuilder};
 
-use crate::{CommitteeSelection, LeaderRotation, SlotDuration};
+use crate::{CommitteeSelection, LeaderRotation, PluginLoader, SlotDuration};
 
 pub struct Config {
+    plugin_loader: PluginLoader,
     genesis_time: u64,
     committee_selection: CommitteeSelection<Config>,
     leader_rotation: LeaderRotation,
@@ -23,6 +26,7 @@ impl Config {
         let issuer_id_4 = IssuerID::from([4u8; 32]);
 
         Self {
+            plugin_loader: PluginLoader::Core,
             genesis_time: 0,
             committee_selection: CommitteeSelection::FixedCommittee(Committee::from([
                 Member::new(issuer_id_1),
@@ -61,14 +65,22 @@ impl Config {
 }
 
 impl blockdag::BlockDAGConfig for Config {
-    type ErrorType = protocol::Error;
+    type ErrorType = protocol::ProtocolError;
 
     fn genesis_block_id(&self) -> BlockID {
         BlockID::default()
     }
 }
 
-impl protocol::ProtocolConfig for Config {}
+impl protocol::ProtocolConfig for Config {
+    fn inject_plugins(
+        &self,
+        mut registry: PluginRegistry<dyn ProtocolPlugin<Self>>,
+    ) -> PluginRegistry<dyn ProtocolPlugin<Self>> {
+        self.plugin_loader.dispatch(self, &mut registry);
+        registry
+    }
+}
 
 impl virtual_voting::VirtualVotingConfig for Config {
     type Source = BlockMetadataRef<Self>;

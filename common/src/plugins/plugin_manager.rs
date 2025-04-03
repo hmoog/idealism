@@ -16,6 +16,11 @@ impl<Trait: ?Sized + 'static> PluginManager<Trait> {
         plugins.load::<U>()
     }
 
+    pub fn get<T: Any + Send + Sync + 'static>(&self) -> Option<Arc<T>> {
+        let plugins = self.0.read().unwrap();
+        plugins.get::<T>()
+    }
+
     pub fn for_each<E>(&self, mut f: impl FnMut(&Trait) -> Result<(), E>) -> Result<(), E> {
         for plugin in self.0.read().unwrap().iter() {
             f(plugin)?;
