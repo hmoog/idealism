@@ -15,3 +15,9 @@ impl SlotDuration {
         }
     }
 }
+
+impl Default for SlotDuration {
+    fn default() -> Self {
+        Self::Static(10)
+    }
+}

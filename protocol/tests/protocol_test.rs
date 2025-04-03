@@ -7,7 +7,7 @@ use protocol_plugins::{
 
 #[test]
 fn test_protocol() -> ProtocolResult<()> {
-    let protocol = Protocol::new(Config::new());
+    let protocol = Protocol::new(Config::default());
 
     let consensus = protocol.plugins.get::<Consensus<Config>>().unwrap();
     let consensus_round = protocol.plugins.get::<ConsensusRound<Config>>().unwrap();

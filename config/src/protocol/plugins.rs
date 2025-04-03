@@ -7,13 +7,13 @@ use protocol_plugins::{
 
 use crate::Config;
 
-pub enum PluginLoader {
+pub enum ProtocolPlugins {
     Core,
     Custom(fn(&Config, &mut PluginRegistry<dyn ProtocolPlugin<Config>>)),
 }
 
-impl PluginLoader {
-    pub fn dispatch(
+impl ProtocolPlugins {
+    pub fn inject(
         &self,
         config: &Config,
         registry: &mut PluginRegistry<dyn ProtocolPlugin<Config>>,
@@ -27,5 +27,11 @@ impl PluginLoader {
             }
             Self::Custom(handler) => handler(config, registry),
         }
+    }
+}
+
+impl Default for ProtocolPlugins {
+    fn default() -> Self {
+        Self::Core
     }
 }

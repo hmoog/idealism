@@ -1,11 +1,35 @@
-mod committee_selection;
-mod config;
-mod leader_rotation;
-mod plugin_loader;
-mod slot_duration;
+mod blockdag {
+    mod config;
+    mod params;
 
-pub use committee_selection::*;
+    pub use params::*;
+}
+
+mod config;
+
+mod protocol {
+    mod config;
+    mod params;
+    mod plugins;
+
+    pub use params::*;
+    pub use plugins::*;
+}
+
+mod virtual_voting {
+    mod committee_selection;
+    mod config;
+    mod leader_rotation;
+    mod params;
+    mod slot_duration;
+
+    pub use committee_selection::*;
+    pub use leader_rotation::*;
+    pub use params::*;
+    pub use slot_duration::*;
+}
+
+pub use blockdag::*;
 pub use config::*;
-pub use leader_rotation::*;
-pub use plugin_loader::*;
-pub use slot_duration::*;
+pub use protocol::*;
+pub use virtual_voting::*;

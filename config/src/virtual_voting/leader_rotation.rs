@@ -25,3 +25,9 @@ fn round_robin(vote: &VoteBuilder<Config>) -> u64 {
         0
     }
 }
+
+impl Default for LeaderRotation {
+    fn default() -> Self {
+        Self::RoundRobin
+    }
+}

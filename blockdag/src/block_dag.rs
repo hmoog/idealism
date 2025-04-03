@@ -89,15 +89,13 @@ impl<C: BlockDAGConfig> BlockDAG<C> {
             let block = metadata.clone();
             let pending_parents = pending_parents.clone();
 
-            self.address(parent_id)
-                .on_available(move |parent| {
-                    block.register_parent(index, parent.downgrade());
+            let sub = self.address(parent_id).on_available(move |parent| {
+                block.register_parent(index, parent.downgrade());
 
-                    parent
-                        .on_processed(move |_| pending_parents.decrease())
-                        .retain()
-                })
-                .retain();
+                let sub = parent.on_processed(move |_| pending_parents.decrease());
+                sub.retain()
+            });
+            sub.retain();
         }
     }
 }

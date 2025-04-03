@@ -32,7 +32,7 @@ impl BlockIDGenerator {
 
 #[test]
 fn test_consensus() -> virtual_voting::Result<()> {
-    let genesis = Vote::new_genesis(BlockMetadataRef::default(), Arc::new(Config::new()));
+    let genesis = Vote::new_genesis(BlockMetadataRef::default(), Arc::new(Config::default()));
     let members = genesis.committee.members();
 
     println!("FIRST ROUND - VOTE FOR GENESIS");
