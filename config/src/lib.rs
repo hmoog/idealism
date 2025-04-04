@@ -1,5 +1,4 @@
 mod blockdag {
-    mod config;
     mod params;
 
     pub use params::*;
@@ -8,7 +7,6 @@ mod blockdag {
 mod config;
 
 mod protocol {
-    mod config;
     mod params;
     mod plugins;
 
@@ -18,7 +16,6 @@ mod protocol {
 
 mod virtual_voting {
     mod committee_selection;
-    mod config;
     mod leader_rotation;
     mod params;
     mod slot_duration;
