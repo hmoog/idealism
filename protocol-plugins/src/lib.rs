@@ -12,6 +12,14 @@ pub mod consensus {
     pub use plugin::Consensus;
 }
 
+pub mod consensus_feed {
+    mod event;
+    mod plugin;
+
+    pub use event::ConsensusFeedEvent;
+    pub use plugin::ConsensusFeed;
+}
+
 pub mod consensus_round {
     mod plugin;
 

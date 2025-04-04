@@ -1,8 +1,8 @@
 use common::plugins::PluginRegistry;
 use protocol::ProtocolPlugin;
 use protocol_plugins::{
-    block_factory::BlockFactory, consensus::Consensus, consensus_round::ConsensusRound,
-    tip_selection::TipSelection,
+    block_factory::BlockFactory, consensus::Consensus, consensus_feed::ConsensusFeed,
+    consensus_round::ConsensusRound, tip_selection::TipSelection,
 };
 
 use crate::Config;
@@ -24,6 +24,7 @@ impl ProtocolPlugins {
                 registry.load::<ConsensusRound<Config>>();
                 registry.load::<TipSelection<Config>>();
                 registry.load::<BlockFactory<Config>>();
+                registry.load::<ConsensusFeed<Config>>();
             }
             Self::Custom(handler) => handler(config, registry),
         }

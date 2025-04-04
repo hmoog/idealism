@@ -27,39 +27,48 @@ pub struct ConsensusRound<C: ProtocolConfig> {
 impl<C: ProtocolConfig> ConsensusRound<C> {
     fn init_plugin(self) -> Arc<Self> {
         let plugin = Arc::new(self);
-        plugin
-            .consensus
-            .heaviest_milestone_vote
-            .subscribe({
-                let plugin = plugin.clone();
-                move |(_, new)| {
-                    plugin.update_started(new.as_ref().unwrap().round);
+
+        plugin.consensus.heaviest_milestone_vote.attach({
+            let plugin = plugin.clone();
+            move |(_, new)| {
+                if let Some(new) = new {
+                    plugin.update_started(new.round);
                 }
-            })
-            .retain();
+            }
+        });
 
         plugin
     }
 
     fn process_vote(&self, vote: &Vote<C>) -> ProtocolResult<()> {
-        if vote.milestone.is_some() {
-            match &vote.issuer {
-                Issuer::User(issuer) => self.consensus.committee.must_read(|committee| {
-                    if let Some(member) = committee.member(issuer) {
-                        let (threshold, _does_confirm) = committee.consensus_threshold();
+        if vote.milestone.is_none() {
+            return Ok(());
+        }
 
-                        self.started.must_read(|round| {
-                            if vote.round == *round {
-                                self.update_seen_participants(vote, member, threshold);
-                            }
-                        });
+        self.started.must_read(|round| {
+            if vote.round != *round {
+                return;
+            }
+
+            self.consensus.committee.must_read(|committee| {
+                let (threshold, _) = committee.consensus_threshold();
+
+                match &vote.issuer {
+                    Issuer::User(issuer) => {
+                        if let Some(member) = committee.member(issuer) {
+                            self.update_seen_participants(vote.round, member, threshold);
+                        }
                     }
-                }),
-                Issuer::Genesis => {
-                    // TODO: GENESIS
-                }
-            };
-        };
+                    Issuer::Genesis => {
+                        for (issuer, _) in &vote.referenced_milestones {
+                            if let Some(member) = committee.member(issuer) {
+                                self.update_seen_participants(vote.round, member, threshold);
+                            }
+                        }
+                    }
+                };
+            });
+        });
 
         Ok(())
     }
@@ -78,30 +87,29 @@ impl<C: ProtocolConfig> ConsensusRound<C> {
             .expect("must not fail");
     }
 
-    fn update_seen_participants(&self, vote: &Vote<C>, member: &Member, threshold: u64) {
+    fn update_seen_participants(&self, round: u64, member: &Member, threshold: u64) {
         self.seen_participants
             .compute::<(), _>(|participants| {
                 let mut participants = participants.unwrap_or_default();
                 if participants.insert(member.id().clone()) {
-                    self.update_seen_weight(vote.round, member.weight(), threshold);
+                    self.update_seen_weight(round, member.weight(), threshold);
                 }
 
                 Notify(None, Some(participants))
             })
-            .expect("must not fail");
+            .expect("seen_participants.compute should never fail");
     }
 
     fn update_seen_weight(&self, round: u64, weight: u64, threshold: u64) {
-        self.seen_weight
-            .compute::<(), _>(|old| {
-                let new = old.unwrap_or(0) + weight;
-                if new > threshold {
-                    self.completed.track_max(round);
-                }
+        let result = self.seen_weight.compute::<(), _>(|old| {
+            let new = old.unwrap_or(0) + weight;
+            if new > threshold {
+                self.completed.track_max(round);
+            }
 
-                Notify(old, Some(new))
-            })
-            .expect("must not fail");
+            Notify(old, Some(new))
+        });
+        result.expect("seen_weight.compute should never fail");
     }
 }
 

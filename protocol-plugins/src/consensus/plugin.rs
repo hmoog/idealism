@@ -38,7 +38,6 @@ impl<C: ProtocolConfig> Consensus<C> {
         self.heaviest_milestone_vote.compute(|old| {
             let result = match old {
                 Some(old) if old >= *vote => Retain(Some(old)),
-                Some(old) => Notify(Some(old), Some(vote.clone())),
                 _ => Notify(old, Some(vote.clone())),
             };
 

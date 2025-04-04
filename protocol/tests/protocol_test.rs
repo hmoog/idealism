@@ -1,24 +1,26 @@
 use common::ids::IssuerID;
-use config::Config;
+use config::{Config, ProtocolParams, ProtocolPlugins};
 use protocol::{Protocol, ProtocolResult};
 use protocol_plugins::{
-    block_factory::BlockFactory, consensus::Consensus, consensus_round::ConsensusRound,
+    block_factory::BlockFactory, consensus_feed::ConsensusFeed, consensus_round::ConsensusRound,
 };
 
 #[test]
 fn test_protocol() -> ProtocolResult<()> {
-    let protocol = Protocol::new(Config::default());
+    let protocol = Protocol::new(Config::default().with_protocol_params(
+        ProtocolParams::default().with_plugins(ProtocolPlugins::Custom(|cfg, registry| {
+            ProtocolPlugins::Core.inject(cfg, registry);
 
-    let consensus = protocol.plugins.get::<Consensus<Config>>().unwrap();
+            // define anonymous logging functionality (that subscribes on init)
+            registry
+                .load::<ConsensusFeed<Config>>()
+                .subscribe(|event| println!("consensus: {:?}", event))
+                .retain();
+        })),
+    ));
+
     let consensus_round = protocol.plugins.get::<ConsensusRound<Config>>().unwrap();
     let block_factory = protocol.plugins.get::<BlockFactory<Config>>().unwrap();
-
-    consensus
-        .heaviest_milestone_vote
-        .subscribe(|update| {
-            println!("heaviest_milestone: {:?} => {:?}", update.0, update.1);
-        })
-        .retain();
 
     consensus_round
         .started
@@ -32,22 +34,6 @@ fn test_protocol() -> ProtocolResult<()> {
         .subscribe(|update| {
             println!("round::completed: {:?} => {:?}", update.0, update.1);
         })
-        .retain();
-
-    consensus
-        .committee
-        .subscribe(|update| {
-            println!(
-                "committee: {:?} => {:?}",
-                update.0.as_ref().map(|x| x.commitment()),
-                update.1.as_ref().map(|x| x.commitment())
-            );
-        })
-        .retain();
-
-    consensus
-        .accepted_blocks
-        .subscribe(|event| println!("Blocks ordered: {:?}", event))
         .retain();
 
     let block_1 = block_factory.new_block(&IssuerID::from([1u8; 32]));

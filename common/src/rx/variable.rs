@@ -74,6 +74,10 @@ impl<T> Variable<T> {
         self.event.subscribe(callback)
     }
 
+    pub fn attach(&self, callback: impl Callback<(Option<T>, Option<T>)>) {
+        self.subscribe(callback).retain()
+    }
+
     pub fn compute<E, F: FnOnce(Option<T>) -> UpdateType<T, E>>(
         &self,
         compute: F,
