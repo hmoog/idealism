@@ -1,5 +1,4 @@
 mod accepted;
-mod block_address;
 mod block_dag;
 mod block_metadata;
 mod block_metadata_ref;

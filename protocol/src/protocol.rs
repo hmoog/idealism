@@ -24,7 +24,7 @@ impl<C: ProtocolConfig> Protocol<C> {
             config: Arc::new(config),
         }));
 
-        let subscription = protocol.block_dag.on_block_ready({
+        let subscription = protocol.block_dag.block_ready.subscribe({
             let protocol = protocol.clone();
             move |block| {
                 if let Err(err) = protocol.process_block(block) {

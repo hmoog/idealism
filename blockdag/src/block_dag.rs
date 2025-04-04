@@ -9,42 +9,41 @@ use std::{
 use common::{
     blocks::Block,
     ids::BlockID,
-    rx::{Callback, Callbacks, Countdown, Event, ResourceGuard, Subscription},
+    rx::{Countdown, Event, ResourceGuard, Signal},
 };
+use zero::{Clone0, Deref0};
 
-use crate::{BlockDAGConfig, block_address::BlockAddress, block_metadata::BlockMetadata};
+use crate::{BlockDAGConfig, block_metadata::BlockMetadata};
 
+#[derive(Default, Deref0, Clone0)]
 pub struct BlockDAG<C: BlockDAGConfig>(Arc<BlockDAGData<C>>);
 
-struct BlockDAGData<C: BlockDAGConfig> {
-    blocks: Mutex<HashMap<BlockID, BlockAddress<C>>>,
-    ready_event: Event<ResourceGuard<BlockMetadata<C>>>,
+#[derive(Default)]
+pub struct BlockDAGData<C: BlockDAGConfig> {
+    pub block_ready: Event<ResourceGuard<BlockMetadata<C>>>,
+    blocks: Mutex<HashMap<BlockID, Arc<Signal<BlockMetadata<C>>>>>,
 }
 
 impl<C: BlockDAGConfig> BlockDAG<C> {
     pub fn attach(&self, block: Block) -> BlockMetadata<C> {
-        self.address(block.id()).publish(block)
-    }
-
-    pub fn on_block_ready(
-        &self,
-        callback: impl Callback<ResourceGuard<BlockMetadata<C>>>,
-    ) -> Subscription<Callbacks<ResourceGuard<BlockMetadata<C>>>> {
-        self.0.ready_event.subscribe(callback)
+        self.address(block.id())
+            .get_or_insert_with(|| BlockMetadata::new(block))
+            .clone()
+            .unwrap()
     }
 
     pub fn get(&self, block_id: &BlockID) -> Option<BlockMetadata<C>> {
         let addresses = self.0.blocks.lock().unwrap();
         addresses
             .get(block_id)
-            .and_then(|a| a.data().get().as_ref().cloned())
+            .and_then(|a| a.get().as_ref().cloned())
     }
 
-    fn address(&self, block_id: &BlockID) -> BlockAddress<C> {
+    fn address(&self, block_id: &BlockID) -> Arc<Signal<BlockMetadata<C>>> {
         let (block_address, is_new) = match self.0.blocks.lock().unwrap().entry(block_id.clone()) {
             Occupied(entry) => (entry.get().clone(), false),
             Vacant(entry) => {
-                let addr = BlockAddress::new();
+                let addr = Arc::new(Signal::default());
                 entry.insert(addr.clone());
                 (addr, true)
             }
@@ -57,17 +56,17 @@ impl<C: BlockDAGConfig> BlockDAG<C> {
         block_address
     }
 
-    fn monitor_address(&self, new_address: &BlockAddress<C>) {
+    fn monitor_address(&self, new_address: &Signal<BlockMetadata<C>>) {
         let block_dag = self.clone();
 
         new_address
-            .on_available(move |block| {
+            .subscribe(move |block| {
                 block_dag.on_all_parents_processed(block, {
                     let block_dag = block_dag.clone();
                     let block = block.clone();
 
                     move || {
-                        block_dag.0.ready_event.trigger(&ResourceGuard::new(
+                        block_dag.0.block_ready.trigger(&ResourceGuard::new(
                             block.clone(),
                             BlockMetadata::mark_processed,
                         ))
@@ -89,7 +88,7 @@ impl<C: BlockDAGConfig> BlockDAG<C> {
             let block = metadata.clone();
             let pending_parents = pending_parents.clone();
 
-            let sub = self.address(parent_id).on_available(move |parent| {
+            let sub = self.address(parent_id).subscribe(move |parent| {
                 block.register_parent(index, parent.downgrade());
 
                 let sub = parent.on_processed(move |_| pending_parents.decrease());
@@ -97,20 +96,5 @@ impl<C: BlockDAGConfig> BlockDAG<C> {
             });
             sub.retain();
         }
-    }
-}
-
-impl<C: BlockDAGConfig> Default for BlockDAG<C> {
-    fn default() -> Self {
-        Self(Arc::new(BlockDAGData {
-            blocks: Mutex::new(HashMap::new()),
-            ready_event: Event::new(),
-        }))
-    }
-}
-
-impl<C: BlockDAGConfig> Clone for BlockDAG<C> {
-    fn clone(&self) -> Self {
-        Self(Arc::clone(&self.0))
     }
 }

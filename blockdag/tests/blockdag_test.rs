@@ -7,7 +7,8 @@ fn test_block_dag() {
     let block_dag: BlockDAG<Config> = BlockDAG::default();
 
     block_dag
-        .on_block_ready(|metadata| {
+        .block_ready
+        .subscribe(|metadata| {
             println!("Block {} is ready", metadata.block.id());
         })
         .retain();

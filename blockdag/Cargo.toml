@@ -8,6 +8,7 @@ indexmap = "2.7.1"
 common = { path = "../common" }
 virtual-voting = { path = "../virtual-voting" }
 thiserror = "2.0.12"
+zero = { path = "../zero" }
 
 [dev-dependencies]
 config = { path = "../config" }
