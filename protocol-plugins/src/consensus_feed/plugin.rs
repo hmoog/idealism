@@ -20,7 +20,7 @@ use crate::{
 
 #[derive(Default)]
 pub struct ConsensusFeed<C: ProtocolConfig> {
-    event: Arc<Event<ConsensusFeedEvent<C>>>,
+    event: Event<ConsensusFeedEvent<C>>,
     consensus: Arc<Consensus<C>>,
 }
 
