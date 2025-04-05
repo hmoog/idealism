@@ -24,7 +24,7 @@ impl<C: ProtocolConfig> Protocol<C> {
             config: Arc::new(config),
         }));
 
-        let subscription = protocol.block_dag.block_ready.subscribe({
+        let subscription = protocol.block_dag.subscribe({
             let protocol = protocol.clone();
             move |block| {
                 if let Err(err) = protocol.process_block(block) {
@@ -35,7 +35,7 @@ impl<C: ProtocolConfig> Protocol<C> {
         subscription.retain();
 
         let genesis_block = Block::GenesisBlock(protocol.config.genesis_block_id());
-        protocol.block_dag.attach(genesis_block);
+        protocol.block_dag.queue(genesis_block);
 
         protocol
     }

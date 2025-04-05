@@ -5,7 +5,7 @@ use std::{
 
 use common::{
     blocks::Block,
-    rx::{CallbackOnce, CallbacksOnce, Signal, Subscription},
+    rx::{CallbackOnce, CallbacksOnce, Countdown, Signal, Subscription},
 };
 use indexmap::IndexSet;
 use virtual_voting::{Vote, Votes};
@@ -20,6 +20,7 @@ use crate::{
 pub struct BlockMetadata<C: BlockDAGConfig>(pub(crate) Arc<Inner<C>>);
 
 pub struct Inner<C: BlockDAGConfig> {
+    pub all_parents_processed: Arc<Countdown>,
     parents: Mutex<Vec<BlockMetadataRef<C>>>,
     processed: Signal<()>,
     pub block: Block,
@@ -32,6 +33,7 @@ impl<C: BlockDAGConfig> BlockMetadata<C> {
     pub fn new(block: Block) -> Self {
         Self(Arc::new(Inner {
             parents: Mutex::new(vec![BlockMetadataRef::default(); block.parents().len()]),
+            all_parents_processed: Arc::new(Countdown::new(block.parents().len())),
             processed: Signal::new(),
             block,
             accepted: Signal::new(),
@@ -102,9 +104,15 @@ impl<C: BlockDAGConfig> BlockMetadata<C> {
         BlockMetadataRef(Arc::downgrade(&self.0))
     }
 
-    pub(crate) fn register_parent(&self, index: usize, parent: BlockMetadataRef<C>) {
-        let mut parents = self.parents();
-        parents[index] = parent;
+    pub(crate) fn register_parent(&self, index: usize, parent: &BlockMetadata<C>) {
+        self.parents()[index] = parent.downgrade();
+
+        parent
+            .on_processed({
+                let all_parents_processed = self.all_parents_processed.clone();
+                move |_| all_parents_processed.decrease()
+            })
+            .retain();
     }
 
     pub(crate) fn mark_processed(&self) {

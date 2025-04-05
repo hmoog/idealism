@@ -1,15 +1,12 @@
 use std::{
-    collections::{
-        HashMap,
-        hash_map::Entry::{Occupied, Vacant},
-    },
+    collections::HashMap,
     sync::{Arc, Mutex},
 };
-
+use std::ops::Deref;
 use common::{
     blocks::Block,
     ids::BlockID,
-    rx::{Countdown, Event, ResourceGuard, Signal},
+    rx::{Event, ResourceGuard, Signal},
 };
 use zero::{Clone0, Deref0};
 
@@ -20,13 +17,13 @@ pub struct BlockDAG<C: BlockDAGConfig>(Arc<BlockDAGData<C>>);
 
 #[derive(Default)]
 pub struct BlockDAGData<C: BlockDAGConfig> {
-    pub block_ready: Event<ResourceGuard<BlockMetadata<C>>>,
     blocks: Mutex<HashMap<BlockID, Arc<Signal<BlockMetadata<C>>>>>,
+    block_ready: Event<ResourceGuard<BlockMetadata<C>>>,
 }
 
 impl<C: BlockDAGConfig> BlockDAG<C> {
-    pub fn attach(&self, block: Block) -> BlockMetadata<C> {
-        self.address(block.id())
+    pub fn queue(&self, block: Block) -> BlockMetadata<C> {
+        self.metadata_signal(block.id())
             .get_or_insert_with(|| BlockMetadata::new(block))
             .clone()
             .unwrap()
@@ -39,62 +36,66 @@ impl<C: BlockDAGConfig> BlockDAG<C> {
             .and_then(|a| a.get().as_ref().cloned())
     }
 
-    fn address(&self, block_id: &BlockID) -> Arc<Signal<BlockMetadata<C>>> {
-        let (block_address, is_new) = match self.0.blocks.lock().unwrap().entry(block_id.clone()) {
-            Occupied(entry) => (entry.get().clone(), false),
-            Vacant(entry) => {
-                let addr = Arc::new(Signal::default());
-                entry.insert(addr.clone());
-                (addr, true)
-            }
+    fn metadata_signal(&self, block_id: &BlockID) -> Arc<Signal<BlockMetadata<C>>> {
+        let mut is_new = false;
+
+        let signal = {
+            let mut blocks = self.0.blocks.lock().unwrap();
+            blocks
+                .entry(block_id.clone())
+                .or_insert_with(|| {
+                    is_new = true;
+                    Arc::new(Signal::default())
+                })
+                .clone()
         };
 
         if is_new {
-            self.monitor_address(&block_address);
+            signal
+                .subscribe({
+                    let block_dag = self.clone();
+                    move |metadata| {
+                        block_dag.setup_metadata(metadata);
+                    }
+                }).retain();
         }
 
-        block_address
+        signal
     }
 
-    fn monitor_address(&self, new_address: &Signal<BlockMetadata<C>>) {
-        let block_dag = self.clone();
-
-        new_address
-            .subscribe(move |block| {
-                block_dag.on_all_parents_processed(block, {
-                    let block_dag = block_dag.clone();
-                    let block = block.clone();
-
-                    move || {
-                        block_dag.0.block_ready.trigger(&ResourceGuard::new(
-                            block.clone(),
-                            BlockMetadata::mark_processed,
-                        ))
+    fn setup_metadata(&self, metadata: &BlockMetadata<C>) {
+        for (index, parent_id) in metadata.block.parents().iter().enumerate() {
+            self
+                .metadata_signal(parent_id)
+                .subscribe({
+                    let metadata = metadata.clone();
+                    move |parent| {
+                        metadata.register_parent(index, parent);
                     }
                 })
+                .retain();
+        }
+
+        metadata
+            .all_parents_processed
+            .subscribe({
+                let block_dag = self.clone();
+                let metadata = metadata.clone();
+                move |_| {
+                    block_dag.block_ready.trigger(&ResourceGuard::new(
+                        metadata,
+                        BlockMetadata::mark_processed,
+                    ))
+                }
             })
             .retain();
     }
+}
 
-    fn on_all_parents_processed(
-        &self,
-        metadata: &BlockMetadata<C>,
-        callback: impl Fn() + Send + Sync + 'static,
-    ) {
-        let parents = metadata.block.parents();
-        let pending_parents = Countdown::new(parents.len(), callback);
+impl<C: BlockDAGConfig> Deref for BlockDAGData<C> {
+    type Target = Event<ResourceGuard<BlockMetadata<C>>>;
 
-        for (index, parent_id) in parents.iter().enumerate() {
-            let block = metadata.clone();
-            let pending_parents = pending_parents.clone();
-
-            let sub = self.address(parent_id).subscribe(move |parent| {
-                block.register_parent(index, parent.downgrade());
-
-                let sub = parent.on_processed(move |_| pending_parents.decrease());
-                sub.retain()
-            });
-            sub.retain();
-        }
+    fn deref(&self) -> &Self::Target {
+        &self.block_ready
     }
 }

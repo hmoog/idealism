@@ -1,46 +1,40 @@
-use std::sync::{
-    Arc,
-    atomic::{AtomicUsize, Ordering},
+use std::{
+    ops::Deref,
+    sync::atomic::{AtomicUsize, Ordering},
 };
 
-pub struct Countdown {
-    inner: Arc<Inner>,
-}
+use crate::rx::Signal;
 
-struct Inner {
-    count: AtomicUsize,
-    target: usize,
-    callback: Box<dyn Fn() + Send + Sync>,
+pub struct Countdown {
+    signal: Signal<()>,
+    counter: AtomicUsize,
 }
 
 impl Countdown {
-    pub fn new(x: usize, callback: impl Fn() + Send + Sync + 'static) -> Self {
+    pub fn new(counter: usize) -> Self {
         Countdown {
-            inner: Arc::new(Inner {
-                count: AtomicUsize::new(0),
-                target: x,
-                callback: match x {
-                    0 => {
-                        callback();
-                        Box::new(|| {})
-                    }
-                    _ => Box::new(callback),
-                },
-            }),
+            signal: {
+                let signal = Signal::default();
+                if counter == 0 {
+                    signal.set(());
+                }
+                signal
+            },
+            counter: AtomicUsize::new(counter),
         }
     }
 
     pub fn decrease(&self) {
-        if self.inner.count.fetch_add(1, Ordering::SeqCst) + 1 == self.inner.target {
-            (self.inner.callback)();
+        if self.counter.fetch_sub(1, Ordering::SeqCst) - 1 == 0 {
+            self.signal.set(());
         }
     }
 }
 
-impl Clone for Countdown {
-    fn clone(&self) -> Self {
-        Countdown {
-            inner: Arc::clone(&self.inner),
-        }
+impl Deref for Countdown {
+    type Target = Signal<()>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.signal
     }
 }

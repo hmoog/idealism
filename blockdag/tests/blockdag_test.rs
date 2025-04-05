@@ -7,18 +7,17 @@ fn test_block_dag() {
     let block_dag: BlockDAG<Config> = BlockDAG::default();
 
     block_dag
-        .block_ready
         .subscribe(|metadata| {
             println!("Block {} is ready", metadata.block.id());
         })
         .retain();
 
-    block_dag.attach(Block::from(NetworkBlock {
+    block_dag.queue(Block::from(NetworkBlock {
         parents: vec![],
         issuer_id: Default::default(),
     }));
 
-    block_dag.attach(Block::from(NetworkBlock {
+    block_dag.queue(Block::from(NetworkBlock {
         parents: vec![],
         issuer_id: Default::default(),
     }));
