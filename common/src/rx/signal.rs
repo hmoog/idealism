@@ -13,18 +13,6 @@ pub struct Signal<T> {
 }
 
 impl<T> Signal<T> {
-    pub fn new() -> Self {
-        Self {
-            signal: Mutex::new(None),
-            callbacks: Arc::new(Mutex::new(HopSlotMap::with_key())),
-        }
-    }
-
-    pub fn init(self, signal: T) -> Self {
-        self.set(signal);
-        self
-    }
-
     pub fn set(&self, signal: T) {
         drop(self.get_or_insert(signal));
     }
@@ -69,6 +57,9 @@ impl<T> Signal<T> {
 
 impl<T> Default for Signal<T> {
     fn default() -> Self {
-        Self::new()
+        Self {
+            signal: Mutex::new(None),
+            callbacks: Arc::new(Mutex::new(HopSlotMap::with_key())),
+        }
     }
 }

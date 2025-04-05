@@ -4,7 +4,7 @@ use common::rx::Signal;
 
 #[test]
 fn test_signal() {
-    let signal = Signal::new();
+    let signal = Signal::default();
 
     let callback_counter = Arc::new(AtomicU64::new(0));
 

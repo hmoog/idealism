@@ -34,11 +34,11 @@ impl<C: BlockDAGConfig> BlockMetadata<C> {
         Self(Arc::new(Inner {
             parents: Mutex::new(vec![BlockMetadataRef::default(); block.parents().len()]),
             all_parents_processed: Arc::new(Countdown::new(block.parents().len())),
-            processed: Signal::new(),
+            processed: Signal::default(),
             block,
-            accepted: Signal::new(),
-            vote: Signal::new(),
-            error: Signal::new(),
+            accepted: Signal::default(),
+            vote: Signal::default(),
+            error: Signal::default(),
         }))
     }
 
