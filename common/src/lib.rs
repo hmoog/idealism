@@ -15,8 +15,10 @@ pub mod blocks {
     pub use network_block::NetworkBlock;
 }
 pub mod collections {
+    mod any_map;
     mod max_set;
 
+    pub use any_map::AnyMap;
     pub use max_set::MaxSet;
 }
 pub mod hash {

@@ -1,10 +1,11 @@
 use std::{
     collections::VecDeque,
-    sync::{Arc, Mutex, MutexGuard},
+    sync::{Arc, Mutex, MutexGuard, RwLock},
 };
 
 use common::{
     blocks::Block,
+    collections::AnyMap,
     rx::{CallbackOnce, CallbacksOnce, Countdown, Signal, Subscription},
 };
 use indexmap::IndexSet;
@@ -20,6 +21,7 @@ use crate::{
 pub struct BlockMetadata<C: BlockDAGConfig>(pub(crate) Arc<Inner<C>>);
 
 pub struct Inner<C: BlockDAGConfig> {
+    signals: RwLock<AnyMap>,
     pub all_parents_processed: Arc<Countdown>,
     parents: Mutex<Vec<BlockMetadataRef<C>>>,
     processed: Signal<()>,
@@ -32,6 +34,7 @@ pub struct Inner<C: BlockDAGConfig> {
 impl<C: BlockDAGConfig> BlockMetadata<C> {
     pub fn new(block: Block) -> Self {
         Self(Arc::new(Inner {
+            signals: RwLock::new(AnyMap::default()),
             parents: Mutex::new(vec![BlockMetadataRef::default(); block.parents().len()]),
             all_parents_processed: Arc::new(Countdown::new(block.parents().len())),
             processed: Signal::default(),
@@ -40,6 +43,18 @@ impl<C: BlockDAGConfig> BlockMetadata<C> {
             vote: Signal::default(),
             error: Signal::default(),
         }))
+    }
+
+    pub fn signal<T: Send + Sync + Default + 'static>(&self) -> Arc<Signal<T>> {
+        if let Some(signal) = self.signals.read().unwrap().get::<Arc<Signal<T>>>() {
+            return signal.clone();
+        }
+
+        self.signals
+            .write()
+            .unwrap()
+            .get_or_insert_with::<Arc<Signal<T>>, _>(Arc::default)
+            .clone()
     }
 
     pub fn vote(&self) -> Result<Vote<C>> {

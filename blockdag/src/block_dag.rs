@@ -1,8 +1,9 @@
 use std::{
     collections::HashMap,
+    ops::Deref,
     sync::{Arc, Mutex},
 };
-use std::ops::Deref;
+
 use common::{
     blocks::Block,
     ids::BlockID,
@@ -57,7 +58,8 @@ impl<C: BlockDAGConfig> BlockDAG<C> {
                     move |metadata| {
                         block_dag.setup_metadata(metadata);
                     }
-                }).retain();
+                })
+                .retain();
         }
 
         signal
@@ -65,8 +67,7 @@ impl<C: BlockDAGConfig> BlockDAG<C> {
 
     fn setup_metadata(&self, metadata: &BlockMetadata<C>) {
         for (index, parent_id) in metadata.block.parents().iter().enumerate() {
-            self
-                .metadata_signal(parent_id)
+            self.metadata_signal(parent_id)
                 .subscribe({
                     let metadata = metadata.clone();
                     move |parent| {
@@ -82,10 +83,9 @@ impl<C: BlockDAGConfig> BlockDAG<C> {
                 let block_dag = self.clone();
                 let metadata = metadata.clone();
                 move |_| {
-                    block_dag.block_ready.trigger(&ResourceGuard::new(
-                        metadata,
-                        BlockMetadata::mark_processed,
-                    ))
+                    block_dag
+                        .block_ready
+                        .trigger(&ResourceGuard::new(metadata, BlockMetadata::mark_processed))
                 }
             })
             .retain();
