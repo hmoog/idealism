@@ -41,7 +41,7 @@ impl<C: ProtocolConfig> Protocol<C> {
     }
 
     fn process_block(&self, metadata: &ResourceGuard<BlockMetadata<C>>) -> ProtocolResult<()> {
-        metadata.vote.set(match &metadata.block {
+        metadata.signal().set(match &metadata.block {
             Block::NetworkBlock(_, network_block) => Vote::new(
                 metadata.downgrade(),
                 &network_block.issuer_id,

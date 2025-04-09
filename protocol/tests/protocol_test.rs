@@ -4,6 +4,7 @@ use protocol::{Protocol, ProtocolResult};
 use protocol_plugins::{
     block_factory::BlockFactory, consensus_feed::ConsensusFeed, consensus_round::ConsensusRound,
 };
+use virtual_voting::Vote;
 
 #[test]
 fn test_protocol() -> ProtocolResult<()> {
@@ -46,15 +47,30 @@ fn test_protocol() -> ProtocolResult<()> {
     let _block3_metadata = protocol.block_dag.queue(block_3);
     let _block4_metadata = protocol.block_dag.queue(block_4);
 
-    println!("{}", block1_metadata.vote()?.milestone()?.height);
-    println!("{}", block2_metadata.vote()?.milestone().is_ok());
+    println!(
+        "{}",
+        block1_metadata
+            .try_get::<Vote<Config>>()?
+            .milestone()?
+            .height
+    );
+    println!(
+        "{}",
+        block2_metadata
+            .try_get::<Vote<Config>>()?
+            .milestone()
+            .is_ok()
+    );
 
     let block_1_1 = block_factory.new_block(&IssuerID::from([1u8; 32]));
     let block_1_1_metadata = protocol.block_dag.queue(block_1_1);
 
     println!(
         "{}",
-        block_1_1_metadata.vote()?.accepted_milestone()?.height()?
+        block_1_1_metadata
+            .try_get::<Vote<Config>>()?
+            .accepted_milestone()?
+            .height()?
     );
 
     Ok(())

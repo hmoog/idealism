@@ -55,6 +55,12 @@ impl<T> Signal<T> {
     }
 }
 
+impl<T: Clone> Signal<T> {
+    pub fn value(&self) -> Option<T> {
+        self.get().as_ref().cloned()
+    }
+}
+
 impl<T> Default for Signal<T> {
     fn default() -> Self {
         Self {

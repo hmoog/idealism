@@ -132,6 +132,6 @@ impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin<C>> for ConsensusRound<C> {
 
 impl<C: ProtocolConfig> ProtocolPlugin<C> for ConsensusRound<C> {
     fn process_block(&self, block: &BlockMetadata<C>) -> ProtocolResult<()> {
-        self.process_vote(&block.vote()?)
+        self.process_vote(&block.try_get()?)
     }
 }

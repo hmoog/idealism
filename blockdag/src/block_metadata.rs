@@ -1,4 +1,5 @@
 use std::{
+    any::TypeId,
     collections::VecDeque,
     sync::{Arc, Mutex, MutexGuard, RwLock},
 };
@@ -13,7 +14,7 @@ use virtual_voting::{Vote, Votes};
 
 use crate::{
     BlockDAGConfig, BlockMetadataRef,
-    Error::{BlockNotFound, VoteNotFound},
+    Error::{BlockNotFound, MetadataNotFound},
     accepted::Accepted,
     error::Result,
 };
@@ -27,7 +28,6 @@ pub struct Inner<C: BlockDAGConfig> {
     processed: Signal<()>,
     pub block: Block,
     pub accepted: Signal<Accepted>,
-    pub vote: Signal<Vote<C>>,
     pub error: Signal<C::ErrorType>,
 }
 
@@ -40,12 +40,11 @@ impl<C: BlockDAGConfig> BlockMetadata<C> {
             processed: Signal::default(),
             block,
             accepted: Signal::default(),
-            vote: Signal::default(),
             error: Signal::default(),
         }))
     }
 
-    pub fn signal<T: Send + Sync + Default + 'static>(&self) -> Arc<Signal<T>> {
+    pub fn signal<T: Send + Sync + 'static>(&self) -> Arc<Signal<T>> {
         if let Some(signal) = self.signals.read().unwrap().get::<Arc<Signal<T>>>() {
             return signal.clone();
         }
@@ -57,8 +56,10 @@ impl<C: BlockDAGConfig> BlockMetadata<C> {
             .clone()
     }
 
-    pub fn vote(&self) -> Result<Vote<C>> {
-        self.vote.get().as_ref().cloned().ok_or(VoteNotFound)
+    pub fn try_get<T: Send + Sync + Clone + 'static>(&self) -> Result<T> {
+        self.signal::<T>()
+            .value()
+            .ok_or(MetadataNotFound(TypeId::of::<T>()))
     }
 
     pub fn parents(&self) -> MutexGuard<Vec<BlockMetadataRef<C>>> {
@@ -92,10 +93,7 @@ impl<C: BlockDAGConfig> BlockMetadata<C> {
         let mut result = Votes::default();
         for block_ref in self.parents().iter() {
             match block_ref.upgrade() {
-                Some(block) => match &*block.vote.get() {
-                    Some(vote) => result.insert(vote.clone()),
-                    None => return Err(VoteNotFound),
-                },
+                Some(block) => result.insert(block.try_get::<Vote<C>>()?),
                 None => return Err(BlockNotFound),
             };
         }

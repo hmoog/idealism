@@ -23,9 +23,7 @@ impl<Trait: ?Sized + 'static> PluginRegistry<Trait> {
     }
 
     pub fn get<T: Any + Send + Sync + 'static>(&self) -> Option<Arc<T>> {
-        self.instances
-            .get::<Arc<T>>()
-            .map(Arc::clone)
+        self.instances.get::<Arc<T>>().map(Arc::clone)
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &Arc<Trait>> {
