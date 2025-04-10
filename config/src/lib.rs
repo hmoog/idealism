@@ -1,7 +1,9 @@
 mod blockdag {
     mod params;
+    mod plugins;
 
     pub use params::*;
+    pub use plugins::*;
 }
 
 mod config;

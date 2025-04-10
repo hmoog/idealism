@@ -16,7 +16,7 @@ use crate::{
     BlockDAGConfig, BlockMetadataRef,
     Error::{BlockNotFound, MetadataNotFound},
     accepted::Accepted,
-    error::Result,
+    error::BlockDAGResult,
 };
 
 pub struct BlockMetadata<C: BlockDAGConfig>(pub(crate) Arc<Inner<C>>);
@@ -56,7 +56,7 @@ impl<C: BlockDAGConfig> BlockMetadata<C> {
             .clone()
     }
 
-    pub fn try_get<T: Send + Sync + Clone + 'static>(&self) -> Result<T> {
+    pub fn try_get<T: Send + Sync + Clone + 'static>(&self) -> BlockDAGResult<T> {
         self.signal::<T>()
             .value()
             .ok_or(MetadataNotFound(TypeId::of::<T>()))
@@ -69,7 +69,7 @@ impl<C: BlockDAGConfig> BlockMetadata<C> {
     pub fn past_cone<F: Fn(&BlockMetadata<C>) -> bool>(
         &self,
         should_visit: F,
-    ) -> Result<IndexSet<BlockMetadata<C>>> {
+    ) -> BlockDAGResult<IndexSet<BlockMetadata<C>>> {
         let mut past_cone = IndexSet::new();
 
         if should_visit(self) && past_cone.insert(self.clone()) {
@@ -89,7 +89,7 @@ impl<C: BlockDAGConfig> BlockMetadata<C> {
         Ok(past_cone)
     }
 
-    pub fn referenced_votes(&self) -> Result<Votes<C>> {
+    pub fn referenced_votes(&self) -> BlockDAGResult<Votes<C>> {
         let mut result = Votes::default();
         for block_ref in self.parents().iter() {
             match block_ref.upgrade() {

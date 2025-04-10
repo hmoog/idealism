@@ -11,4 +11,4 @@ pub enum Error {
     MetadataNotFound(TypeId),
 }
 
-pub type Result<T> = core::result::Result<T, Error>;
+pub type BlockDAGResult<T> = Result<T, Error>;

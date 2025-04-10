@@ -7,17 +7,19 @@ use std::{
 use common::{
     blocks::Block,
     ids::BlockID,
+    plugins::PluginRegistry,
     rx::{Event, ResourceGuard, Signal},
 };
 use zero::{Clone0, Deref0};
 
-use crate::{BlockDAGConfig, block_metadata::BlockMetadata};
+use crate::{BlockDAGConfig, BlockDAGPlugin, block_metadata::BlockMetadata};
 
 #[derive(Default, Deref0, Clone0)]
 pub struct BlockDAG<C: BlockDAGConfig>(Arc<BlockDAGData<C>>);
 
 #[derive(Default)]
 pub struct BlockDAGData<C: BlockDAGConfig> {
+    pub plugins: PluginRegistry<dyn BlockDAGPlugin<C>>,
     blocks: Mutex<HashMap<BlockID, Arc<Signal<BlockMetadata<C>>>>>,
     block_ready: Event<ResourceGuard<BlockMetadata<C>>>,
 }
@@ -70,25 +72,28 @@ impl<C: BlockDAGConfig> BlockDAG<C> {
             self.metadata_signal(parent_id)
                 .subscribe({
                     let metadata = metadata.clone();
-                    move |parent| {
-                        metadata.register_parent(index, parent);
-                    }
+                    move |parent| metadata.register_parent(index, parent)
                 })
                 .retain();
         }
 
-        metadata
-            .all_parents_processed
-            .subscribe({
-                let block_dag = self.clone();
-                let metadata = metadata.clone();
-                move |_| {
-                    block_dag
-                        .block_ready
-                        .trigger(&ResourceGuard::new(metadata, BlockMetadata::mark_processed))
+        let subscription = metadata.all_parents_processed.subscribe({
+            let block_dag = self.clone();
+            let metadata = metadata.clone();
+            move |_| {
+                let resource_guard = ResourceGuard::new(metadata, BlockMetadata::mark_processed);
+                for plugin in block_dag.plugins.iter() {
+                    if let Err(_err) = plugin.process_block(&resource_guard) {
+                        // TODO: ADJUST ERROR TYPE
+                        // metadata.error.set(err);
+                        return;
+                    }
                 }
-            })
-            .retain();
+
+                block_dag.block_ready.trigger(&resource_guard)
+            }
+        });
+        subscription.retain();
     }
 }
 

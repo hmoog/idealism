@@ -20,7 +20,7 @@ impl<C: ProtocolConfig> Protocol<C> {
     pub fn new(config: C) -> Self {
         let protocol = Self(Arc::new(ProtocolData {
             block_dag: BlockDAG::default(),
-            plugins: config.inject_plugins(PluginRegistry::default()),
+            plugins: ProtocolConfig::inject_plugins(&config, PluginRegistry::default()),
             config: Arc::new(config),
         }));
 
