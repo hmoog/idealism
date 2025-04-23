@@ -9,3 +9,4 @@ indexmap = "2.7.1"
 protocol = { path = "../protocol" }
 common = { path = "../common" }
 virtual-voting = { path = "../virtual-voting" }
+zero = { path = "../zero" }

@@ -9,9 +9,13 @@ pub mod bft {
 }
 pub mod blocks {
     mod block;
+    mod block_metadata;
+    mod block_metadata_ref;
     mod network_block;
 
     pub use block::Block;
+    pub use block_metadata::BlockMetadata;
+    pub use block_metadata_ref::BlockMetadataRef;
     pub use network_block::NetworkBlock;
 }
 pub mod collections {
@@ -20,6 +24,13 @@ pub mod collections {
 
     pub use any_map::AnyMap;
     pub use max_set::MaxSet;
+}
+pub mod errors {
+    mod error;
+    mod result;
+
+    pub use error::*;
+    pub use result::*;
 }
 pub mod hash {
     mod blake2b;

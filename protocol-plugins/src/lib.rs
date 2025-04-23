@@ -1,7 +1,23 @@
+pub mod block_dag {
+    mod block_dag;
+    mod block_dag_metadata;
+
+    pub use block_dag::BlockDAG;
+    pub use block_dag_metadata::BlockDAGMetadata;
+}
+
 pub mod block_factory {
     mod plugin;
 
     pub use plugin::BlockFactory;
+}
+
+pub mod block_storage {
+    mod address;
+    mod plugin;
+
+    pub use address::Address;
+    pub use plugin::BlockStorage;
 }
 
 pub mod consensus {

@@ -1,8 +1,8 @@
 use common::plugins::PluginRegistry;
 use protocol::ProtocolPlugin;
 use protocol_plugins::{
-    block_factory::BlockFactory, consensus::Consensus, consensus_feed::ConsensusFeed,
-    consensus_round::ConsensusRound, tip_selection::TipSelection,
+    block_factory::BlockFactory, block_storage::BlockStorage, consensus::Consensus,
+    consensus_feed::ConsensusFeed, consensus_round::ConsensusRound, tip_selection::TipSelection,
 };
 
 use crate::Config;
@@ -20,6 +20,7 @@ impl ProtocolPlugins {
     ) {
         match self {
             Self::Core => {
+                registry.load::<BlockStorage>();
                 registry.load::<Consensus<Config>>();
                 registry.load::<ConsensusRound<Config>>();
                 registry.load::<TipSelection<Config>>();
