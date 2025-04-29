@@ -6,10 +6,9 @@ use common::{
     ids::IssuerID,
 };
 use config::{Config, ProtocolParams, ProtocolPlugins};
+use consensus_round::ConsensusRound;
 use protocol::Protocol;
-use protocol_plugins::{
-    block_factory::BlockFactory, consensus_feed::ConsensusFeed, consensus_round::ConsensusRound,
-};
+use protocol_plugins::{block_factory::BlockFactory, consensus_feed::ConsensusFeed};
 use virtual_voting::{Milestone, Vote};
 
 #[test]
@@ -27,7 +26,7 @@ fn test_protocol() -> Result<()> {
     ));
 
     let consensus_round = protocol.plugins.get::<ConsensusRound<Config>>().unwrap();
-    let block_factory = protocol.plugins.get::<BlockFactory>().unwrap();
+    let block_factory = protocol.plugins.get::<BlockFactory<Config>>().unwrap();
 
     consensus_round
         .started

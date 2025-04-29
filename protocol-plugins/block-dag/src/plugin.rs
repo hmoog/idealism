@@ -11,7 +11,7 @@ use common::{
     rx::{Callback, Callbacks, Event, Subscription},
 };
 use indexmap::IndexSet;
-use protocol::{ProtocolConfig, ProtocolPlugin};
+use protocol::ProtocolPlugin;
 
 use crate::BlockDAGMetadata;
 
@@ -21,8 +21,8 @@ pub struct BlockDAG {
     available: Event<BlockMetadata>,
 }
 
-impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin<C>> for BlockDAG {
-    fn construct(plugins: &mut PluginRegistry<dyn ProtocolPlugin<C>>) -> Arc<Self> {
+impl Plugin<dyn ProtocolPlugin> for BlockDAG {
+    fn construct(plugins: &mut PluginRegistry<dyn ProtocolPlugin>) -> Arc<Self> {
         Arc::new_cyclic(|block_dag: &Weak<Self>| {
             let block_storage: Arc<BlockStorage> = plugins.load();
 
@@ -48,7 +48,7 @@ impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin<C>> for BlockDAG {
         })
     }
 
-    fn plugin(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin<C>> {
+    fn plugin(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin> {
         arc
     }
 }
@@ -94,40 +94,35 @@ impl BlockDAG {
         let metadata = Arc::new(BlockDAGMetadata::new(block.block.parents().len()));
 
         for (index, parent_id) in block.block.parents().iter().enumerate() {
-            self.block_storage
-                .address(parent_id)
-                .subscribe({
-                    let weak_metadata = Arc::downgrade(&metadata);
-                    move |parent| {
-                        if let Some(metadata) = weak_metadata.upgrade() {
-                            metadata.set_parent_available(index, parent)
-                        }
-                    }
-                })
-                .retain();
-        }
+            self.block_storage.address(parent_id).attach({
+                let weak_metadata = Arc::downgrade(&metadata);
 
-        metadata
-            .all_parents_available
-            .subscribe({
-                let block_dag = Arc::downgrade(self);
-                let block = block.downgrade();
-
-                move |_| {
-                    if let Some(block_dag) = block_dag.upgrade() {
-                        if let Some(block) = block.upgrade() {
-                            block_dag.available.trigger(&block);
-                        }
+                move |parent| {
+                    if let Some(metadata) = weak_metadata.upgrade() {
+                        metadata.set_parent_available(index, parent)
                     }
                 }
-            })
-            .retain();
+            });
+        }
+
+        metadata.all_parents_available.attach({
+            let block_dag = Arc::downgrade(self);
+            let block = block.downgrade();
+
+            move |_| {
+                if let Some(block_dag) = block_dag.upgrade() {
+                    if let Some(block) = block.upgrade() {
+                        block_dag.available.trigger(&block);
+                    }
+                }
+            }
+        });
 
         metadata
     }
 }
 
-impl<C: ProtocolConfig> ProtocolPlugin<C> for BlockDAG {
+impl ProtocolPlugin for BlockDAG {
     fn shutdown(&self) {
         self.subscription.lock().unwrap().take();
     }

@@ -1,29 +1,73 @@
 use std::{
     collections::HashSet,
-    sync::{Arc, Mutex},
+    marker::PhantomData,
+    sync::{Arc, Mutex, Weak},
 };
 
-use block_dag::BlockDAGMetadata;
+use block_dag::{BlockDAG, BlockDAGMetadata};
 use common::{
     blocks::BlockMetadata,
     errors::{Error::BlockNotFound, Result},
     ids::BlockID,
     plugins::{Plugin, PluginRegistry},
+    rx::{Callbacks, Subscription},
 };
 use protocol::{ProtocolConfig, ProtocolPlugin};
+use virtual_voting::Vote;
 
 #[derive(Default)]
-pub struct TipSelection {
+pub struct TipSelection<C: ProtocolConfig> {
     tips: Mutex<HashSet<BlockMetadata>>,
+    block_dag_subscription: Mutex<Option<Subscription<Callbacks<BlockMetadata>>>>,
+    _marker: PhantomData<C>,
 }
 
-impl<C: ProtocolConfig> ProtocolPlugin<C> for TipSelection {
-    fn shutdown(&self) {
-        todo!()
+impl<C: ProtocolConfig> TipSelection<C> {
+    pub fn get(&self) -> Vec<BlockID> {
+        self.tips
+            .lock()
+            .expect("failed to lock")
+            .iter()
+            .map(|x| x.block.id())
+            .cloned()
+            .collect()
     }
-}
 
-impl TipSelection {
+    fn new(weak: &Weak<Self>, plugins: &mut PluginRegistry<dyn ProtocolPlugin>) -> Self {
+        Self {
+            tips: Default::default(),
+            block_dag_subscription: Mutex::new(Some(Self::block_dag_subscription(
+                &plugins.load(),
+                weak.clone(),
+            ))),
+            _marker: PhantomData,
+        }
+    }
+
+    fn shutdown(&self) {
+        self.block_dag_subscription.lock().unwrap().take();
+    }
+
+    fn block_dag_subscription(block_dag: &Arc<BlockDAG>, weak: Weak<Self>) -> BlockDAGSubscription {
+        let weak = weak.clone();
+
+        block_dag.subscribe(move |block| {
+            let weak = weak.clone();
+            let weak_block = block.downgrade();
+
+            block.metadata().attach(move |_: &Arc<Vote<C>>| {
+                if let Some(tip_selection) = weak.upgrade() {
+                    if let Some(block) = weak_block.upgrade() {
+                        if let Err(err) = tip_selection.process_block(&block) {
+                            // TODO: handle the error more elegantly
+                            println!("{:?}", err);
+                        }
+                    }
+                }
+            })
+        })
+    }
+
     fn process_block(&self, block: &BlockMetadata) -> Result<()> {
         let metadata = block;
 
@@ -50,24 +94,22 @@ impl TipSelection {
 
         Ok(())
     }
-
-    pub fn get(&self) -> Vec<BlockID> {
-        self.tips
-            .lock()
-            .expect("failed to lock")
-            .iter()
-            .map(|x| x.block.id())
-            .cloned()
-            .collect()
-    }
 }
 
-impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin<C>> for TipSelection {
-    fn construct(_: &mut PluginRegistry<dyn ProtocolPlugin<C>>) -> Arc<Self> {
-        Arc::new(Self::default())
+impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin> for TipSelection<C> {
+    fn construct(plugins: &mut PluginRegistry<dyn ProtocolPlugin>) -> Arc<Self> {
+        Arc::new_cyclic(|weak| Self::new(weak, plugins))
     }
 
-    fn plugin(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin<C>> {
+    fn plugin(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin> {
         arc
     }
 }
+
+impl<C: ProtocolConfig> ProtocolPlugin for TipSelection<C> {
+    fn shutdown(&self) {
+        self.shutdown();
+    }
+}
+
+type BlockDAGSubscription = Subscription<Callbacks<BlockMetadata>>;

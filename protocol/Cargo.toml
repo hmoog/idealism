@@ -11,4 +11,5 @@ zero = { path = "../zero" }
 [dev-dependencies]
 block-storage = { path = "../protocol-plugins/block-storage"}
 config = { path = "../config" }
+consensus-round = { path = "../protocol-plugins/consensus-round" }
 protocol-plugins = { path = "../protocol-plugins-old" }

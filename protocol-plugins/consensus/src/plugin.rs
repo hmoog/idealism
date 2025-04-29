@@ -28,7 +28,7 @@ pub struct Consensus<C: ProtocolConfig> {
 }
 
 impl<C: ProtocolConfig> Consensus<C> {
-    fn setup(self: Arc<Self>, plugins: &mut PluginRegistry<dyn ProtocolPlugin<C>>) -> Arc<Self> {
+    fn setup(self: Arc<Self>, plugins: &mut PluginRegistry<dyn ProtocolPlugin>) -> Arc<Self> {
         let weak_consensus = Arc::downgrade(&self);
 
         *self.block_dag_subscription.lock().expect("failed to lock") =
@@ -52,10 +52,7 @@ impl<C: ProtocolConfig> Consensus<C> {
     }
 
     fn shutdown(&self) {
-        self.block_dag_subscription
-            .lock()
-            .expect("failed to lock")
-            .take();
+        self.block_dag_subscription.lock().unwrap().take();
     }
 
     fn process_vote(&self, vote: &Vote<C>) -> virtual_voting::Result<()> {
@@ -150,17 +147,17 @@ impl<C: ProtocolConfig> Consensus<C> {
     }
 }
 
-impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin<C>> for Consensus<C> {
-    fn construct(plugins: &mut PluginRegistry<dyn ProtocolPlugin<C>>) -> Arc<Self> {
+impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin> for Consensus<C> {
+    fn construct(plugins: &mut PluginRegistry<dyn ProtocolPlugin>) -> Arc<Self> {
         Arc::new(Self::default()).setup(plugins)
     }
 
-    fn plugin(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin<C>> {
+    fn plugin(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin> {
         arc
     }
 }
 
-impl<C: ProtocolConfig> ProtocolPlugin<C> for Consensus<C> {
+impl<C: ProtocolConfig> ProtocolPlugin for Consensus<C> {
     fn shutdown(&self) {
         Self::shutdown(self);
     }

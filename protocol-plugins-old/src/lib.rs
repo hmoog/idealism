@@ -8,8 +8,6 @@ pub mod block_factory {
     pub use plugin::BlockFactory;
 }
 
-pub mod consensus {}
-
 pub mod consensus_feed {
     mod event;
     mod plugin;
@@ -18,11 +16,7 @@ pub mod consensus_feed {
     pub use plugin::ConsensusFeed;
 }
 
-pub mod consensus_round {
-    mod plugin;
-
-    pub use plugin::ConsensusRound;
-}
+pub mod consensus_round {}
 
 pub mod tip_selection {
     mod plugin;

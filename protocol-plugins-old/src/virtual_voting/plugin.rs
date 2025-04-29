@@ -38,10 +38,11 @@ impl<C: ProtocolConfig> VirtualVoting<C> {
     }
 }
 
-impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin<C>> for VirtualVoting<C> {
-    fn construct(plugins: &mut PluginRegistry<dyn ProtocolPlugin<C>>) -> Arc<Self> {
+impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin> for VirtualVoting<C> {
+    fn construct(plugins: &mut PluginRegistry<dyn ProtocolPlugin>) -> Arc<Self> {
         Arc::new_cyclic(|_virtual_voting: &Weak<Self>| {
             let block_dag: Arc<BlockDAG> = plugins.load();
+            let config: Arc<C> = plugins.load();
 
             Self {
                 subscription: Mutex::new(Some(block_dag.subscribe({
@@ -64,9 +65,9 @@ impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin<C>> for VirtualVoting<C> {
                                     Err(_) => {}
                                 }
                             }
-                            _ => {
-                                // Vote::new_genesis(block.downgrade(), self.config.clone())
-                            }
+                            _ => block
+                                .metadata()
+                                .set(Vote::new_genesis(block.downgrade(), config.clone())),
                         };
                     }
                 }))),
@@ -75,12 +76,12 @@ impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin<C>> for VirtualVoting<C> {
         })
     }
 
-    fn plugin(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin<C>> {
+    fn plugin(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin> {
         arc
     }
 }
 
-impl<C: ProtocolConfig> ProtocolPlugin<C> for VirtualVoting<C> {
+impl<C: ProtocolConfig> ProtocolPlugin for VirtualVoting<C> {
     fn shutdown(&self) {
         self.subscription.lock().unwrap().take();
     }

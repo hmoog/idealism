@@ -31,7 +31,7 @@ pub struct ConsensusRound<C: ProtocolConfig> {
 }
 
 impl<C: ProtocolConfig> ConsensusRound<C> {
-    fn new(weak: &Weak<Self>, plugins: &mut PluginRegistry<dyn ProtocolPlugin<C>>) -> Self {
+    fn new(weak: &Weak<Self>, plugins: &mut PluginRegistry<dyn ProtocolPlugin>) -> Self {
         let consensus: Arc<Consensus<C>> = plugins.load();
 
         Self {
@@ -159,17 +159,17 @@ impl<C: ProtocolConfig> ConsensusRound<C> {
     }
 }
 
-impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin<C>> for ConsensusRound<C> {
-    fn construct(plugins: &mut PluginRegistry<dyn ProtocolPlugin<C>>) -> Arc<Self> {
-        Arc::new_cyclic(|s| Self::new(s, plugins))
+impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin> for ConsensusRound<C> {
+    fn construct(plugins: &mut PluginRegistry<dyn ProtocolPlugin>) -> Arc<Self> {
+        Arc::new_cyclic(|weak| Self::new(weak, plugins))
     }
 
-    fn plugin(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin<C>> {
+    fn plugin(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin> {
         arc
     }
 }
 
-impl<C: ProtocolConfig> ProtocolPlugin<C> for ConsensusRound<C> {
+impl<C: ProtocolConfig> ProtocolPlugin for ConsensusRound<C> {
     fn shutdown(&self) {
         self.shutdown();
     }

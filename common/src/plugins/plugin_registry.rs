@@ -8,6 +8,22 @@ pub struct PluginRegistry<Trait: ?Sized + 'static> {
 }
 
 impl<Trait: ?Sized + 'static> PluginRegistry<Trait> {
+    pub fn set<U: Any + Send + Sync + Plugin<Trait> + 'static>(
+        &mut self,
+        instance: Arc<U>,
+    ) -> Arc<U> {
+        if let Some(existing) = self.instances.get::<Arc<U>>() {
+            return existing.clone();
+        }
+
+        self.instances.insert(instance.clone());
+
+        let trait_object = U::plugin(instance.clone());
+        self.trait_objects.push(trait_object);
+
+        instance
+    }
+
     pub fn load<U: Any + Send + Sync + Plugin<Trait> + 'static>(&mut self) -> Arc<U> {
         if let Some(existing) = self.instances.get::<Arc<U>>() {
             return existing.clone();

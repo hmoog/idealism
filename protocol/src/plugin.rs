@@ -1,5 +1,3 @@
-use crate::ProtocolConfig;
-
-pub trait ProtocolPlugin<C: ProtocolConfig>: Send + Sync {
+pub trait ProtocolPlugin: Send + Sync {
     fn shutdown(&self);
 }

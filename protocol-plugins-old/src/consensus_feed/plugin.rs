@@ -21,7 +21,7 @@ pub struct ConsensusFeed<C: ProtocolConfig> {
     consensus: Arc<Consensus<C>>,
 }
 
-impl<C: ProtocolConfig> ProtocolPlugin<C> for ConsensusFeed<C> {
+impl<C: ProtocolConfig> ProtocolPlugin for ConsensusFeed<C> {
     fn shutdown(&self) {
         todo!()
     }
@@ -67,8 +67,8 @@ impl<C: ProtocolConfig> ConsensusFeed<C> {
     }
 }
 
-impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin<C>> for ConsensusFeed<C> {
-    fn construct(dependencies: &mut PluginRegistry<dyn ProtocolPlugin<C>>) -> Arc<Self> {
+impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin> for ConsensusFeed<C> {
+    fn construct(dependencies: &mut PluginRegistry<dyn ProtocolPlugin>) -> Arc<Self> {
         Self {
             event: Default::default(),
             consensus: dependencies.load(),
@@ -76,7 +76,7 @@ impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin<C>> for ConsensusFeed<C> {
         .init_plugin()
     }
 
-    fn plugin(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin<C>> {
+    fn plugin(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin> {
         arc
     }
 }

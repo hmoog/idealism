@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 consensus = { path = "../protocol-plugins/consensus" }
+consensus-round = { path = "../protocol-plugins/consensus-round" }
 protocol = { path = "../protocol" }
 block-storage = { path = "../protocol-plugins/block-storage"}
 protocol-plugins = { path = "../protocol-plugins-old" }
