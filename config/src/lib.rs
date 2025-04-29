@@ -1,11 +1,3 @@
-mod blockdag {
-    mod params;
-    mod plugins;
-
-    pub use params::*;
-    pub use plugins::*;
-}
-
 mod config;
 
 mod protocol {
@@ -28,7 +20,6 @@ mod virtual_voting {
     pub use slot_duration::*;
 }
 
-pub use blockdag::*;
 pub use config::*;
 pub use protocol::*;
 pub use virtual_voting::*;

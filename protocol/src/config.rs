@@ -1,10 +1,9 @@
-use blockdag::BlockDAGConfig;
-use common::plugins::PluginRegistry;
+use common::{blocks::BlockMetadataRef, plugins::PluginRegistry};
 use virtual_voting::VirtualVotingConfig;
 
-use crate::{ProtocolError, ProtocolPlugin};
+use crate::ProtocolPlugin;
 
-pub trait ProtocolConfig: VirtualVotingConfig + BlockDAGConfig<ErrorType = ProtocolError> {
+pub trait ProtocolConfig: VirtualVotingConfig<Source = BlockMetadataRef> {
     fn inject_plugins(
         &self,
         registry: PluginRegistry<dyn ProtocolPlugin<Self>>,

@@ -1,13 +1,19 @@
-use common::ids::IssuerID;
+use std::any::TypeId;
+
+use block_storage::BlockStorage;
+use common::{
+    errors::{Error::MetadataNotFound, Result},
+    ids::IssuerID,
+};
 use config::{Config, ProtocolParams, ProtocolPlugins};
-use protocol::{Protocol, ProtocolResult};
+use protocol::Protocol;
 use protocol_plugins::{
     block_factory::BlockFactory, consensus_feed::ConsensusFeed, consensus_round::ConsensusRound,
 };
-use virtual_voting::Vote;
+use virtual_voting::{Milestone, Vote};
 
 #[test]
-fn test_protocol() -> ProtocolResult<()> {
+fn test_protocol() -> Result<()> {
     let protocol = Protocol::new(Config::default().with_protocol_params(
         ProtocolParams::default().with_plugins(ProtocolPlugins::Custom(|cfg, registry| {
             ProtocolPlugins::Core.inject(cfg, registry);
@@ -21,7 +27,7 @@ fn test_protocol() -> ProtocolResult<()> {
     ));
 
     let consensus_round = protocol.plugins.get::<ConsensusRound<Config>>().unwrap();
-    let block_factory = protocol.plugins.get::<BlockFactory<Config>>().unwrap();
+    let block_factory = protocol.plugins.get::<BlockFactory>().unwrap();
 
     consensus_round
         .started
@@ -42,16 +48,33 @@ fn test_protocol() -> ProtocolResult<()> {
     let block_3 = block_factory.new_block(&IssuerID::from([3u8; 32]));
     let block_4 = block_factory.new_block(&IssuerID::from([4u8; 32]));
 
-    let block1_metadata = protocol.block_dag.queue(block_1);
-    let block2_metadata = protocol.block_dag.queue(block_2);
-    let _block3_metadata = protocol.block_dag.queue(block_3);
-    let _block4_metadata = protocol.block_dag.queue(block_4);
+    let block1_metadata = protocol
+        .plugins
+        .get::<BlockStorage>()
+        .unwrap()
+        .insert(block_1);
+    let block2_metadata = protocol
+        .plugins
+        .get::<BlockStorage>()
+        .unwrap()
+        .insert(block_2);
+    let _block3_metadata = protocol
+        .plugins
+        .get::<BlockStorage>()
+        .unwrap()
+        .insert(block_3);
+    let _block4_metadata = protocol
+        .plugins
+        .get::<BlockStorage>()
+        .unwrap()
+        .insert(block_4);
 
     println!(
         "{}",
         block1_metadata
             .try_get::<Vote<Config>>()?
-            .milestone()?
+            .milestone()
+            .map_err(|_| MetadataNotFound(TypeId::of::<Milestone<Config>>()))?
             .height
     );
     println!(
@@ -63,14 +86,20 @@ fn test_protocol() -> ProtocolResult<()> {
     );
 
     let block_1_1 = block_factory.new_block(&IssuerID::from([1u8; 32]));
-    let block_1_1_metadata = protocol.block_dag.queue(block_1_1);
+    let block_1_1_metadata = protocol
+        .plugins
+        .get::<BlockStorage>()
+        .unwrap()
+        .insert(block_1_1);
 
     println!(
         "{}",
         block_1_1_metadata
             .try_get::<Vote<Config>>()?
-            .accepted_milestone()?
-            .height()?
+            .accepted_milestone()
+            .map_err(|_| MetadataNotFound(TypeId::of::<Milestone<Config>>()))?
+            .height()
+            .map_err(|_| MetadataNotFound(TypeId::of::<Milestone<Config>>()))?
     );
 
     Ok(())

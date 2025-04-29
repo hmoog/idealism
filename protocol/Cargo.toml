@@ -4,12 +4,11 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-blockdag = { path = "../blockdag" }
 common = { path = "../common" }
-virtual-voting = { path = "../virtual-voting" }
+virtual-voting = { path = "../protocol-plugins/virtual-voting" }
 zero = { path = "../zero" }
-thiserror = "2.0.12"
 
 [dev-dependencies]
+block-storage = { path = "../protocol-plugins/block-storage"}
 config = { path = "../config" }
-protocol-plugins = { path = "../protocol-plugins" }
+protocol-plugins = { path = "../protocol-plugins-old" }

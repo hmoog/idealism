@@ -1,0 +1,10 @@
+[package]
+name = "block-dag"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+common = { path = "../../common" }
+block-storage = { path = "../block-storage"}
+indexmap = "2.7.1"
+protocol = { path = "../../protocol" }

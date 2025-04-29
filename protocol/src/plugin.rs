@@ -1,7 +1,5 @@
-use blockdag::BlockMetadata;
-
-use crate::{ProtocolConfig, ProtocolResult};
+use crate::ProtocolConfig;
 
 pub trait ProtocolPlugin<C: ProtocolConfig>: Send + Sync {
-    fn process_block(&self, block: &BlockMetadata<C>) -> ProtocolResult<()>;
+    fn shutdown(&self);
 }

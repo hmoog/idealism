@@ -1,0 +1,12 @@
+[package]
+name = "protocol-plugins"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+block-dag = { path = "../protocol-plugins/block-dag" }
+consensus = { path = "../protocol-plugins/consensus" }
+protocol = { path = "../protocol" }
+common = { path = "../common" }
+virtual-voting = { path = "../protocol-plugins/virtual-voting" }
+zero = { path = "../zero" }

@@ -4,8 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-blockdag = { path = "../blockdag" }
+consensus = { path = "../protocol-plugins/consensus" }
 protocol = { path = "../protocol" }
-protocol-plugins = { path = "../protocol-plugins" }
+block-storage = { path = "../protocol-plugins/block-storage"}
+protocol-plugins = { path = "../protocol-plugins-old" }
 common = { path = "../common" }
-virtual-voting = { path = "../virtual-voting" }
+virtual-voting = { path = "../protocol-plugins/virtual-voting" }

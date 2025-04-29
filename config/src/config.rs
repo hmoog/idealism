@@ -1,9 +1,8 @@
-use crate::{BlockDAGParams, ProtocolParams, VirtualVotingParams};
+use crate::{ProtocolParams, VirtualVotingParams};
 
 #[derive(Default)]
 pub struct Config {
     pub protocol_params: ProtocolParams,
-    pub blockdag_params: BlockDAGParams,
     pub virtual_voting_params: VirtualVotingParams,
 }
 

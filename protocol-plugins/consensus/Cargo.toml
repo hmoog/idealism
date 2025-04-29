@@ -1,0 +1,11 @@
+[package]
+name = "consensus"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+block-dag = { path = "../block-dag" }
+common = { path = "../../common" }
+indexmap = "2.7.1"
+protocol = { path = "../../protocol" }
+virtual-voting = { path = "../virtual-voting" }

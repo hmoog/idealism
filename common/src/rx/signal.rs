@@ -44,6 +44,14 @@ impl<T> Signal<T> {
         )
     }
 
+    pub fn attach(&self, callback: impl CallbackOnce<T>) {
+        Subscription::new(
+            Arc::downgrade(&self.callbacks),
+            self.try_add_callback(callback),
+        )
+        .retain()
+    }
+
     fn try_add_callback(&self, callback: impl CallbackOnce<T>) -> Option<ID> {
         match self.signal.lock().unwrap().as_ref() {
             Some(emitted_signal) => {
