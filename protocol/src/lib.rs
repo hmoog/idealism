@@ -22,4 +22,8 @@ impl Protocol {
             plugins: ProtocolConfig::inject_plugins(&*plugins.provide(Arc::new(config)), plugins),
         }
     }
+
+    pub fn start(&self) {
+        self.plugins.start();
+    }
 }

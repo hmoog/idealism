@@ -11,6 +11,12 @@ pub struct Plugins {
 }
 
 impl Plugins {
+    pub fn start(&self) {
+        for instance in &self.trait_objects {
+            instance.start();
+        }
+    }
+
     pub fn provide<U: Any + Send + Sync + Plugin + 'static>(&mut self, instance: Arc<U>) -> Arc<U> {
         if let Some(existing) = self.instances.get::<Arc<U>>() {
             return existing.clone();

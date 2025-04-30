@@ -3,9 +3,8 @@ use std::any::type_name;
 use block_factory::BlockFactory;
 use block_storage::BlockStorage;
 use common::{
-    blocks::Block::GenesisBlock,
     errors::{Error::MetadataNotFound, Result},
-    ids::{Id, IssuerID},
+    ids::{IssuerID},
 };
 use config::{Config, ProtocolParams, ProtocolPlugins};
 use consensus_feed::ConsensusFeed;
@@ -26,11 +25,7 @@ fn test_protocol() -> Result<()> {
                 .retain();
         })),
     ));
-
-    let _config = protocol.plugins.get::<Config>().unwrap();
-    let block_storage = protocol.plugins.get::<BlockStorage>().unwrap();
-
-    block_storage.insert(GenesisBlock(Id::default()));
+    protocol.start();
 
     let consensus_round = protocol.plugins.get::<ConsensusRound<Config>>().unwrap();
     let block_factory = protocol.plugins.get::<BlockFactory<Config>>().unwrap();

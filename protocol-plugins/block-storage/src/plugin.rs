@@ -8,6 +8,8 @@ use common::{
     ids::BlockID,
     rx::{Callback, Callbacks, Event, Signal, Subscription},
 };
+use common::blocks::Block::GenesisBlock;
+use common::ids::Id;
 use protocol::{ManagedPlugin, Plugins};
 
 use crate::Address;
@@ -19,6 +21,12 @@ pub struct BlockStorage {
 }
 
 impl BlockStorage {
+    fn start(&self) {
+        println!("BlockStorage started");
+
+        self.insert(GenesisBlock(Id::default()));
+    }
+
     pub fn insert(&self, block: Block) -> BlockMetadata {
         self.address(block.id())
             .get_or_insert_with(|| BlockMetadata::new(block))
@@ -62,6 +70,10 @@ impl BlockStorage {
 impl ManagedPlugin for BlockStorage {
     fn construct(_manager: &mut Plugins) -> Arc<Self> {
         Arc::new(Self::default())
+    }
+
+    fn start(&self) {
+        self.start();
     }
 
     fn shutdown(&self) {
