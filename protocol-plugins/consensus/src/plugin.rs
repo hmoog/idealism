@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use block_dag::BlockDAG;
+use block_dag::{BlockDAG, BlockDAGBlockMetadataExt};
 use common::{
     bft::Committee,
     blocks::BlockMetadata,
@@ -124,7 +124,7 @@ impl<C: VirtualVotingConfig> Consensus<C> {
 
         for (height_index, accepted_milestone) in milestones.iter().rev().enumerate() {
             let block = accepted_milestone.source.upgrade().ok_or(BlockNotFound)?;
-            let past_cone = BlockDAG::past_cone(&block, |b| {
+            let past_cone = block.past_cone(|b| {
                 Ok(!b.try_get::<Arc<ConsensusMetadata>>()?.is_accepted(0))
             })?;
 
