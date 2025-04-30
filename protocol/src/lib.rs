@@ -1,10 +1,13 @@
 mod config;
-
-pub use config::ProtocolConfig;
-
+mod managed_plugin;
+mod plugin;
+mod plugins;
 use std::sync::Arc;
 
-use common::plugins::Plugins;
+pub use config::ProtocolConfig;
+pub use managed_plugin::ManagedPlugin;
+pub use plugin::Plugin;
+pub use plugins::Plugins;
 use zero::{Clone0, Deref0};
 
 #[derive(Deref0, Clone0)]
@@ -23,4 +26,3 @@ impl Protocol {
         }))
     }
 }
-

@@ -1,9 +1,8 @@
 use std::{any::Any, sync::Arc};
 
-use crate::{
-    collections::AnyMap,
-    plugins::{ManagedPlugin, Plugin},
-};
+use common::collections::AnyMap;
+
+use crate::{ManagedPlugin, Plugin};
 
 pub struct Plugins {
     instances: AnyMap,

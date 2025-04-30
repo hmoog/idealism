@@ -6,9 +6,9 @@ use std::{
 use common::{
     blocks::{Block, BlockMetadata},
     ids::BlockID,
-    plugins::{ManagedPlugin, Plugins},
     rx::{Callback, Callbacks, Event, Signal, Subscription},
 };
+use protocol::{ManagedPlugin, Plugins};
 
 use crate::Address;
 

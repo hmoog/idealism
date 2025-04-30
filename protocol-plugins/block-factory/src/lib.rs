@@ -3,8 +3,8 @@ use std::sync::Arc;
 use common::{
     blocks::{Block, BlockMetadataRef, NetworkBlock},
     ids::IssuerID,
-    plugins::{ManagedPlugin, Plugins},
 };
+use protocol::{ManagedPlugin, Plugins};
 use tip_selection::TipSelection;
 use virtual_voting::VirtualVotingConfig;
 

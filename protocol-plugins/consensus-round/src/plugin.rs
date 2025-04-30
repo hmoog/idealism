@@ -9,7 +9,6 @@ use common::{
     blocks::{BlockMetadata, BlockMetadataRef},
     errors::Result,
     ids::IssuerID,
-    plugins::{ManagedPlugin, Plugins},
     rx::{
         Callbacks, Subscription,
         UpdateType::{Notify, Retain},
@@ -17,6 +16,7 @@ use common::{
     },
 };
 use consensus::Consensus;
+use protocol::{ManagedPlugin, Plugins};
 use virtual_voting::{Issuer, VirtualVotingConfig, Vote};
 
 pub struct ConsensusRound<C: VirtualVotingConfig<Source = BlockMetadataRef>> {

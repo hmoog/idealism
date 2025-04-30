@@ -9,9 +9,9 @@ use common::{
     blocks::{BlockMetadata, BlockMetadataRef},
     errors::{Error::BlockNotFound, Result},
     ids::BlockID,
-    plugins::{ManagedPlugin, Plugins},
     rx::{Callbacks, Subscription},
 };
+use protocol::{ManagedPlugin, Plugins};
 use virtual_voting::{VirtualVotingConfig, Vote};
 
 #[derive(Default)]

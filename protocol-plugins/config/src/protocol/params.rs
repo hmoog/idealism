@@ -1,4 +1,4 @@
-use common::plugins::{Plugin, Plugins};
+use protocol::{Plugin, Plugins};
 
 use crate::{Config, ProtocolPlugins};
 

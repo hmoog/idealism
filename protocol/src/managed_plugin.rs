@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::plugins::{Plugin, plugins::Plugins};
+use crate::{Plugin, Plugins};
 
 pub trait ManagedPlugin: Sized {
     fn construct(plugins: &mut Plugins) -> Arc<Self>;

@@ -5,13 +5,13 @@ use common::{
     bft::Committee,
     blocks::{BlockMetadata, BlockMetadataRef},
     errors::Error::BlockNotFound,
-    plugins::{ManagedPlugin, Plugins},
     rx::{
         Callbacks, Event, Subscription, UpdateType,
         UpdateType::{Notify, Retain},
         Variable,
     },
 };
+use protocol::{ManagedPlugin, Plugins};
 use virtual_voting::{VirtualVotingConfig, Vote};
 
 use crate::{AcceptanceState, AcceptedBlocks, ConsensusMetadata};

@@ -7,9 +7,9 @@ use block_dag::{BlockDAG, BlockDAGMetadata};
 use common::{
     blocks::{Block, BlockMetadata, BlockMetadataRef},
     errors::Error::BlockNotFound,
-    plugins::{ManagedPlugin, Plugins},
     rx::{Callbacks, Subscription},
 };
+use protocol::{ManagedPlugin, Plugins};
 
 use crate::{Error, Result, VirtualVotingConfig, Vote, Votes};
 

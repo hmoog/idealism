@@ -1,10 +1,10 @@
 use block_dag::BlockDAG;
 use block_factory::BlockFactory;
 use block_storage::BlockStorage;
-use common::plugins::Plugins;
 use consensus::Consensus;
 use consensus_feed::ConsensusFeed;
 use consensus_round::ConsensusRound;
+use protocol::Plugins;
 use tip_selection::TipSelection;
 use virtual_voting::VirtualVoting;
 

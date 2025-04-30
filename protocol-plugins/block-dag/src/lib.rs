@@ -9,11 +9,11 @@ use block_storage::{Address, BlockStorage};
 use common::{
     blocks::BlockMetadata,
     errors::{Error::BlockNotFound, Result},
-    plugins::{ManagedPlugin, Plugins},
     rx::{Callback, Callbacks, Event, Subscription},
 };
 use indexmap::IndexSet;
 pub use metadata::BlockDAGMetadata;
+use protocol::{ManagedPlugin, Plugins};
 
 pub struct BlockDAG {
     block_storage: Arc<BlockStorage>,

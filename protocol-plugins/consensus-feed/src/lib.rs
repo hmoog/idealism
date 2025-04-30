@@ -1,10 +1,6 @@
 use std::{ops::Deref, sync::Arc};
 
-use common::{
-    blocks::BlockMetadataRef,
-    plugins::{ManagedPlugin, Plugins},
-    rx::Event,
-};
+use common::{blocks::BlockMetadataRef, rx::Event};
 use consensus::Consensus;
 use virtual_voting::VirtualVotingConfig;
 
@@ -84,3 +80,4 @@ impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Deref for ConsensusFeed<
 mod event;
 
 pub use event::ConsensusFeedEvent;
+use protocol::{ManagedPlugin, Plugins};
