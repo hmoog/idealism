@@ -4,6 +4,7 @@ use common::collections::AnyMap;
 
 use crate::{ManagedPlugin, Plugin};
 
+#[derive(Default)]
 pub struct Plugins {
     instances: AnyMap,
     trait_objects: Vec<Arc<dyn Plugin>>,
@@ -39,14 +40,5 @@ impl Plugins {
 
     pub fn iter(&self) -> impl Iterator<Item = &Arc<dyn Plugin>> {
         self.trait_objects.iter()
-    }
-}
-
-impl Default for Plugins {
-    fn default() -> Self {
-        Self {
-            instances: Default::default(),
-            trait_objects: Vec::new(),
-        }
     }
 }

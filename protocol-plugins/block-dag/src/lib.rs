@@ -37,10 +37,10 @@ impl BlockDAG {
     }
 
     fn block_storage_subscription(
-        block_dag: &Arc<BlockStorage>,
+        block_storage: &Arc<BlockStorage>,
         weak: Weak<Self>,
     ) -> BlockStorageSubscription {
-        block_dag.subscribe(move |address| {
+        block_storage.subscribe(move |address| {
             let weak = weak.clone();
             address.attach(move |block| {
                 if let Some(block_dag) = weak.upgrade() {
@@ -83,10 +83,7 @@ impl BlockDAG {
 }
 
 impl BlockDAG {
-    pub fn subscribe(
-        &self,
-        callback: impl Callback<BlockMetadata>,
-    ) -> Subscription<Callbacks<BlockMetadata>> {
+    pub fn subscribe(&self, callback: impl Callback<BlockMetadata>) -> BlockDAGSubscription {
         self.block_available.subscribe(callback)
     }
 }
@@ -102,3 +99,4 @@ impl ManagedPlugin for BlockDAG {
 }
 
 type BlockStorageSubscription = Subscription<Callbacks<Address>>;
+type BlockDAGSubscription = Subscription<Callbacks<BlockMetadata>>;
