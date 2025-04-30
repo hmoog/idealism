@@ -14,7 +14,7 @@ use protocol::{ManagedPlugin, Plugins};
 
 pub struct BlockDAG {
     block_storage: Arc<BlockStorage>,
-    block_storage_subscription: Mutex<Option<Subscription<Callbacks<Address>>>>,
+    block_storage_subscription: Mutex<Option<BlockStorageSubscription>>,
     block_available: Event<BlockMetadata>,
 }
 
@@ -23,21 +23,10 @@ impl BlockDAG {
         let block_storage: Arc<BlockStorage> = plugins.load();
 
         Self {
-            block_storage_subscription: Mutex::new(Some(block_storage.subscribe({
-                let block_dag = weak.clone();
-                move |address| {
-                    address
-                        .subscribe({
-                            let block_dag = block_dag.clone();
-                            move |block| {
-                                if let Some(block_dag) = block_dag.upgrade() {
-                                    block.metadata().set(block_dag.new_metadata(block));
-                                }
-                            }
-                        })
-                        .retain()
-                }
-            }))),
+            block_storage_subscription: Mutex::new(Some(Self::block_storage_subscription(
+                &block_storage,
+                weak.clone(),
+            ))),
             block_storage,
             block_available: Event::default(),
         }
@@ -45,6 +34,20 @@ impl BlockDAG {
 
     fn shutdown(&self) {
         self.block_storage_subscription.lock().unwrap().take();
+    }
+
+    fn block_storage_subscription(
+        block_dag: &Arc<BlockStorage>,
+        weak: Weak<Self>,
+    ) -> BlockStorageSubscription {
+        block_dag.subscribe(move |address| {
+            let weak = weak.clone();
+            address.attach(move |block| {
+                if let Some(block_dag) = weak.upgrade() {
+                    block.metadata().set(block_dag.new_metadata(block));
+                }
+            })
+        })
     }
 
     fn new_metadata(self: &Arc<Self>, block: &BlockMetadata) -> Arc<BlockDAGMetadata> {
@@ -97,3 +100,5 @@ impl ManagedPlugin for BlockDAG {
         self.shutdown()
     }
 }
+
+type BlockStorageSubscription = Subscription<Callbacks<Address>>;
