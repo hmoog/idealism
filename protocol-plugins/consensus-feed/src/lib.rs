@@ -1,6 +1,6 @@
 use std::{ops::Deref, sync::Arc};
 
-use common::{blocks::BlockMetadataRef, rx::Event};
+use common::rx::Event;
 use consensus::Consensus;
 use virtual_voting::VirtualVotingConfig;
 
@@ -10,12 +10,12 @@ use crate::ConsensusFeedEvent::{
 };
 
 #[derive(Default)]
-pub struct ConsensusFeed<C: VirtualVotingConfig<Source = BlockMetadataRef>> {
+pub struct ConsensusFeed<C: VirtualVotingConfig> {
     event: Event<ConsensusFeedEvent<C>>,
     consensus: Arc<Consensus<C>>,
 }
 
-impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ConsensusFeed<C> {
+impl<C: VirtualVotingConfig> ConsensusFeed<C> {
     fn init_plugin(self) -> Arc<Self> {
         let plugin = Arc::new(self);
 
@@ -55,7 +55,7 @@ impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ConsensusFeed<C> {
     }
 }
 
-impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ManagedPlugin for ConsensusFeed<C> {
+impl<C: VirtualVotingConfig> ManagedPlugin for ConsensusFeed<C> {
     fn construct(dependencies: &mut Plugins) -> Arc<Self> {
         Self {
             event: Default::default(),
@@ -69,7 +69,7 @@ impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ManagedPlugin for Consen
     }
 }
 
-impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Deref for ConsensusFeed<C> {
+impl<C: VirtualVotingConfig> Deref for ConsensusFeed<C> {
     type Target = Event<ConsensusFeedEvent<C>>;
 
     fn deref(&self) -> &Self::Target {

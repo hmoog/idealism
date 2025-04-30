@@ -5,7 +5,9 @@ use crate::{Plugin, Plugins};
 pub trait ManagedPlugin: Sized {
     fn construct(plugins: &mut Plugins) -> Arc<Self>;
 
-    fn shutdown(&self);
+    fn shutdown(&self) {
+        // do nothing
+    }
 }
 
 impl<T: ManagedPlugin> Plugin for T {

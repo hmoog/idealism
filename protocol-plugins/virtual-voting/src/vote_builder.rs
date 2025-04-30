@@ -2,6 +2,7 @@ use std::{cmp::max, collections::HashSet, sync::Arc};
 
 use common::{
     bft::{Committee, Member},
+    blocks::BlockMetadataRef,
     ids::IssuerID,
 };
 
@@ -13,7 +14,7 @@ use crate::{
 };
 
 pub struct VoteBuilder<T: VirtualVotingConfig> {
-    pub source: T::Source,
+    pub source: BlockMetadataRef,
     pub config: Arc<T>,
     pub issuer: Issuer,
     pub time: u64,
@@ -28,7 +29,7 @@ pub struct VoteBuilder<T: VirtualVotingConfig> {
 
 impl<C: VirtualVotingConfig> VoteBuilder<C> {
     pub(crate) fn build(
-        source: C::Source,
+        source: BlockMetadataRef,
         issuer: &IssuerID,
         time: u64,
         votes: &Votes<C>,
@@ -79,7 +80,7 @@ impl<C: VirtualVotingConfig> VoteBuilder<C> {
         Ok(Vote::from(Arc::new(builder)))
     }
 
-    pub(crate) fn build_genesis(source: C::Source, config: Arc<C>) -> Vote<C> {
+    pub(crate) fn build_genesis(source: BlockMetadataRef, config: Arc<C>) -> Vote<C> {
         Vote::from(Arc::new_cyclic(|me| {
             let committee = config.select_committee(None);
 

@@ -6,7 +6,7 @@ use std::{
 
 use block_dag::{BlockDAG, BlockDAGMetadata};
 use common::{
-    blocks::{BlockMetadata, BlockMetadataRef},
+    blocks::BlockMetadata,
     errors::{Error::BlockNotFound, Result},
     ids::BlockID,
     rx::{Callbacks, Subscription},
@@ -15,13 +15,13 @@ use protocol::{ManagedPlugin, Plugins};
 use virtual_voting::{VirtualVotingConfig, Vote};
 
 #[derive(Default)]
-pub struct TipSelection<C: VirtualVotingConfig<Source = BlockMetadataRef>> {
+pub struct TipSelection<C: VirtualVotingConfig> {
     tips: Mutex<HashSet<BlockMetadata>>,
     block_dag_subscription: Mutex<Option<Subscription<Callbacks<BlockMetadata>>>>,
     _marker: PhantomData<C>,
 }
 
-impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> TipSelection<C> {
+impl<C: VirtualVotingConfig> TipSelection<C> {
     pub fn get(&self) -> Vec<BlockID> {
         self.tips
             .lock()
@@ -95,7 +95,7 @@ impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> TipSelection<C> {
     }
 }
 
-impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ManagedPlugin for TipSelection<C> {
+impl<C: VirtualVotingConfig> ManagedPlugin for TipSelection<C> {
     fn construct(plugins: &mut Plugins) -> Arc<Self> {
         Arc::new_cyclic(|weak| Self::new(weak, plugins))
     }

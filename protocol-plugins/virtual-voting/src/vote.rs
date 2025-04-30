@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use common::ids::IssuerID;
+use common::{blocks::BlockMetadataRef, ids::IssuerID};
 use zero::{Clone0, Deref0};
 
 use crate::{
@@ -12,7 +12,7 @@ pub struct Vote<C: VirtualVotingConfig>(Arc<VoteBuilder<C>>);
 
 impl<C: VirtualVotingConfig> Vote<C> {
     pub fn new(
-        source: C::Source,
+        source: BlockMetadataRef,
         issuer: &IssuerID,
         time: u64,
         latest: Votes<C>,
@@ -20,7 +20,7 @@ impl<C: VirtualVotingConfig> Vote<C> {
         VoteBuilder::build(source, issuer, time, &latest)
     }
 
-    pub fn new_genesis(source: C::Source, config: Arc<C>) -> Self {
+    pub fn new_genesis(source: BlockMetadataRef, config: Arc<C>) -> Self {
         VoteBuilder::build_genesis(source, config)
     }
 

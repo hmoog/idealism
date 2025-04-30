@@ -1,3 +1,3 @@
 pub trait Plugin {
-    fn shutdown(&self);
+    fn shutdown(&self) {}
 }

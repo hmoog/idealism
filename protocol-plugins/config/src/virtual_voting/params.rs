@@ -1,4 +1,4 @@
-use common::{bft::Committee, blocks::BlockMetadataRef};
+use common::bft::Committee;
 use virtual_voting::{Vote, VoteBuilder};
 
 use crate::{CommitteeSelection, Config, LeaderRotation, SlotDuration};
@@ -38,8 +38,6 @@ impl Config {
 }
 
 impl virtual_voting::VirtualVotingConfig for Config {
-    type Source = BlockMetadataRef;
-
     fn genesis_time(&self) -> u64 {
         self.virtual_voting_params.genesis_time
     }

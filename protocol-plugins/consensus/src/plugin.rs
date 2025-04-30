@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use block_dag::BlockDAG;
 use common::{
     bft::Committee,
-    blocks::{BlockMetadata, BlockMetadataRef},
+    blocks::BlockMetadata,
     errors::Error::BlockNotFound,
     rx::{
         Callbacks, Event, Subscription, UpdateType,
@@ -17,7 +17,7 @@ use virtual_voting::{VirtualVotingConfig, Vote};
 use crate::{AcceptanceState, AcceptedBlocks, ConsensusMetadata};
 
 #[derive(Default)]
-pub struct Consensus<C: VirtualVotingConfig<Source = BlockMetadataRef>> {
+pub struct Consensus<C: VirtualVotingConfig> {
     pub chain_index: Variable<u64>,
     pub heaviest_milestone_vote: Variable<Vote<C>>,
     pub latest_accepted_milestone: Variable<Vote<C>>,
@@ -26,7 +26,7 @@ pub struct Consensus<C: VirtualVotingConfig<Source = BlockMetadataRef>> {
     block_dag_subscription: Mutex<Option<Subscription<Callbacks<BlockMetadata>>>>,
 }
 
-impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Consensus<C> {
+impl<C: VirtualVotingConfig> Consensus<C> {
     fn setup(self: Arc<Self>, plugins: &mut Plugins) -> Arc<Self> {
         let weak_consensus = Arc::downgrade(&self);
 
@@ -146,7 +146,7 @@ impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Consensus<C> {
     }
 }
 
-impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ManagedPlugin for Consensus<C> {
+impl<C: VirtualVotingConfig> ManagedPlugin for Consensus<C> {
     fn construct(plugins: &mut Plugins) -> Arc<Self> {
         Arc::new(Self::default()).setup(plugins)
     }

@@ -13,12 +13,12 @@ use protocol::{ManagedPlugin, Plugins};
 
 use crate::{Error, Result, VirtualVotingConfig, Vote, Votes};
 
-pub struct VirtualVoting<C: VirtualVotingConfig<Source = BlockMetadataRef>> {
+pub struct VirtualVoting<C: VirtualVotingConfig> {
     subscription: Mutex<Option<Subscription<Callbacks<BlockMetadata>>>>,
     _marker: PhantomData<C>,
 }
 
-impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> VirtualVoting<C> {
+impl<C: VirtualVotingConfig> VirtualVoting<C> {
     pub fn referenced_votes(block: &BlockMetadata) -> Result<Votes<C>> {
         let mut result = Votes::default();
         for block_ref in block
@@ -38,7 +38,7 @@ impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> VirtualVoting<C> {
     }
 }
 
-impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ManagedPlugin for VirtualVoting<C> {
+impl<C: VirtualVotingConfig> ManagedPlugin for VirtualVoting<C> {
     fn construct(plugins: &mut Plugins) -> Arc<Self> {
         Arc::new_cyclic(|_virtual_voting: &Weak<Self>| {
             let block_dag: Arc<BlockDAG> = plugins.load();
