@@ -1,0 +1,12 @@
+[package]
+name = "block-factory"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+common = { path = "../../common" }
+block-dag = { path = "../block-dag" }
+block-storage = { path = "../block-storage" }
+protocol = { path = "../../protocol" }
+tip-selection = { path = "../tip-selection" }
+virtual-voting = { path = "../virtual-voting" }

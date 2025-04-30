@@ -9,12 +9,9 @@ use consensus::Consensus;
 use protocol::ProtocolPlugin;
 use virtual_voting::VirtualVotingConfig;
 
-use crate::consensus_feed::{
-    ConsensusFeedEvent,
-    ConsensusFeedEvent::{
-        ChainIndexUpdated, CommitteeUpdated, HeaviestMilestoneVoteUpdated,
-        LatestAcceptedMilestoneUpdated,
-    },
+use crate::ConsensusFeedEvent::{
+    ChainIndexUpdated, CommitteeUpdated, HeaviestMilestoneVoteUpdated,
+    LatestAcceptedMilestoneUpdated,
 };
 
 #[derive(Default)]
@@ -92,3 +89,7 @@ impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Deref for ConsensusFeed<
         &self.event
     }
 }
+
+mod event;
+
+pub use event::ConsensusFeedEvent;

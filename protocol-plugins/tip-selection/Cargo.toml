@@ -1,0 +1,10 @@
+[package]
+name = "tip-selection"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+block-dag = { path = "../block-dag" }
+protocol = { path = "../../protocol" }
+common = { path = "../../common" }
+virtual-voting = { path = "../virtual-voting" }

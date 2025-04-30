@@ -1,12 +1,12 @@
 use block_dag::BlockDAG;
+use block_factory::BlockFactory;
 use block_storage::BlockStorage;
 use common::plugins::PluginRegistry;
 use consensus::Consensus;
+use consensus_feed::ConsensusFeed;
 use consensus_round::ConsensusRound;
 use protocol::ProtocolPlugin;
-use protocol_plugins::{
-    block_factory::BlockFactory, consensus_feed::ConsensusFeed, tip_selection::TipSelection,
-};
+use tip_selection::TipSelection;
 use virtual_voting::VirtualVoting;
 
 use crate::Config;

@@ -9,7 +9,8 @@ zero = { path = "../zero" }
 
 [dev-dependencies]
 block-storage = { path = "../protocol-plugins/block-storage"}
+block-factory = { path = "../protocol-plugins/block-factory" }
 config = { path = "../protocol-plugins/config" }
 consensus-round = { path = "../protocol-plugins/consensus-round" }
-protocol-plugins = { path = "../protocol-plugins-old" }
 virtual-voting = { path = "../protocol-plugins/virtual-voting" }
+consensus-feed = { path = "../protocol-plugins/consensus-feed" }

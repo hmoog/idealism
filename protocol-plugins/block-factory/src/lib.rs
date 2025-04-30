@@ -6,9 +6,8 @@ use common::{
     plugins::{Plugin, PluginRegistry},
 };
 use protocol::ProtocolPlugin;
+use tip_selection::TipSelection;
 use virtual_voting::VirtualVotingConfig;
-
-use crate::tip_selection::TipSelection;
 
 pub struct BlockFactory<C: VirtualVotingConfig<Source = BlockMetadataRef>> {
     tip_selection: Arc<TipSelection<C>>,

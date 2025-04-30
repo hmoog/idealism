@@ -1,5 +1,6 @@
 use std::any::type_name;
 
+use block_factory::BlockFactory;
 use block_storage::BlockStorage;
 use common::{
     blocks::Block::GenesisBlock,
@@ -7,9 +8,9 @@ use common::{
     ids::{Id, IssuerID},
 };
 use config::{Config, ProtocolParams, ProtocolPlugins};
+use consensus_feed::ConsensusFeed;
 use consensus_round::ConsensusRound;
 use protocol::Protocol;
-use protocol_plugins::{block_factory::BlockFactory, consensus_feed::ConsensusFeed};
 use virtual_voting::{Milestone, Vote};
 
 #[test]
