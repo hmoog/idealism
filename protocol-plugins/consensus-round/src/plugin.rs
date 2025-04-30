@@ -6,7 +6,7 @@ use std::{
 use block_dag::BlockDAG;
 use common::{
     bft::Member,
-    blocks::BlockMetadata,
+    blocks::{BlockMetadata, BlockMetadataRef},
     errors::Result,
     ids::IssuerID,
     plugins::{Plugin, PluginRegistry},
@@ -16,9 +16,8 @@ use common::{
         Variable,
     },
 };
-use common::blocks::BlockMetadataRef;
 use consensus::Consensus;
-use protocol::{ProtocolPlugin};
+use protocol::ProtocolPlugin;
 use virtual_voting::{Issuer, VirtualVotingConfig, Vote};
 
 pub struct ConsensusRound<C: VirtualVotingConfig<Source = BlockMetadataRef>> {
@@ -160,7 +159,9 @@ impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ConsensusRound<C> {
     }
 }
 
-impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Plugin<dyn ProtocolPlugin> for ConsensusRound<C> {
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Plugin<dyn ProtocolPlugin>
+    for ConsensusRound<C>
+{
     fn construct(plugins: &mut PluginRegistry<dyn ProtocolPlugin>) -> Arc<Self> {
         Arc::new_cyclic(|weak| Self::new(weak, plugins))
     }

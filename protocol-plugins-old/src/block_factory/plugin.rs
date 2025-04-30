@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
 use common::{
-    blocks::{Block, NetworkBlock},
+    blocks::{Block, BlockMetadataRef, NetworkBlock},
     ids::IssuerID,
     plugins::{Plugin, PluginRegistry},
 };
-use common::blocks::BlockMetadataRef;
-use protocol::{ProtocolPlugin};
+use protocol::ProtocolPlugin;
 use virtual_voting::VirtualVotingConfig;
+
 use crate::tip_selection::TipSelection;
 
 pub struct BlockFactory<C: VirtualVotingConfig<Source = BlockMetadataRef>> {
@@ -27,7 +27,9 @@ impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ProtocolPlugin for Block
     fn shutdown(&self) {}
 }
 
-impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Plugin<dyn ProtocolPlugin> for BlockFactory<C> {
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Plugin<dyn ProtocolPlugin>
+    for BlockFactory<C>
+{
     fn construct(dependencies: &mut PluginRegistry<dyn ProtocolPlugin>) -> Arc<Self> {
         Arc::new(Self {
             tip_selection: dependencies.load(),

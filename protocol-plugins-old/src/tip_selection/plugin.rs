@@ -6,14 +6,13 @@ use std::{
 
 use block_dag::{BlockDAG, BlockDAGMetadata};
 use common::{
-    blocks::BlockMetadata,
+    blocks::{BlockMetadata, BlockMetadataRef},
     errors::{Error::BlockNotFound, Result},
     ids::BlockID,
     plugins::{Plugin, PluginRegistry},
     rx::{Callbacks, Subscription},
 };
-use common::blocks::BlockMetadataRef;
-use protocol::{ProtocolPlugin};
+use protocol::ProtocolPlugin;
 use virtual_voting::{VirtualVotingConfig, Vote};
 
 #[derive(Default)]
@@ -97,7 +96,9 @@ impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> TipSelection<C> {
     }
 }
 
-impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Plugin<dyn ProtocolPlugin> for TipSelection<C> {
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Plugin<dyn ProtocolPlugin>
+    for TipSelection<C>
+{
     fn construct(plugins: &mut PluginRegistry<dyn ProtocolPlugin>) -> Arc<Self> {
         Arc::new_cyclic(|weak| Self::new(weak, plugins))
     }

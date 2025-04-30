@@ -1,6 +1,6 @@
 pub use crate::{
-    collections::*, error::*, issuer::*, milestone::*, consensus_mechanism::*, virtual_voting_config::*,
-    vote::*, vote_builder::*, vote_ref::*, weight_tracker::*, plugin::*,
+    collections::*, consensus_mechanism::*, error::*, issuer::*, milestone::*, plugin::*,
+    virtual_voting_config::*, vote::*, vote_builder::*, vote_ref::*, weight_tracker::*,
 };
 pub mod builtin {}
 mod collections {
@@ -16,10 +16,10 @@ mod collections {
     pub use votes_by_issuer::*;
     pub use votes_by_round::*;
 }
+mod consensus_mechanism;
 mod error;
 mod issuer;
 mod milestone;
-mod consensus_mechanism;
 mod plugin;
 mod virtual_voting_config;
 mod vote;

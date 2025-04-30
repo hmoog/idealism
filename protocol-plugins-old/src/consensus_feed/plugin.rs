@@ -1,13 +1,14 @@
 use std::{ops::Deref, sync::Arc};
 
 use common::{
+    blocks::BlockMetadataRef,
     plugins::{Plugin, PluginRegistry},
     rx::Event,
 };
-use common::blocks::BlockMetadataRef;
 use consensus::Consensus;
-use protocol::{ProtocolPlugin};
+use protocol::ProtocolPlugin;
 use virtual_voting::VirtualVotingConfig;
+
 use crate::consensus_feed::{
     ConsensusFeedEvent,
     ConsensusFeedEvent::{
@@ -68,7 +69,9 @@ impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ConsensusFeed<C> {
     }
 }
 
-impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Plugin<dyn ProtocolPlugin> for ConsensusFeed<C> {
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Plugin<dyn ProtocolPlugin>
+    for ConsensusFeed<C>
+{
     fn construct(dependencies: &mut PluginRegistry<dyn ProtocolPlugin>) -> Arc<Self> {
         Self {
             event: Default::default(),

@@ -6,9 +6,10 @@ use common::{
 };
 
 use crate::{
+    ConsensusMechanism,
     Error::{TimeMustIncrease, VotesMustNotBeEmpty},
-    Issuer, Milestone, Result, ConsensusMechanism, VirtualVotingConfig, Vote, VoteRef, VoteRefs,
-    VoteRefsByIssuer, Votes, VotesByIssuer,
+    Issuer, Milestone, Result, VirtualVotingConfig, Vote, VoteRef, VoteRefs, VoteRefsByIssuer,
+    Votes, VotesByIssuer,
 };
 
 pub struct VoteBuilder<T: VirtualVotingConfig> {
@@ -124,7 +125,8 @@ impl<C: VirtualVotingConfig> VoteBuilder<C> {
             validator_votes.round() < self.round || self.referenced_round_weight >= threshold
         }) {
             // determine the heaviest tip and the accepted milestone
-            let (accepted, heaviest_tip) = ConsensusMechanism::run(votes, &self.committee, threshold)?;
+            let (accepted, heaviest_tip) =
+                ConsensusMechanism::run(votes, &self.committee, threshold)?;
 
             // update the round and referenced round weight if we have enough weight
             if self.referenced_round_weight + validator.weight() >= threshold {

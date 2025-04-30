@@ -1,6 +1,4 @@
-use common::{
-    plugins::{Plugin, PluginRegistry},
-};
+use common::plugins::{Plugin, PluginRegistry};
 
 use crate::ProtocolPlugin;
 

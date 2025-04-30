@@ -1,5 +1,6 @@
 use common::bft::Committee;
 use protocol::ProtocolConfig;
+
 use crate::{Vote, VoteBuilder};
 
 pub trait VirtualVotingConfig: ProtocolConfig + Default + Sync + Send + 'static {

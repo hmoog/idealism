@@ -1,4 +1,4 @@
-use std::any::{type_name};
+use std::any::type_name;
 
 use block_storage::BlockStorage;
 use common::{

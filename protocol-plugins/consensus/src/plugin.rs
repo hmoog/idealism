@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use block_dag::BlockDAG;
 use common::{
     bft::Committee,
-    blocks::BlockMetadata,
+    blocks::{BlockMetadata, BlockMetadataRef},
     errors::Error::BlockNotFound,
     plugins::{Plugin, PluginRegistry},
     rx::{
@@ -12,8 +12,7 @@ use common::{
         Variable,
     },
 };
-use common::blocks::BlockMetadataRef;
-use protocol::{ProtocolPlugin};
+use protocol::ProtocolPlugin;
 use virtual_voting::{VirtualVotingConfig, Vote};
 
 use crate::{AcceptanceState, AcceptedBlocks, ConsensusMetadata};
@@ -148,7 +147,9 @@ impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Consensus<C> {
     }
 }
 
-impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Plugin<dyn ProtocolPlugin> for Consensus<C> {
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Plugin<dyn ProtocolPlugin>
+    for Consensus<C>
+{
     fn construct(plugins: &mut PluginRegistry<dyn ProtocolPlugin>) -> Arc<Self> {
         Arc::new(Self::default()).setup(plugins)
     }

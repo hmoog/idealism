@@ -1,5 +1,4 @@
-use common::bft::Committee;
-use common::blocks::BlockMetadataRef;
+use common::{bft::Committee, blocks::BlockMetadataRef};
 use virtual_voting::{VirtualVotingConfig, Vote};
 
 pub enum ConsensusFeedEvent<C: VirtualVotingConfig<Source = BlockMetadataRef>> {

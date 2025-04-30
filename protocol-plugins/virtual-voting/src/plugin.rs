@@ -2,6 +2,7 @@ use std::{
     marker::PhantomData,
     sync::{Arc, Mutex, Weak},
 };
+
 use block_dag::{BlockDAG, BlockDAGMetadata};
 use common::{
     blocks::{Block, BlockMetadata, BlockMetadataRef},
@@ -9,7 +10,8 @@ use common::{
     plugins::{Plugin, PluginRegistry},
     rx::{Callbacks, Subscription},
 };
-use protocol::{ProtocolPlugin};
+use protocol::ProtocolPlugin;
+
 use crate::{Error, Result, VirtualVotingConfig, Vote, Votes};
 
 pub struct VirtualVoting<C: VirtualVotingConfig<Source = BlockMetadataRef>> {
@@ -37,7 +39,9 @@ impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> VirtualVoting<C> {
     }
 }
 
-impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Plugin<dyn ProtocolPlugin> for VirtualVoting<C> {
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Plugin<dyn ProtocolPlugin>
+    for VirtualVoting<C>
+{
     fn construct(plugins: &mut PluginRegistry<dyn ProtocolPlugin>) -> Arc<Self> {
         Arc::new_cyclic(|_virtual_voting: &Weak<Self>| {
             let block_dag: Arc<BlockDAG> = plugins.load();
