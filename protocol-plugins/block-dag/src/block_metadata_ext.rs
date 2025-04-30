@@ -1,9 +1,11 @@
-use std::collections::VecDeque;
-use std::sync::Arc;
+use std::{collections::VecDeque, sync::Arc};
+
+use common::{
+    blocks::BlockMetadata,
+    errors::{Error::BlockNotFound, Result},
+};
 use indexmap::IndexSet;
-use common::blocks::BlockMetadata;
-use common::errors::Error::BlockNotFound;
-use common::errors::Result;
+
 use crate::BlockDAGMetadata;
 
 pub trait BlockDAGBlockMetadataExt {

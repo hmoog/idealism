@@ -1,17 +1,15 @@
-mod metadata;
 mod block_metadata_ext;
+mod metadata;
 
-use std::{
-    sync::{Arc, Mutex, Weak},
-};
+use std::sync::{Arc, Mutex, Weak};
 
+pub use block_metadata_ext::BlockDAGBlockMetadataExt;
 use block_storage::{Address, BlockStorage};
 use common::{
     blocks::BlockMetadata,
     rx::{Callback, Callbacks, Event, Subscription},
 };
 pub use metadata::BlockDAGMetadata;
-pub use block_metadata_ext::BlockDAGBlockMetadataExt;
 use protocol::{ManagedPlugin, Plugins};
 
 pub struct BlockDAG {

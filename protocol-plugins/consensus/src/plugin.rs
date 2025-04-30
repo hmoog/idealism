@@ -124,9 +124,8 @@ impl<C: VirtualVotingConfig> Consensus<C> {
 
         for (height_index, accepted_milestone) in milestones.iter().rev().enumerate() {
             let block = accepted_milestone.source.upgrade().ok_or(BlockNotFound)?;
-            let past_cone = block.past_cone(|b| {
-                Ok(!b.try_get::<Arc<ConsensusMetadata>>()?.is_accepted(0))
-            })?;
+            let past_cone =
+                block.past_cone(|b| Ok(!b.try_get::<Arc<ConsensusMetadata>>()?.is_accepted(0)))?;
 
             for (round_index, block) in past_cone.iter().rev().enumerate() {
                 block
