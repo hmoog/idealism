@@ -10,7 +10,6 @@ use common::{
     plugins::{ManagedPlugin, Plugins},
     rx::{Callbacks, Subscription},
 };
-use protocol::ProtocolPlugin;
 
 use crate::{Error, Result, VirtualVotingConfig, Vote, Votes};
 
@@ -39,10 +38,8 @@ impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> VirtualVoting<C> {
     }
 }
 
-impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ManagedPlugin<dyn ProtocolPlugin>
-    for VirtualVoting<C>
-{
-    fn construct(plugins: &mut Plugins<dyn ProtocolPlugin>) -> Arc<Self> {
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ManagedPlugin for VirtualVoting<C> {
+    fn construct(plugins: &mut Plugins) -> Arc<Self> {
         Arc::new_cyclic(|_virtual_voting: &Weak<Self>| {
             let block_dag: Arc<BlockDAG> = plugins.load();
             let config: Arc<C> = plugins.get().unwrap();
@@ -80,16 +77,6 @@ impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ManagedPlugin<dyn Protoc
         })
     }
 
-    fn shutdown(&self) {
-        self.subscription.lock().unwrap().take();
-    }
-
-    fn downcast(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin> {
-        arc
-    }
-}
-
-impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ProtocolPlugin for VirtualVoting<C> {
     fn shutdown(&self) {
         self.subscription.lock().unwrap().take();
     }

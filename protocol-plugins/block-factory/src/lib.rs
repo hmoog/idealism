@@ -5,7 +5,6 @@ use common::{
     ids::IssuerID,
     plugins::{ManagedPlugin, Plugins},
 };
-use protocol::ProtocolPlugin;
 use tip_selection::TipSelection;
 use virtual_voting::VirtualVotingConfig;
 
@@ -22,22 +21,12 @@ impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> BlockFactory<C> {
     }
 }
 
-impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ProtocolPlugin for BlockFactory<C> {
-    fn shutdown(&self) {}
-}
-
-impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ManagedPlugin<dyn ProtocolPlugin>
-    for BlockFactory<C>
-{
-    fn construct(dependencies: &mut Plugins<dyn ProtocolPlugin>) -> Arc<Self> {
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ManagedPlugin for BlockFactory<C> {
+    fn construct(dependencies: &mut Plugins) -> Arc<Self> {
         Arc::new(Self {
             tip_selection: dependencies.load(),
         })
     }
 
     fn shutdown(&self) {}
-
-    fn downcast(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin> {
-        arc
-    }
 }

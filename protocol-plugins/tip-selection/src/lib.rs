@@ -12,7 +12,6 @@ use common::{
     plugins::{ManagedPlugin, Plugins},
     rx::{Callbacks, Subscription},
 };
-use protocol::ProtocolPlugin;
 use virtual_voting::{VirtualVotingConfig, Vote};
 
 #[derive(Default)]
@@ -33,7 +32,7 @@ impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> TipSelection<C> {
             .collect()
     }
 
-    fn new(weak: &Weak<Self>, plugins: &mut Plugins<dyn ProtocolPlugin>) -> Self {
+    fn new(weak: &Weak<Self>, plugins: &mut Plugins) -> Self {
         Self {
             tips: Default::default(),
             block_dag_subscription: Mutex::new(Some(Self::block_dag_subscription(
@@ -96,23 +95,11 @@ impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> TipSelection<C> {
     }
 }
 
-impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ManagedPlugin<dyn ProtocolPlugin>
-    for TipSelection<C>
-{
-    fn construct(plugins: &mut Plugins<dyn ProtocolPlugin>) -> Arc<Self> {
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ManagedPlugin for TipSelection<C> {
+    fn construct(plugins: &mut Plugins) -> Arc<Self> {
         Arc::new_cyclic(|weak| Self::new(weak, plugins))
     }
 
-    fn shutdown(&self) {
-        self.shutdown();
-    }
-
-    fn downcast(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin> {
-        arc
-    }
-}
-
-impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ProtocolPlugin for TipSelection<C> {
     fn shutdown(&self) {
         self.shutdown();
     }

@@ -9,7 +9,6 @@ use common::{
     plugins::{ManagedPlugin, Plugins},
     rx::{Callback, Callbacks, Event, Signal, Subscription},
 };
-use protocol::ProtocolPlugin;
 
 use crate::Address;
 
@@ -60,21 +59,11 @@ impl BlockStorage {
     }
 }
 
-impl ManagedPlugin<dyn ProtocolPlugin> for BlockStorage {
-    fn construct(_manager: &mut Plugins<dyn ProtocolPlugin>) -> Arc<Self> {
+impl ManagedPlugin for BlockStorage {
+    fn construct(_manager: &mut Plugins) -> Arc<Self> {
         Arc::new(Self::default())
     }
 
-    fn shutdown(&self) {
-        self.blocks.lock().unwrap().clear();
-    }
-
-    fn downcast(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin> {
-        arc
-    }
-}
-
-impl ProtocolPlugin for BlockStorage {
     fn shutdown(&self) {
         self.blocks.lock().unwrap().clear();
     }

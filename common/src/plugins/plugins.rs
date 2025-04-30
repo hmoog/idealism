@@ -1,40 +1,35 @@
 use std::{any::Any, sync::Arc};
 
-use crate::{collections::AnyMap, plugins::ManagedPlugin};
-use crate::plugins::Plugin;
+use crate::{
+    collections::AnyMap,
+    plugins::{ManagedPlugin, Plugin},
+};
 
-pub struct Plugins<Trait: ?Sized + 'static> {
+pub struct Plugins {
     instances: AnyMap,
-    trait_objects: Vec<Arc<Trait>>,
+    trait_objects: Vec<Arc<dyn Plugin>>,
 }
 
-impl<Trait: ?Sized + 'static> Plugins<Trait> {
-    pub fn provide<U: Any + Send + Sync + Plugin<Trait> + 'static>(
-        &mut self,
-        instance: Arc<U>,
-    ) -> Arc<U> {
+impl Plugins {
+    pub fn provide<U: Any + Send + Sync + Plugin + 'static>(&mut self, instance: Arc<U>) -> Arc<U> {
         if let Some(existing) = self.instances.get::<Arc<U>>() {
             return existing.clone();
         }
 
         self.instances.insert(instance.clone());
-
-        let trait_object = U::downcast(instance.clone());
-        self.trait_objects.push(trait_object);
+        self.trait_objects.push(instance.clone());
 
         instance
     }
 
-    pub fn load<U: Any + Send + Sync + ManagedPlugin<Trait> + 'static>(&mut self) -> Arc<U> {
+    pub fn load<U: Any + Send + Sync + ManagedPlugin + 'static>(&mut self) -> Arc<U> {
         if let Some(existing) = self.instances.get::<Arc<U>>() {
             return existing.clone();
         }
 
         let instance = U::construct(self);
         self.instances.insert(instance.clone());
-
-        let trait_object = U::downcast(instance.clone());
-        self.trait_objects.push(trait_object);
+        self.trait_objects.push(instance.clone());
 
         instance
     }
@@ -43,12 +38,12 @@ impl<Trait: ?Sized + 'static> Plugins<Trait> {
         self.instances.get::<Arc<T>>().map(Arc::clone)
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &Arc<Trait>> {
+    pub fn iter(&self) -> impl Iterator<Item = &Arc<dyn Plugin>> {
         self.trait_objects.iter()
     }
 }
 
-impl<Trait: ?Sized + 'static> Default for Plugins<Trait> {
+impl Default for Plugins {
     fn default() -> Self {
         Self {
             instances: Default::default(),

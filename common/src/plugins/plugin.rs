@@ -1,7 +1,3 @@
-use std::sync::Arc;
-
-pub trait Plugin<Trait: ?Sized>: Sized {
+pub trait Plugin {
     fn shutdown(&self);
-
-    fn downcast(arc: Arc<Self>) -> Arc<Trait>;
 }

@@ -14,7 +14,6 @@ use common::{
 };
 use indexmap::IndexSet;
 pub use metadata::BlockDAGMetadata;
-use protocol::ProtocolPlugin;
 
 pub struct BlockDAG {
     block_storage: Arc<BlockStorage>,
@@ -22,8 +21,8 @@ pub struct BlockDAG {
     block_available: Event<BlockMetadata>,
 }
 
-impl ManagedPlugin<dyn ProtocolPlugin> for BlockDAG {
-    fn construct(plugins: &mut Plugins<dyn ProtocolPlugin>) -> Arc<Self> {
+impl ManagedPlugin for BlockDAG {
+    fn construct(plugins: &mut Plugins) -> Arc<Self> {
         Arc::new_cyclic(|block_dag: &Weak<Self>| {
             let block_storage: Arc<BlockStorage> = plugins.load();
 
@@ -51,10 +50,6 @@ impl ManagedPlugin<dyn ProtocolPlugin> for BlockDAG {
 
     fn shutdown(&self) {
         self.block_storage_subscription.lock().unwrap().take();
-    }
-
-    fn downcast(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin> {
-        arc
     }
 }
 
@@ -124,11 +119,5 @@ impl BlockDAG {
         });
 
         metadata
-    }
-}
-
-impl ProtocolPlugin for BlockDAG {
-    fn shutdown(&self) {
-        self.block_storage_subscription.lock().unwrap().take();
     }
 }

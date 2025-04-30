@@ -5,7 +5,6 @@ use common::plugins::Plugins;
 use consensus::Consensus;
 use consensus_feed::ConsensusFeed;
 use consensus_round::ConsensusRound;
-use protocol::ProtocolPlugin;
 use tip_selection::TipSelection;
 use virtual_voting::VirtualVoting;
 
@@ -13,11 +12,11 @@ use crate::Config;
 
 pub enum ProtocolPlugins {
     Core,
-    Custom(fn(&Config, &mut Plugins<dyn ProtocolPlugin>)),
+    Custom(fn(&Config, &mut Plugins)),
 }
 
 impl ProtocolPlugins {
-    pub fn inject(&self, config: &Config, registry: &mut Plugins<dyn ProtocolPlugin>) {
+    pub fn inject(&self, config: &Config, registry: &mut Plugins) {
         match self {
             Self::Core => {
                 registry.load::<BlockStorage>();

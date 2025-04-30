@@ -6,7 +6,6 @@ use common::{
     rx::Event,
 };
 use consensus::Consensus;
-use protocol::ProtocolPlugin;
 use virtual_voting::VirtualVotingConfig;
 
 use crate::ConsensusFeedEvent::{
@@ -18,12 +17,6 @@ use crate::ConsensusFeedEvent::{
 pub struct ConsensusFeed<C: VirtualVotingConfig<Source = BlockMetadataRef>> {
     event: Event<ConsensusFeedEvent<C>>,
     consensus: Arc<Consensus<C>>,
-}
-
-impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ProtocolPlugin for ConsensusFeed<C> {
-    fn shutdown(&self) {
-        todo!()
-    }
 }
 
 impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ConsensusFeed<C> {
@@ -66,10 +59,8 @@ impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ConsensusFeed<C> {
     }
 }
 
-impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ManagedPlugin<dyn ProtocolPlugin>
-    for ConsensusFeed<C>
-{
-    fn construct(dependencies: &mut Plugins<dyn ProtocolPlugin>) -> Arc<Self> {
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ManagedPlugin for ConsensusFeed<C> {
+    fn construct(dependencies: &mut Plugins) -> Arc<Self> {
         Self {
             event: Default::default(),
             consensus: dependencies.load(),
@@ -79,10 +70,6 @@ impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ManagedPlugin<dyn Protoc
 
     fn shutdown(&self) {
         todo!()
-    }
-
-    fn downcast(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin> {
-        arc
     }
 }
 
