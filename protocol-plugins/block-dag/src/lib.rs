@@ -18,8 +18,8 @@ use protocol::ProtocolPlugin;
 
 pub struct BlockDAG {
     block_storage: Arc<BlockStorage>,
-    subscription: Mutex<Option<Subscription<Callbacks<Address>>>>,
-    available: Event<BlockMetadata>,
+    block_storage_subscription: Mutex<Option<Subscription<Callbacks<Address>>>>,
+    block_available: Event<BlockMetadata>,
 }
 
 impl Plugin<dyn ProtocolPlugin> for BlockDAG {
@@ -28,7 +28,7 @@ impl Plugin<dyn ProtocolPlugin> for BlockDAG {
             let block_storage: Arc<BlockStorage> = plugins.load();
 
             Self {
-                subscription: Mutex::new(Some(block_storage.subscribe({
+                block_storage_subscription: Mutex::new(Some(block_storage.subscribe({
                     let block_dag = block_dag.clone();
                     move |address| {
                         address
@@ -44,7 +44,7 @@ impl Plugin<dyn ProtocolPlugin> for BlockDAG {
                     }
                 }))),
                 block_storage,
-                available: Event::default(),
+                block_available: Event::default(),
             }
         })
     }
@@ -59,7 +59,7 @@ impl BlockDAG {
         &self,
         callback: impl Callback<BlockMetadata>,
     ) -> Subscription<Callbacks<BlockMetadata>> {
-        self.available.subscribe(callback)
+        self.block_available.subscribe(callback)
     }
 
     pub fn past_cone<F: Fn(&BlockMetadata) -> Result<bool>>(
@@ -113,7 +113,7 @@ impl BlockDAG {
             move |_| {
                 if let Some(block_dag) = block_dag.upgrade() {
                     if let Some(block) = block.upgrade() {
-                        block_dag.available.trigger(&block);
+                        block_dag.block_available.trigger(&block);
                     }
                 }
             }
@@ -125,6 +125,6 @@ impl BlockDAG {
 
 impl ProtocolPlugin for BlockDAG {
     fn shutdown(&self) {
-        self.subscription.lock().unwrap().take();
+        self.block_storage_subscription.lock().unwrap().take();
     }
 }

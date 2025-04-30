@@ -5,5 +5,4 @@ edition = "2024"
 
 [dependencies]
 common = { path = "../../common" }
-indexmap = "2.7.1"
 protocol = { path = "../../protocol" }
