@@ -1,13 +1,11 @@
 use common::{
-    blocks::BlockMetadataRef,
     plugins::{Plugin, PluginRegistry},
 };
-use virtual_voting::VirtualVotingConfig;
 
 use crate::ProtocolPlugin;
 
 pub trait ProtocolConfig:
-    ProtocolPlugin + Plugin<dyn ProtocolPlugin> + VirtualVotingConfig<Source = BlockMetadataRef>
+    ProtocolPlugin + Plugin<dyn ProtocolPlugin> + Sync + Send + 'static
 {
     fn inject_plugins(
         &self,

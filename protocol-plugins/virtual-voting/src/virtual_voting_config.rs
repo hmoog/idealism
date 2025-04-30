@@ -1,8 +1,8 @@
 use common::bft::Committee;
-
+use protocol::ProtocolConfig;
 use crate::{Vote, VoteBuilder};
 
-pub trait VirtualVotingConfig: Default + Sync + Send + 'static {
+pub trait VirtualVotingConfig: ProtocolConfig + Default + Sync + Send + 'static {
     type Source: Send + Sync;
 
     fn genesis_time(&self) -> u64;

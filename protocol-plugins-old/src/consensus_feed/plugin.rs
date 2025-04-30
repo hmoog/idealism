@@ -4,9 +4,10 @@ use common::{
     plugins::{Plugin, PluginRegistry},
     rx::Event,
 };
+use common::blocks::BlockMetadataRef;
 use consensus::Consensus;
-use protocol::{ProtocolConfig, ProtocolPlugin};
-
+use protocol::{ProtocolPlugin};
+use virtual_voting::VirtualVotingConfig;
 use crate::consensus_feed::{
     ConsensusFeedEvent,
     ConsensusFeedEvent::{
@@ -16,18 +17,18 @@ use crate::consensus_feed::{
 };
 
 #[derive(Default)]
-pub struct ConsensusFeed<C: ProtocolConfig> {
+pub struct ConsensusFeed<C: VirtualVotingConfig<Source = BlockMetadataRef>> {
     event: Event<ConsensusFeedEvent<C>>,
     consensus: Arc<Consensus<C>>,
 }
 
-impl<C: ProtocolConfig> ProtocolPlugin for ConsensusFeed<C> {
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ProtocolPlugin for ConsensusFeed<C> {
     fn shutdown(&self) {
         todo!()
     }
 }
 
-impl<C: ProtocolConfig> ConsensusFeed<C> {
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ConsensusFeed<C> {
     fn init_plugin(self) -> Arc<Self> {
         let plugin = Arc::new(self);
 
@@ -67,7 +68,7 @@ impl<C: ProtocolConfig> ConsensusFeed<C> {
     }
 }
 
-impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin> for ConsensusFeed<C> {
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Plugin<dyn ProtocolPlugin> for ConsensusFeed<C> {
     fn construct(dependencies: &mut PluginRegistry<dyn ProtocolPlugin>) -> Arc<Self> {
         Self {
             event: Default::default(),
@@ -81,7 +82,7 @@ impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin> for ConsensusFeed<C> {
     }
 }
 
-impl<C: ProtocolConfig> Deref for ConsensusFeed<C> {
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Deref for ConsensusFeed<C> {
     type Target = Event<ConsensusFeedEvent<C>>;
 
     fn deref(&self) -> &Self::Target {

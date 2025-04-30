@@ -1,15 +1,15 @@
 use common::bft::Committee;
-use protocol::ProtocolConfig;
-use virtual_voting::Vote;
+use common::blocks::BlockMetadataRef;
+use virtual_voting::{VirtualVotingConfig, Vote};
 
-pub enum ConsensusFeedEvent<C: ProtocolConfig> {
+pub enum ConsensusFeedEvent<C: VirtualVotingConfig<Source = BlockMetadataRef>> {
     ChainIndexUpdated(Option<u64>, Option<u64>),
     HeaviestMilestoneVoteUpdated(Option<Vote<C>>, Option<Vote<C>>),
     LatestAcceptedMilestoneUpdated(Option<Vote<C>>, Option<Vote<C>>),
     CommitteeUpdated(Option<Committee>, Option<Committee>),
 }
 
-impl<C: ProtocolConfig> std::fmt::Debug for ConsensusFeedEvent<C> {
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> std::fmt::Debug for ConsensusFeedEvent<C> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ConsensusFeedEvent::ChainIndexUpdated(old, new) => f

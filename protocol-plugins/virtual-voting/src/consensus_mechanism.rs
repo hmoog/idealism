@@ -6,13 +6,13 @@ use crate::{
     Error, Result, VirtualVotingConfig, Vote, Votes, VotesByIssuer, VotesByRound, WeightTracker,
 };
 
-pub struct VirtualVoting<C: VirtualVotingConfig> {
+pub struct ConsensusMechanism<C: VirtualVotingConfig> {
     children: HashMap<Vote<C>, Votes<C>>,
     weight_tracker: WeightTracker<C>,
     consensus_threshold: u64,
 }
 
-impl<C: VirtualVotingConfig> VirtualVoting<C> {
+impl<C: VirtualVotingConfig> ConsensusMechanism<C> {
     pub fn run(
         votes: VotesByIssuer<C>,
         committee: &Committee,

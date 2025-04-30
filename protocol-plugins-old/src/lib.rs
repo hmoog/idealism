@@ -1,7 +1,3 @@
-mod virtual_voting {
-    mod plugin;
-}
-
 pub mod block_factory {
     mod plugin;
 

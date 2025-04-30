@@ -15,10 +15,9 @@ pub struct ProtocolData {
 impl Protocol {
     pub fn new(config: impl ProtocolConfig) -> Self {
         let mut plugins = PluginRegistry::default();
-        let config = plugins.set(Arc::new(config));
 
         Self(Arc::new(ProtocolData {
-            plugins: ProtocolConfig::inject_plugins(&*config, plugins),
+            plugins: ProtocolConfig::inject_plugins(&*plugins.set(Arc::new(config)), plugins),
         }))
     }
 }

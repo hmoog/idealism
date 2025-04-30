@@ -12,13 +12,14 @@ use common::{
         Variable,
     },
 };
-use protocol::{ProtocolConfig, ProtocolPlugin};
-use virtual_voting::Vote;
+use common::blocks::BlockMetadataRef;
+use protocol::{ProtocolPlugin};
+use virtual_voting::{VirtualVotingConfig, Vote};
 
 use crate::{AcceptanceState, AcceptedBlocks, ConsensusMetadata};
 
 #[derive(Default)]
-pub struct Consensus<C: ProtocolConfig> {
+pub struct Consensus<C: VirtualVotingConfig<Source = BlockMetadataRef>> {
     pub chain_index: Variable<u64>,
     pub heaviest_milestone_vote: Variable<Vote<C>>,
     pub latest_accepted_milestone: Variable<Vote<C>>,
@@ -27,7 +28,7 @@ pub struct Consensus<C: ProtocolConfig> {
     block_dag_subscription: Mutex<Option<Subscription<Callbacks<BlockMetadata>>>>,
 }
 
-impl<C: ProtocolConfig> Consensus<C> {
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Consensus<C> {
     fn setup(self: Arc<Self>, plugins: &mut PluginRegistry<dyn ProtocolPlugin>) -> Arc<Self> {
         let weak_consensus = Arc::downgrade(&self);
 
@@ -147,7 +148,7 @@ impl<C: ProtocolConfig> Consensus<C> {
     }
 }
 
-impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin> for Consensus<C> {
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Plugin<dyn ProtocolPlugin> for Consensus<C> {
     fn construct(plugins: &mut PluginRegistry<dyn ProtocolPlugin>) -> Arc<Self> {
         Arc::new(Self::default()).setup(plugins)
     }
@@ -157,7 +158,7 @@ impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin> for Consensus<C> {
     }
 }
 
-impl<C: ProtocolConfig> ProtocolPlugin for Consensus<C> {
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ProtocolPlugin for Consensus<C> {
     fn shutdown(&self) {
         Self::shutdown(self);
     }

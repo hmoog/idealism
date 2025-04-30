@@ -1,0 +1,14 @@
+[package]
+name = "config"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+consensus = { path = "../consensus" }
+consensus-round = { path = "../consensus-round" }
+protocol = { path = "../../protocol" }
+block-dag = { path = "../block-dag" }
+block-storage = { path = "../block-storage"}
+protocol-plugins = { path = "../../protocol-plugins-old" }
+common = { path = "../../common" }
+virtual-voting = { path = "../virtual-voting" }

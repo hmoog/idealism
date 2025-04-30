@@ -1,9 +1,10 @@
-use std::any::TypeId;
+use std::any::{type_name};
 
 use block_storage::BlockStorage;
 use common::{
+    blocks::Block::GenesisBlock,
     errors::{Error::MetadataNotFound, Result},
-    ids::IssuerID,
+    ids::{Id, IssuerID},
 };
 use config::{Config, ProtocolParams, ProtocolPlugins};
 use consensus_round::ConsensusRound;
@@ -24,6 +25,11 @@ fn test_protocol() -> Result<()> {
                 .retain();
         })),
     ));
+
+    let _config = protocol.plugins.get::<Config>().unwrap();
+    let block_storage = protocol.plugins.get::<BlockStorage>().unwrap();
+
+    block_storage.insert(GenesisBlock(Id::default()));
 
     let consensus_round = protocol.plugins.get::<ConsensusRound<Config>>().unwrap();
     let block_factory = protocol.plugins.get::<BlockFactory<Config>>().unwrap();
@@ -73,7 +79,7 @@ fn test_protocol() -> Result<()> {
         block1_metadata
             .try_get::<Vote<Config>>()?
             .milestone()
-            .map_err(|_| MetadataNotFound(TypeId::of::<Milestone<Config>>()))?
+            .map_err(|_| MetadataNotFound(type_name::<Milestone<Config>>()))?
             .height
     );
     println!(
@@ -96,9 +102,9 @@ fn test_protocol() -> Result<()> {
         block_1_1_metadata
             .try_get::<Vote<Config>>()?
             .accepted_milestone()
-            .map_err(|_| MetadataNotFound(TypeId::of::<Milestone<Config>>()))?
+            .map_err(|_| MetadataNotFound(type_name::<Milestone<Config>>()))?
             .height()
-            .map_err(|_| MetadataNotFound(TypeId::of::<Milestone<Config>>()))?
+            .map_err(|_| MetadataNotFound(type_name::<Milestone<Config>>()))?
     );
 
     Ok(())

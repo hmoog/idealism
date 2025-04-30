@@ -16,11 +16,12 @@ use common::{
         Variable,
     },
 };
+use common::blocks::BlockMetadataRef;
 use consensus::Consensus;
-use protocol::{ProtocolConfig, ProtocolPlugin};
-use virtual_voting::{Issuer, Vote};
+use protocol::{ProtocolPlugin};
+use virtual_voting::{Issuer, VirtualVotingConfig, Vote};
 
-pub struct ConsensusRound<C: ProtocolConfig> {
+pub struct ConsensusRound<C: VirtualVotingConfig<Source = BlockMetadataRef>> {
     pub started: Variable<u64>,
     pub completed: Variable<u64>,
     pub seen_participants: Variable<HashSet<IssuerID>>,
@@ -30,7 +31,7 @@ pub struct ConsensusRound<C: ProtocolConfig> {
     consensus: Arc<Consensus<C>>,
 }
 
-impl<C: ProtocolConfig> ConsensusRound<C> {
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ConsensusRound<C> {
     fn new(weak: &Weak<Self>, plugins: &mut PluginRegistry<dyn ProtocolPlugin>) -> Self {
         let consensus: Arc<Consensus<C>> = plugins.load();
 
@@ -159,7 +160,7 @@ impl<C: ProtocolConfig> ConsensusRound<C> {
     }
 }
 
-impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin> for ConsensusRound<C> {
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Plugin<dyn ProtocolPlugin> for ConsensusRound<C> {
     fn construct(plugins: &mut PluginRegistry<dyn ProtocolPlugin>) -> Arc<Self> {
         Arc::new_cyclic(|weak| Self::new(weak, plugins))
     }
@@ -169,7 +170,7 @@ impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin> for ConsensusRound<C> {
     }
 }
 
-impl<C: ProtocolConfig> ProtocolPlugin for ConsensusRound<C> {
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ProtocolPlugin for ConsensusRound<C> {
     fn shutdown(&self) {
         self.shutdown();
     }

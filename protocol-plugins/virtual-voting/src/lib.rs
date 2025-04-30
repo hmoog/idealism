@@ -1,6 +1,6 @@
 pub use crate::{
-    collections::*, error::*, issuer::*, milestone::*, virtual_voting::*, virtual_voting_config::*,
-    vote::*, vote_builder::*, vote_ref::*, weight_tracker::*,
+    collections::*, error::*, issuer::*, milestone::*, consensus_mechanism::*, virtual_voting_config::*,
+    vote::*, vote_builder::*, vote_ref::*, weight_tracker::*, plugin::*,
 };
 pub mod builtin {}
 mod collections {
@@ -19,7 +19,8 @@ mod collections {
 mod error;
 mod issuer;
 mod milestone;
-mod virtual_voting;
+mod consensus_mechanism;
+mod plugin;
 mod virtual_voting_config;
 mod vote;
 mod vote_builder;

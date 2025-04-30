@@ -1,5 +1,5 @@
 use std::{
-    any::TypeId,
+    any::type_name,
     sync::{Arc, RwLock},
 };
 
@@ -28,7 +28,7 @@ impl BlockMetadata {
     pub fn try_get<T: Send + Sync + Clone + 'static>(&self) -> Result<T> {
         self.metadata::<T>()
             .value()
-            .ok_or(MetadataNotFound(TypeId::of::<T>()))
+            .ok_or(MetadataNotFound(type_name::<T>()))
     }
 
     pub fn metadata<T: Send + Sync + 'static>(&self) -> Arc<Signal<T>> {

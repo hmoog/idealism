@@ -5,15 +5,16 @@ use common::{
     ids::IssuerID,
     plugins::{Plugin, PluginRegistry},
 };
-use protocol::{ProtocolConfig, ProtocolPlugin};
-
+use common::blocks::BlockMetadataRef;
+use protocol::{ProtocolPlugin};
+use virtual_voting::VirtualVotingConfig;
 use crate::tip_selection::TipSelection;
 
-pub struct BlockFactory<C: ProtocolConfig> {
+pub struct BlockFactory<C: VirtualVotingConfig<Source = BlockMetadataRef>> {
     tip_selection: Arc<TipSelection<C>>,
 }
 
-impl<C: ProtocolConfig> BlockFactory<C> {
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> BlockFactory<C> {
     pub fn new_block(&self, issuer: &IssuerID) -> Block {
         Block::from(NetworkBlock {
             parents: self.tip_selection.get(),
@@ -22,11 +23,11 @@ impl<C: ProtocolConfig> BlockFactory<C> {
     }
 }
 
-impl<C: ProtocolConfig> ProtocolPlugin for BlockFactory<C> {
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ProtocolPlugin for BlockFactory<C> {
     fn shutdown(&self) {}
 }
 
-impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin> for BlockFactory<C> {
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Plugin<dyn ProtocolPlugin> for BlockFactory<C> {
     fn construct(dependencies: &mut PluginRegistry<dyn ProtocolPlugin>) -> Arc<Self> {
         Arc::new(Self {
             tip_selection: dependencies.load(),

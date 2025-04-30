@@ -4,10 +4,11 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+protocol = { path = "../../protocol" }
+block-dag = { path = "../block-dag" }
 common = { path = "../../common" }
 zero = { path = "../../zero" }
 thiserror = "2.0.12"
 
 [dev-dependencies]
-block-dag = { path = "../block-dag" }
-config = { path = "../../config" }
+config = { path = "../config" }

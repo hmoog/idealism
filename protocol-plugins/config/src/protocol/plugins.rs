@@ -1,3 +1,4 @@
+use block_dag::BlockDAG;
 use block_storage::BlockStorage;
 use common::plugins::PluginRegistry;
 use consensus::Consensus;
@@ -6,6 +7,7 @@ use protocol::ProtocolPlugin;
 use protocol_plugins::{
     block_factory::BlockFactory, consensus_feed::ConsensusFeed, tip_selection::TipSelection,
 };
+use virtual_voting::VirtualVoting;
 
 use crate::Config;
 
@@ -19,6 +21,8 @@ impl ProtocolPlugins {
         match self {
             Self::Core => {
                 registry.load::<BlockStorage>();
+                registry.load::<BlockDAG>();
+                registry.load::<VirtualVoting<Config>>();
                 registry.load::<Consensus<Config>>();
                 registry.load::<ConsensusRound<Config>>();
                 registry.load::<TipSelection<Config>>();

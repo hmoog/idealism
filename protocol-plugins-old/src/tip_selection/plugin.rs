@@ -12,17 +12,18 @@ use common::{
     plugins::{Plugin, PluginRegistry},
     rx::{Callbacks, Subscription},
 };
-use protocol::{ProtocolConfig, ProtocolPlugin};
-use virtual_voting::Vote;
+use common::blocks::BlockMetadataRef;
+use protocol::{ProtocolPlugin};
+use virtual_voting::{VirtualVotingConfig, Vote};
 
 #[derive(Default)]
-pub struct TipSelection<C: ProtocolConfig> {
+pub struct TipSelection<C: VirtualVotingConfig<Source = BlockMetadataRef>> {
     tips: Mutex<HashSet<BlockMetadata>>,
     block_dag_subscription: Mutex<Option<Subscription<Callbacks<BlockMetadata>>>>,
     _marker: PhantomData<C>,
 }
 
-impl<C: ProtocolConfig> TipSelection<C> {
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> TipSelection<C> {
     pub fn get(&self) -> Vec<BlockID> {
         self.tips
             .lock()
@@ -96,7 +97,7 @@ impl<C: ProtocolConfig> TipSelection<C> {
     }
 }
 
-impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin> for TipSelection<C> {
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Plugin<dyn ProtocolPlugin> for TipSelection<C> {
     fn construct(plugins: &mut PluginRegistry<dyn ProtocolPlugin>) -> Arc<Self> {
         Arc::new_cyclic(|weak| Self::new(weak, plugins))
     }
@@ -106,7 +107,7 @@ impl<C: ProtocolConfig> Plugin<dyn ProtocolPlugin> for TipSelection<C> {
     }
 }
 
-impl<C: ProtocolConfig> ProtocolPlugin for TipSelection<C> {
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ProtocolPlugin for TipSelection<C> {
     fn shutdown(&self) {
         self.shutdown();
     }
