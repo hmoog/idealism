@@ -6,7 +6,7 @@ use std::{
 use common::{
     blocks::{Block, BlockMetadata},
     ids::BlockID,
-    plugins::{Plugin, PluginRegistry},
+    plugins::{ManagedPlugin, Plugins},
     rx::{Callback, Callbacks, Event, Signal, Subscription},
 };
 use protocol::ProtocolPlugin;
@@ -60,12 +60,16 @@ impl BlockStorage {
     }
 }
 
-impl Plugin<dyn ProtocolPlugin> for BlockStorage {
-    fn construct(_manager: &mut PluginRegistry<dyn ProtocolPlugin>) -> Arc<Self> {
+impl ManagedPlugin<dyn ProtocolPlugin> for BlockStorage {
+    fn construct(_manager: &mut Plugins<dyn ProtocolPlugin>) -> Arc<Self> {
         Arc::new(Self::default())
     }
 
-    fn plugin(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin> {
+    fn shutdown(&self) {
+        self.blocks.lock().unwrap().clear();
+    }
+
+    fn downcast(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin> {
         arc
     }
 }

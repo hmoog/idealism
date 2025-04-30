@@ -5,7 +5,7 @@ use common::{
     bft::Committee,
     blocks::{BlockMetadata, BlockMetadataRef},
     errors::Error::BlockNotFound,
-    plugins::{Plugin, PluginRegistry},
+    plugins::{ManagedPlugin, Plugins},
     rx::{
         Callbacks, Event, Subscription, UpdateType,
         UpdateType::{Notify, Retain},
@@ -28,7 +28,7 @@ pub struct Consensus<C: VirtualVotingConfig<Source = BlockMetadataRef>> {
 }
 
 impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Consensus<C> {
-    fn setup(self: Arc<Self>, plugins: &mut PluginRegistry<dyn ProtocolPlugin>) -> Arc<Self> {
+    fn setup(self: Arc<Self>, plugins: &mut Plugins<dyn ProtocolPlugin>) -> Arc<Self> {
         let weak_consensus = Arc::downgrade(&self);
 
         *self.block_dag_subscription.lock().expect("failed to lock") =
@@ -147,20 +147,24 @@ impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Consensus<C> {
     }
 }
 
-impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Plugin<dyn ProtocolPlugin>
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ManagedPlugin<dyn ProtocolPlugin>
     for Consensus<C>
 {
-    fn construct(plugins: &mut PluginRegistry<dyn ProtocolPlugin>) -> Arc<Self> {
+    fn construct(plugins: &mut Plugins<dyn ProtocolPlugin>) -> Arc<Self> {
         Arc::new(Self::default()).setup(plugins)
     }
 
-    fn plugin(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin> {
+    fn shutdown(&self) {
+        self.shutdown();
+    }
+
+    fn downcast(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin> {
         arc
     }
 }
 
 impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ProtocolPlugin for Consensus<C> {
     fn shutdown(&self) {
-        Self::shutdown(self);
+        self.shutdown();
     }
 }

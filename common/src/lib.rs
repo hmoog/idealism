@@ -51,13 +51,13 @@ pub mod ids {
     pub use issuer_id::IssuerID;
 }
 pub mod plugins {
+    mod managed_plugin;
     mod plugin;
-    mod plugin_manager;
-    mod plugin_registry;
+    mod plugins;
 
+    pub use managed_plugin::ManagedPlugin;
     pub use plugin::Plugin;
-    pub use plugin_manager::PluginManager;
-    pub use plugin_registry::PluginRegistry;
+    pub use plugins::Plugins;
 }
 pub mod rx {
     mod callback;

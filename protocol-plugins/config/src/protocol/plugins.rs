@@ -1,7 +1,7 @@
 use block_dag::BlockDAG;
 use block_factory::BlockFactory;
 use block_storage::BlockStorage;
-use common::plugins::PluginRegistry;
+use common::plugins::Plugins;
 use consensus::Consensus;
 use consensus_feed::ConsensusFeed;
 use consensus_round::ConsensusRound;
@@ -13,11 +13,11 @@ use crate::Config;
 
 pub enum ProtocolPlugins {
     Core,
-    Custom(fn(&Config, &mut PluginRegistry<dyn ProtocolPlugin>)),
+    Custom(fn(&Config, &mut Plugins<dyn ProtocolPlugin>)),
 }
 
 impl ProtocolPlugins {
-    pub fn inject(&self, config: &Config, registry: &mut PluginRegistry<dyn ProtocolPlugin>) {
+    pub fn inject(&self, config: &Config, registry: &mut Plugins<dyn ProtocolPlugin>) {
         match self {
             Self::Core => {
                 registry.load::<BlockStorage>();

@@ -2,7 +2,7 @@ use std::{ops::Deref, sync::Arc};
 
 use common::{
     blocks::BlockMetadataRef,
-    plugins::{Plugin, PluginRegistry},
+    plugins::{ManagedPlugin, Plugins},
     rx::Event,
 };
 use consensus::Consensus;
@@ -66,10 +66,10 @@ impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ConsensusFeed<C> {
     }
 }
 
-impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Plugin<dyn ProtocolPlugin>
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ManagedPlugin<dyn ProtocolPlugin>
     for ConsensusFeed<C>
 {
-    fn construct(dependencies: &mut PluginRegistry<dyn ProtocolPlugin>) -> Arc<Self> {
+    fn construct(dependencies: &mut Plugins<dyn ProtocolPlugin>) -> Arc<Self> {
         Self {
             event: Default::default(),
             consensus: dependencies.load(),
@@ -77,7 +77,11 @@ impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Plugin<dyn ProtocolPlugi
         .init_plugin()
     }
 
-    fn plugin(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin> {
+    fn shutdown(&self) {
+        todo!()
+    }
+
+    fn downcast(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin> {
         arc
     }
 }

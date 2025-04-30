@@ -9,7 +9,7 @@ use block_storage::{Address, BlockStorage};
 use common::{
     blocks::BlockMetadata,
     errors::{Error::BlockNotFound, Result},
-    plugins::{Plugin, PluginRegistry},
+    plugins::{ManagedPlugin, Plugins},
     rx::{Callback, Callbacks, Event, Subscription},
 };
 use indexmap::IndexSet;
@@ -22,8 +22,8 @@ pub struct BlockDAG {
     block_available: Event<BlockMetadata>,
 }
 
-impl Plugin<dyn ProtocolPlugin> for BlockDAG {
-    fn construct(plugins: &mut PluginRegistry<dyn ProtocolPlugin>) -> Arc<Self> {
+impl ManagedPlugin<dyn ProtocolPlugin> for BlockDAG {
+    fn construct(plugins: &mut Plugins<dyn ProtocolPlugin>) -> Arc<Self> {
         Arc::new_cyclic(|block_dag: &Weak<Self>| {
             let block_storage: Arc<BlockStorage> = plugins.load();
 
@@ -49,7 +49,11 @@ impl Plugin<dyn ProtocolPlugin> for BlockDAG {
         })
     }
 
-    fn plugin(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin> {
+    fn shutdown(&self) {
+        self.block_storage_subscription.lock().unwrap().take();
+    }
+
+    fn downcast(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin> {
         arc
     }
 }

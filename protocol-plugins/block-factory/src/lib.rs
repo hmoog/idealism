@@ -3,7 +3,7 @@ use std::sync::Arc;
 use common::{
     blocks::{Block, BlockMetadataRef, NetworkBlock},
     ids::IssuerID,
-    plugins::{Plugin, PluginRegistry},
+    plugins::{ManagedPlugin, Plugins},
 };
 use protocol::ProtocolPlugin;
 use tip_selection::TipSelection;
@@ -26,16 +26,18 @@ impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ProtocolPlugin for Block
     fn shutdown(&self) {}
 }
 
-impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Plugin<dyn ProtocolPlugin>
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ManagedPlugin<dyn ProtocolPlugin>
     for BlockFactory<C>
 {
-    fn construct(dependencies: &mut PluginRegistry<dyn ProtocolPlugin>) -> Arc<Self> {
+    fn construct(dependencies: &mut Plugins<dyn ProtocolPlugin>) -> Arc<Self> {
         Arc::new(Self {
             tip_selection: dependencies.load(),
         })
     }
 
-    fn plugin(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin> {
+    fn shutdown(&self) {}
+
+    fn downcast(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin> {
         arc
     }
 }

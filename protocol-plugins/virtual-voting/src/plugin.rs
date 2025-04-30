@@ -7,7 +7,7 @@ use block_dag::{BlockDAG, BlockDAGMetadata};
 use common::{
     blocks::{Block, BlockMetadata, BlockMetadataRef},
     errors::Error::BlockNotFound,
-    plugins::{Plugin, PluginRegistry},
+    plugins::{ManagedPlugin, Plugins},
     rx::{Callbacks, Subscription},
 };
 use protocol::ProtocolPlugin;
@@ -39,13 +39,13 @@ impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> VirtualVoting<C> {
     }
 }
 
-impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Plugin<dyn ProtocolPlugin>
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ManagedPlugin<dyn ProtocolPlugin>
     for VirtualVoting<C>
 {
-    fn construct(plugins: &mut PluginRegistry<dyn ProtocolPlugin>) -> Arc<Self> {
+    fn construct(plugins: &mut Plugins<dyn ProtocolPlugin>) -> Arc<Self> {
         Arc::new_cyclic(|_virtual_voting: &Weak<Self>| {
             let block_dag: Arc<BlockDAG> = plugins.load();
-            let config: Arc<C> = plugins.load();
+            let config: Arc<C> = plugins.get().unwrap();
 
             Self {
                 subscription: Mutex::new(Some(block_dag.subscribe({
@@ -80,7 +80,11 @@ impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Plugin<dyn ProtocolPlugi
         })
     }
 
-    fn plugin(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin> {
+    fn shutdown(&self) {
+        self.subscription.lock().unwrap().take();
+    }
+
+    fn downcast(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin> {
         arc
     }
 }

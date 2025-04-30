@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use common::plugins::{Plugin, PluginRegistry};
+use common::plugins::{ManagedPlugin, Plugin, Plugins};
 use protocol::ProtocolPlugin;
 
 use crate::{Config, ProtocolPlugins};
@@ -26,19 +26,19 @@ impl ProtocolPlugin for Config {
 impl protocol::ProtocolConfig for Config {
     fn inject_plugins(
         &self,
-        mut registry: PluginRegistry<dyn ProtocolPlugin>,
-    ) -> PluginRegistry<dyn ProtocolPlugin> {
+        mut registry: Plugins<dyn ProtocolPlugin>,
+    ) -> Plugins<dyn ProtocolPlugin> {
         self.protocol_params.plugins.inject(self, &mut registry);
         registry
     }
 }
 
 impl Plugin<dyn ProtocolPlugin> for Config {
-    fn construct(_: &mut PluginRegistry<dyn ProtocolPlugin>) -> Arc<Self> {
-        panic!("Config should not be constructed automatically");
+    fn shutdown(&self) {
+        // do nothing
     }
 
-    fn plugin(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin> {
+    fn downcast(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin> {
         arc
     }
 }

@@ -9,7 +9,7 @@ use common::{
     blocks::{BlockMetadata, BlockMetadataRef},
     errors::Result,
     ids::IssuerID,
-    plugins::{Plugin, PluginRegistry},
+    plugins::{ManagedPlugin, Plugins},
     rx::{
         Callbacks, Subscription,
         UpdateType::{Notify, Retain},
@@ -31,7 +31,7 @@ pub struct ConsensusRound<C: VirtualVotingConfig<Source = BlockMetadataRef>> {
 }
 
 impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ConsensusRound<C> {
-    fn new(weak: &Weak<Self>, plugins: &mut PluginRegistry<dyn ProtocolPlugin>) -> Self {
+    fn new(weak: &Weak<Self>, plugins: &mut Plugins<dyn ProtocolPlugin>) -> Self {
         let consensus: Arc<Consensus<C>> = plugins.load();
 
         Self {
@@ -159,14 +159,18 @@ impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ConsensusRound<C> {
     }
 }
 
-impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Plugin<dyn ProtocolPlugin>
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ManagedPlugin<dyn ProtocolPlugin>
     for ConsensusRound<C>
 {
-    fn construct(plugins: &mut PluginRegistry<dyn ProtocolPlugin>) -> Arc<Self> {
+    fn construct(plugins: &mut Plugins<dyn ProtocolPlugin>) -> Arc<Self> {
         Arc::new_cyclic(|weak| Self::new(weak, plugins))
     }
 
-    fn plugin(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin> {
+    fn shutdown(&self) {
+        self.shutdown();
+    }
+
+    fn downcast(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin> {
         arc
     }
 }

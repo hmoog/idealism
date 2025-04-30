@@ -9,7 +9,7 @@ use common::{
     blocks::{BlockMetadata, BlockMetadataRef},
     errors::{Error::BlockNotFound, Result},
     ids::BlockID,
-    plugins::{Plugin, PluginRegistry},
+    plugins::{ManagedPlugin, Plugins},
     rx::{Callbacks, Subscription},
 };
 use protocol::ProtocolPlugin;
@@ -33,7 +33,7 @@ impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> TipSelection<C> {
             .collect()
     }
 
-    fn new(weak: &Weak<Self>, plugins: &mut PluginRegistry<dyn ProtocolPlugin>) -> Self {
+    fn new(weak: &Weak<Self>, plugins: &mut Plugins<dyn ProtocolPlugin>) -> Self {
         Self {
             tips: Default::default(),
             block_dag_subscription: Mutex::new(Some(Self::block_dag_subscription(
@@ -96,14 +96,18 @@ impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> TipSelection<C> {
     }
 }
 
-impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> Plugin<dyn ProtocolPlugin>
+impl<C: VirtualVotingConfig<Source = BlockMetadataRef>> ManagedPlugin<dyn ProtocolPlugin>
     for TipSelection<C>
 {
-    fn construct(plugins: &mut PluginRegistry<dyn ProtocolPlugin>) -> Arc<Self> {
+    fn construct(plugins: &mut Plugins<dyn ProtocolPlugin>) -> Arc<Self> {
         Arc::new_cyclic(|weak| Self::new(weak, plugins))
     }
 
-    fn plugin(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin> {
+    fn shutdown(&self) {
+        self.shutdown();
+    }
+
+    fn downcast(arc: Arc<Self>) -> Arc<dyn ProtocolPlugin> {
         arc
     }
 }
