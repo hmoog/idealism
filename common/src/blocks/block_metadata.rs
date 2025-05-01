@@ -26,9 +26,10 @@ impl BlockMetadata {
     }
 
     pub fn try_get<T: Send + Sync + Clone + 'static>(&self) -> Result<T> {
-        self.metadata::<T>()
-            .value()
-            .ok_or(MetadataNotFound(type_name::<T>()))
+        self.metadata::<T>().value().ok_or(MetadataNotFound {
+            metadata: type_name::<T>(),
+            block_id: self.block.id().clone(),
+        })
     }
 
     pub fn metadata<T: Send + Sync + 'static>(&self) -> Arc<Signal<T>> {

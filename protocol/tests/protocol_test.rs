@@ -4,7 +4,7 @@ use block_factory::BlockFactory;
 use block_storage::BlockStorage;
 use common::{
     errors::{Error::MetadataNotFound, Result},
-    ids::{IssuerID},
+    ids::IssuerID,
 };
 use config::{Config, ProtocolParams, ProtocolPlugins};
 use consensus_feed::ConsensusFeed;
@@ -75,7 +75,10 @@ fn test_protocol() -> Result<()> {
         block1_metadata
             .try_get::<Vote<Config>>()?
             .milestone()
-            .map_err(|_| MetadataNotFound(type_name::<Milestone<Config>>()))?
+            .map_err(|_| MetadataNotFound {
+                metadata: type_name::<Milestone<Config>>(),
+                block_id: block1_metadata.block.id().clone(),
+            })?
             .height
     );
     println!(
@@ -98,9 +101,15 @@ fn test_protocol() -> Result<()> {
         block_1_1_metadata
             .try_get::<Vote<Config>>()?
             .accepted_milestone()
-            .map_err(|_| MetadataNotFound(type_name::<Milestone<Config>>()))?
+            .map_err(|_| MetadataNotFound {
+                metadata: type_name::<Milestone<Config>>(),
+                block_id: block_1_1_metadata.block.id().clone(),
+            })?
             .height()
-            .map_err(|_| MetadataNotFound(type_name::<Milestone<Config>>()))?
+            .map_err(|_| MetadataNotFound {
+                metadata: type_name::<Milestone<Config>>(),
+                block_id: block_1_1_metadata.block.id().clone(),
+            })?
     );
 
     Ok(())

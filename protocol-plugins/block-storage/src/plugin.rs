@@ -4,12 +4,10 @@ use std::{
 };
 
 use common::{
-    blocks::{Block, BlockMetadata},
-    ids::BlockID,
+    blocks::{Block, Block::GenesisBlock, BlockMetadata},
+    ids::{BlockID, Id},
     rx::{Callback, Callbacks, Event, Signal, Subscription},
 };
-use common::blocks::Block::GenesisBlock;
-use common::ids::Id;
 use protocol::{ManagedPlugin, Plugins};
 
 use crate::Address;

@@ -54,7 +54,7 @@ impl<C: VirtualVotingConfig> TipSelection<C> {
             let weak = weak.clone();
             let weak_block = block.downgrade();
 
-            block.metadata().attach(move |_: &Arc<Vote<C>>| {
+            block.metadata().attach(move |_: &Vote<C>| {
                 if let Some(tip_selection) = weak.upgrade() {
                     if let Some(block) = weak_block.upgrade() {
                         if let Err(err) = tip_selection.process_block(&block) {

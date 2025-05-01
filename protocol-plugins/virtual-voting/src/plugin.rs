@@ -28,6 +28,7 @@ impl<C: VirtualVotingConfig> VirtualVoting<C> {
             .unwrap()
             .iter()
         {
+            println!("PARENT BLOCK");
             match block_ref.upgrade() {
                 Some(block) => result.insert(block.try_get::<Vote<C>>()?),
                 None => return Err(Error::CommonError(BlockNotFound)),
@@ -47,6 +48,7 @@ impl<C: VirtualVotingConfig> ManagedPlugin for VirtualVoting<C> {
             Self {
                 subscription: Mutex::new(Some(block_dag.subscribe({
                     move |block| {
+                        println!("VIRTUAL VOTING PROCESSING BLOCK {}", block.block.id());
                         match &block.block {
                             Block::NetworkBlock(_, network_block) => {
                                 let src: BlockMetadataRef = block.downgrade();
@@ -58,17 +60,24 @@ impl<C: VirtualVotingConfig> ManagedPlugin for VirtualVoting<C> {
                                         referenced_votes,
                                     ) {
                                         Ok(vote) => {
-                                            block.metadata().set(Arc::new(vote));
+                                            println!("VOTE CREATED");
+                                            block.metadata().set(vote);
                                         }
-                                        Err(_err) => {}
+                                        Err(err) => {
+                                            println!("Error creating vote1: {:?}", err);
+                                        }
                                     },
-                                    Err(_err) => {}
+                                    Err(err) => {
+                                        println!("Error creating vote2: {:?}", err);
+                                    }
                                 }
                             }
-                            _ => block.metadata().set(Arc::new(Vote::new_genesis(
-                                block.downgrade(),
-                                config.clone(),
-                            ))),
+                            _ => {
+                                block
+                                    .metadata()
+                                    .set(Vote::new_genesis(block.downgrade(), config.clone()));
+                                println!("GENESIS VOTE CREATED {}", block.block.id());
+                            }
                         };
                     }
                 }))),

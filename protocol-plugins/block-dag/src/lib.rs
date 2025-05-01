@@ -44,14 +44,15 @@ impl BlockDAG {
             let weak = weak.clone();
             address.attach(move |block| {
                 if let Some(block_dag) = weak.upgrade() {
-                    block.metadata().set(block_dag.new_metadata(block));
+                    block_dag.init_metadata(block);
                 }
             })
         })
     }
 
-    fn new_metadata(self: &Arc<Self>, block: &BlockMetadata) -> Arc<BlockDAGMetadata> {
+    fn init_metadata(self: &Arc<Self>, block: &BlockMetadata) -> Arc<BlockDAGMetadata> {
         let metadata = Arc::new(BlockDAGMetadata::new(block.block.parents().len()));
+        block.metadata().set(metadata.clone());
 
         for (index, parent_id) in block.block.parents().iter().enumerate() {
             self.block_storage.address(parent_id).attach({
@@ -59,6 +60,7 @@ impl BlockDAG {
 
                 move |parent| {
                     if let Some(metadata) = weak_metadata.upgrade() {
+                        println!("parent available");
                         metadata.set_parent_available(index, parent)
                     }
                 }

@@ -12,6 +12,7 @@ pub struct BlockDAGMetadata {
 
 impl BlockDAGMetadata {
     pub fn new(parents_count: usize) -> Self {
+        println!("parents_count: {}", parents_count);
         Self {
             parents: Mutex::new(vec![BlockMetadataRef::default(); parents_count]),
             all_parents_available: Arc::new(Countdown::new(parents_count)),
