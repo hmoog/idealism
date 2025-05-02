@@ -26,6 +26,12 @@ impl BlockMetadata {
         }))
     }
 
+    pub fn set<T: Send + Sync + Clone + 'static>(&self, value: T) -> T {
+        self.metadata().set(value.clone());
+
+        value
+    }
+
     pub fn try_get<T: Send + Sync + Clone + 'static>(&self) -> Result<T> {
         self.metadata::<T>().value().ok_or(MetadataNotFound {
             block_id: self.block.id().clone(),
@@ -34,7 +40,7 @@ impl BlockMetadata {
         })
     }
 
-    pub fn metadata<T: Send + Sync + 'static>(&self) -> Arc<Signal<T>> {
+    pub fn metadata<T: Send + Sync + Clone + 'static>(&self) -> Arc<Signal<T>> {
         if let Some(signal) = self.data.read().unwrap().get::<Arc<Signal<T>>>() {
             return signal.clone();
         }

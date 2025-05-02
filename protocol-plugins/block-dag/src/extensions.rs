@@ -5,14 +5,14 @@ use indexmap::IndexSet;
 
 use crate::BlockDAGMetadata;
 
-pub trait BlockDAGBlockMetadataExt {
+pub trait BlockMetadataExt {
     fn past_cone<F: Fn(&BlockMetadata) -> Result<bool>>(
         &self,
         should_visit: F,
     ) -> Result<IndexSet<BlockMetadata>>;
 }
 
-impl BlockDAGBlockMetadataExt for BlockMetadata {
+impl BlockMetadataExt for BlockMetadata {
     fn past_cone<F: Fn(&BlockMetadata) -> Result<bool>>(
         &self,
         should_visit: F,

@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex, Weak};
 
-use block_dag::{BlockDAG, BlockDAGBlockMetadataExt};
+use block_dag::{BlockDAG, BlockMetadataExt};
 use common::{
     bft::Committee,
     blocks::BlockMetadata,
@@ -44,10 +44,7 @@ impl<C: VirtualVotingConfig> Consensus<C> {
         self.block_dag_subscription.lock().unwrap().take();
     }
 
-    fn block_dag_subscription(
-        block_dag: &BlockDAG,
-        weak: Weak<Self>,
-    ) -> BlockDAGSubscription {
+    fn block_dag_subscription(block_dag: &BlockDAG, weak: Weak<Self>) -> BlockDAGSubscription {
         block_dag.block_available.subscribe(move |block| {
             let weak = weak.clone();
             block
