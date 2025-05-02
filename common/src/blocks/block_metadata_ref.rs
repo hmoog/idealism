@@ -1,9 +1,10 @@
-use std::backtrace::Backtrace;
-use std::sync::Weak;
+use std::{backtrace::Backtrace, sync::Weak};
 
-use crate::blocks::{BlockMetadata, block_metadata::BlockMetadataInner};
-use crate::errors::Error;
-use crate::ids::BlockID;
+use crate::{
+    blocks::{BlockMetadata, block_metadata::BlockMetadataInner},
+    errors::Error,
+    ids::BlockID,
+};
 
 pub struct BlockMetadataRef(BlockID, Weak<BlockMetadataInner>);
 

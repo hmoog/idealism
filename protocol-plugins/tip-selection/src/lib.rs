@@ -7,7 +7,7 @@ use std::{
 use block_dag::{BlockDAG, BlockDAGMetadata};
 use common::{
     blocks::BlockMetadata,
-    errors::{Result},
+    errors::Result,
     ids::BlockID,
     rx::{Callbacks, Subscription},
 };

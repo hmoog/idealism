@@ -1,5 +1,5 @@
-use std::any::type_name;
-use std::backtrace::Backtrace;
+use std::{any::type_name, backtrace::Backtrace};
+
 use block_factory::BlockFactory;
 use block_storage::BlockStorage;
 use common::{

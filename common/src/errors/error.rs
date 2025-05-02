@@ -1,8 +1,7 @@
-use std::backtrace::Backtrace;
-use std::fmt;
+use std::{backtrace::Backtrace, fmt};
+
 use crate::ids::BlockID;
 
-#[derive(Debug)]
 pub enum Error {
     BlockNotFound {
         block_id: BlockID,
@@ -18,8 +17,15 @@ pub enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Error::BlockNotFound { block_id, backtrace } => {
-                write!(f, "Block `{}` not found`\nBacktrace:\n{}", block_id, backtrace)
+            Error::BlockNotFound {
+                block_id,
+                backtrace,
+            } => {
+                write!(
+                    f,
+                    "Block `{}` not found`\nBacktrace:\n{}",
+                    block_id, backtrace
+                )
             }
             Error::MetadataNotFound {
                 block_id,
@@ -33,6 +39,12 @@ impl fmt::Display for Error {
                 )
             }
         }
+    }
+}
+
+impl fmt::Debug for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(self, f)
     }
 }
 

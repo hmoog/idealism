@@ -1,8 +1,9 @@
 use std::{
     any::type_name,
+    backtrace::Backtrace,
     sync::{Arc, RwLock},
 };
-use std::backtrace::Backtrace;
+
 use crate::{
     blocks::{Block, BlockMetadataRef},
     collections::AnyMap,
@@ -29,7 +30,7 @@ impl BlockMetadata {
         self.metadata::<T>().value().ok_or(MetadataNotFound {
             block_id: self.block.id().clone(),
             metadata: type_name::<T>(),
-            backtrace: Backtrace::capture(),       
+            backtrace: Backtrace::capture(),
         })
     }
 

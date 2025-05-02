@@ -1,9 +1,6 @@
 use std::{collections::VecDeque, sync::Arc};
 
-use common::{
-    blocks::BlockMetadata,
-    errors::{Result},
-};
+use common::{blocks::BlockMetadata, errors::Result};
 use indexmap::IndexSet;
 
 use crate::BlockDAGMetadata;
