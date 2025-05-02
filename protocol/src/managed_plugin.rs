@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::{Plugin, Plugins};
 
 pub trait ManagedPlugin: Sized {
-    fn construct(plugins: &mut Plugins) -> Arc<Self>;
+    fn new(plugins: &mut Plugins) -> Arc<Self>;
 
     fn start(&self) {
         // do nothing by default

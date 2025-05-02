@@ -27,7 +27,6 @@ impl<C: VirtualVotingConfig> VirtualVoting<C> {
             .unwrap()
             .iter()
         {
-            println!("PARENT BLOCK");
             result.insert(block_ref.try_upgrade()?.try_get::<Vote<C>>()?);
         }
 
@@ -36,7 +35,7 @@ impl<C: VirtualVotingConfig> VirtualVoting<C> {
 }
 
 impl<C: VirtualVotingConfig> ManagedPlugin for VirtualVoting<C> {
-    fn construct(plugins: &mut Plugins) -> Arc<Self> {
+    fn new(plugins: &mut Plugins) -> Arc<Self> {
         Arc::new_cyclic(|_virtual_voting: &Weak<Self>| {
             let block_dag: Arc<BlockDAG> = plugins.load();
             let config: Arc<C> = plugins.get().unwrap();
@@ -44,7 +43,6 @@ impl<C: VirtualVotingConfig> ManagedPlugin for VirtualVoting<C> {
             Self {
                 subscription: Mutex::new(Some(block_dag.block_available.subscribe({
                     move |block| {
-                        println!("VIRTUAL VOTING PROCESSING BLOCK {}", block.block.id());
                         match &block.block {
                             Block::NetworkBlock(_, network_block) => {
                                 let src: BlockMetadataRef = block.downgrade();
@@ -56,7 +54,6 @@ impl<C: VirtualVotingConfig> ManagedPlugin for VirtualVoting<C> {
                                         referenced_votes,
                                     ) {
                                         Ok(vote) => {
-                                            println!("VOTE CREATED");
                                             block.metadata().set(vote);
                                         }
                                         Err(err) => {
@@ -72,7 +69,6 @@ impl<C: VirtualVotingConfig> ManagedPlugin for VirtualVoting<C> {
                                 block
                                     .metadata()
                                     .set(Vote::new_genesis(block.downgrade(), config.clone()));
-                                println!("GENESIS VOTE CREATED {}", block.block.id());
                             }
                         };
                     }

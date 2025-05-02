@@ -159,7 +159,7 @@ impl<C: VirtualVotingConfig> ConsensusRound<C> {
 }
 
 impl<C: VirtualVotingConfig> ManagedPlugin for ConsensusRound<C> {
-    fn construct(plugins: &mut Plugins) -> Arc<Self> {
+    fn new(plugins: &mut Plugins) -> Arc<Self> {
         Arc::new_cyclic(|weak| Self::new(weak, plugins))
     }
 

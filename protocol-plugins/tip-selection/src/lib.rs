@@ -96,7 +96,7 @@ impl<C: VirtualVotingConfig> TipSelection<C> {
 }
 
 impl<C: VirtualVotingConfig> ManagedPlugin for TipSelection<C> {
-    fn construct(plugins: &mut Plugins) -> Arc<Self> {
+    fn new(plugins: &mut Plugins) -> Arc<Self> {
         Arc::new_cyclic(|weak| Self::new(weak, plugins))
     }
 

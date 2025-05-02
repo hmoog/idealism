@@ -1,5 +1,4 @@
 mod address;
-mod plugin;
+mod block_storage;
 
-pub use address::Address;
-pub use plugin::BlockStorage;
+pub use crate::{address::*, block_storage::*};

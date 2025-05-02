@@ -56,7 +56,7 @@ impl<C: VirtualVotingConfig> ConsensusFeed<C> {
 }
 
 impl<C: VirtualVotingConfig> ManagedPlugin for ConsensusFeed<C> {
-    fn construct(dependencies: &mut Plugins) -> Arc<Self> {
+    fn new(dependencies: &mut Plugins) -> Arc<Self> {
         Self {
             event: Default::default(),
             consensus: dependencies.load(),

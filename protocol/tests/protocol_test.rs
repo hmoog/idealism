@@ -25,7 +25,6 @@ fn test_protocol() -> Result<()> {
                 .retain();
         })),
     ));
-    protocol.start();
 
     let consensus_round = protocol.plugins.get::<ConsensusRound<Config>>().unwrap();
     let block_factory = protocol.plugins.get::<BlockFactory<Config>>().unwrap();
@@ -44,10 +43,12 @@ fn test_protocol() -> Result<()> {
         })
         .retain();
 
-    let block_1 = block_factory.new_block(&IssuerID::from([1u8; 32]));
-    let block_2 = block_factory.new_block(&IssuerID::from([2u8; 32]));
-    let block_3 = block_factory.new_block(&IssuerID::from([3u8; 32]));
-    let block_4 = block_factory.new_block(&IssuerID::from([4u8; 32]));
+    protocol.start();
+
+    let block_1 = block_factory.create_block(&IssuerID::from([1u8; 32]));
+    let block_2 = block_factory.create_block(&IssuerID::from([2u8; 32]));
+    let block_3 = block_factory.create_block(&IssuerID::from([3u8; 32]));
+    let block_4 = block_factory.create_block(&IssuerID::from([4u8; 32]));
 
     let block1_metadata = protocol
         .plugins
@@ -83,14 +84,14 @@ fn test_protocol() -> Result<()> {
             .height
     );
     println!(
-        "{}",
+        "is_milestone {}",
         block2_metadata
             .try_get::<Vote<Config>>()?
             .milestone()
             .is_ok()
     );
 
-    let block_1_1 = block_factory.new_block(&IssuerID::from([1u8; 32]));
+    let block_1_1 = block_factory.create_block(&IssuerID::from([1u8; 32]));
     let block_1_1_metadata = protocol
         .plugins
         .get::<BlockStorage>()
@@ -98,7 +99,7 @@ fn test_protocol() -> Result<()> {
         .insert(block_1_1);
 
     println!(
-        "{}",
+        "height {}",
         block_1_1_metadata
             .try_get::<Vote<Config>>()?
             .accepted_milestone()

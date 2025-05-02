@@ -11,35 +11,64 @@ use crate::BlockDAGMetadata;
 
 pub struct BlockDAG {
     pub block_available: Event<BlockMetadata>,
-    block_storage: Arc<BlockStorage>,
     block_storage_subscription: Mutex<Option<Subscription<Callbacks<Address>>>>,
+    block_storage: Arc<BlockStorage>,
 }
 
-impl BlockDAG {
-    fn new(weak: &Weak<Self>, plugins: &mut Plugins) -> Self {
-        Self {
-            block_available: Event::default(),
-            block_storage: plugins.load(),
-            block_storage_subscription: Mutex::new(Some(Self::subscribe_block_storage(
-                weak.clone(),
-                &plugins.load(),
-            ))),
-        }
+impl ManagedPlugin for BlockDAG {
+    fn new(plugins: &mut Plugins) -> Arc<Self> {
+        Arc::new_cyclic(|weak: &Weak<Self>| {
+            let block_storage: Arc<BlockStorage> = plugins.load();
+            let block_storage_subscription =
+                block_storage.subscribe_plugin_to_new_block(weak, |this, block| {
+                    this.setup_metadata(block);
+                });
+
+            Self {
+                block_available: Event::default(),
+                block_storage_subscription: Mutex::new(Some(block_storage_subscription)),
+                block_storage,
+            }
+        })
     }
 
     fn shutdown(&self) {
         self.block_storage_subscription.lock().unwrap().take();
     }
+}
 
-    fn subscribe_block_storage(
-        weak_block_dag: Weak<Self>,
-        block_storage: &BlockStorage,
-    ) -> Subscription<Callbacks<Address>> {
-        block_storage.subscribe(move |address| {
-            let weak_block_dag = weak_block_dag.clone();
-            address.attach(move |block| {
-                if let Some(block_dag) = weak_block_dag.upgrade() {
-                    block_dag.setup_metadata(block);
+impl BlockDAG {
+    pub fn subscribe_plugin_to_block<T: Sync + Send + 'static>(
+        &self,
+        weak_plugin: &Weak<T>,
+        callback: fn(Arc<T>, &BlockMetadata),
+    ) -> Subscription<Callbacks<BlockMetadata>> {
+        let weak_plugin = weak_plugin.clone();
+
+        self.block_available.subscribe(move |block| {
+            if let Some(plugin) = weak_plugin.upgrade() {
+                callback(plugin, block);
+            }
+        })
+    }
+
+    pub fn subscribe_plugin_to_metadata<Plugin, Metadata>(
+        &self,
+        weak_plugin: &Weak<Plugin>,
+        callback: fn(Arc<Plugin>, &Metadata),
+    ) -> Subscription<Callbacks<BlockMetadata>>
+    where
+        Plugin: Sync + Send + 'static,
+        Metadata: Clone + Send + Sync + 'static,
+    {
+        let weak_plugin = weak_plugin.clone();
+
+        self.block_available.subscribe(move |block| {
+            let weak_plugin = weak_plugin.clone();
+
+            block.attach(move |metadata: &Metadata| {
+                if let Some(plugin) = weak_plugin.upgrade() {
+                    callback(plugin, metadata);
                 }
             })
         })
@@ -70,15 +99,5 @@ impl BlockDAG {
                 }
             }
         });
-    }
-}
-
-impl ManagedPlugin for BlockDAG {
-    fn construct(plugins: &mut Plugins) -> Arc<Self> {
-        Arc::new_cyclic(|weak: &Weak<Self>| Self::new(weak, plugins))
-    }
-
-    fn shutdown(&self) {
-        self.shutdown()
     }
 }

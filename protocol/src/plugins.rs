@@ -33,7 +33,7 @@ impl Plugins {
             return existing.clone();
         }
 
-        let instance = U::construct(self);
+        let instance = U::new(self);
         self.instances.insert(instance.clone());
         self.trait_objects.push(instance.clone());
 

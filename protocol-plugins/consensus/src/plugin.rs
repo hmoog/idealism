@@ -26,38 +26,30 @@ pub struct Consensus<C: VirtualVotingConfig> {
 }
 
 impl<C: VirtualVotingConfig> Consensus<C> {
-    fn new(weak: &Weak<Self>, plugins: &mut Plugins) -> Self {
+    fn new(this: &Weak<Self>, plugins: &mut Plugins) -> Self {
+        let block_dag: Arc<BlockDAG> = plugins.load();
+        let block_dag_subscription = Mutex::new(Some(block_dag.subscribe_plugin_to_metadata(
+            this,
+            |this, vote| {
+                if let Err(err) = this.process_vote(vote) {
+                    // TODO: handle the error more elegantly
+                    println!("{:?}", err);
+                }
+            },
+        )));
+
         Self {
             chain_index: Default::default(),
             heaviest_milestone_vote: Default::default(),
             latest_accepted_milestone: Default::default(),
             committee: Default::default(),
             accepted_blocks: Default::default(),
-            block_dag_subscription: Mutex::new(Some(Self::block_dag_subscription(
-                &plugins.load(),
-                weak.clone(),
-            ))),
+            block_dag_subscription,
         }
     }
 
     fn shutdown(&self) {
         self.block_dag_subscription.lock().unwrap().take();
-    }
-
-    fn block_dag_subscription(block_dag: &BlockDAG, weak: Weak<Self>) -> BlockDAGSubscription {
-        block_dag.block_available.subscribe(move |block| {
-            let weak = weak.clone();
-            block
-                .metadata::<Arc<Vote<C>>>()
-                .attach(move |vote: &Arc<Vote<C>>| {
-                    if let Some(consensus) = weak.upgrade() {
-                        if let Err(err) = consensus.process_vote(vote) {
-                            // TODO: handle the error more elegantly
-                            println!("{:?}", err);
-                        }
-                    }
-                });
-        })
     }
 
     fn process_vote(&self, vote: &Vote<C>) -> virtual_voting::Result<()> {
@@ -152,7 +144,7 @@ impl<C: VirtualVotingConfig> Consensus<C> {
 }
 
 impl<C: VirtualVotingConfig> ManagedPlugin for Consensus<C> {
-    fn construct(plugins: &mut Plugins) -> Arc<Self> {
+    fn new(plugins: &mut Plugins) -> Arc<Self> {
         Arc::new_cyclic(|weak: &Weak<Self>| Self::new(weak, plugins))
     }
 
@@ -160,5 +152,3 @@ impl<C: VirtualVotingConfig> ManagedPlugin for Consensus<C> {
         self.shutdown();
     }
 }
-
-type BlockDAGSubscription = Subscription<Callbacks<BlockMetadata>>;
