@@ -6,12 +6,11 @@ use std::{
 use block_dag::{BlockDAG, BlockDAGMetadata};
 use common::{
     blocks::{Block, BlockMetadata, BlockMetadataRef},
-    errors::Error::BlockNotFound,
     rx::{Callbacks, Subscription},
 };
 use protocol::{ManagedPlugin, Plugins};
 
-use crate::{Error, Result, VirtualVotingConfig, Vote, Votes};
+use crate::{Result, VirtualVotingConfig, Vote, Votes};
 
 pub struct VirtualVoting<C: VirtualVotingConfig> {
     subscription: Mutex<Option<Subscription<Callbacks<BlockMetadata>>>>,
@@ -29,10 +28,7 @@ impl<C: VirtualVotingConfig> VirtualVoting<C> {
             .iter()
         {
             println!("PARENT BLOCK");
-            match block_ref.upgrade() {
-                Some(block) => result.insert(block.try_get::<Vote<C>>()?),
-                None => return Err(Error::CommonError(BlockNotFound)),
-            };
+            result.insert(block_ref.try_upgrade()?.try_get::<Vote<C>>()?);
         }
 
         Ok(result)

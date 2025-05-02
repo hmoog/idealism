@@ -1,16 +1,29 @@
+use std::backtrace::Backtrace;
 use std::sync::Weak;
 
 use crate::blocks::{BlockMetadata, block_metadata::BlockMetadataInner};
+use crate::errors::Error;
+use crate::ids::BlockID;
 
-pub struct BlockMetadataRef(Weak<BlockMetadataInner>);
+pub struct BlockMetadataRef(BlockID, Weak<BlockMetadataInner>);
 
 impl BlockMetadataRef {
-    pub fn new(weak: Weak<BlockMetadataInner>) -> Self {
-        Self(weak)
+    pub fn new(block_id: BlockID, weak: Weak<BlockMetadataInner>) -> Self {
+        Self(block_id, weak)
     }
 
     pub fn upgrade(&self) -> Option<BlockMetadata> {
-        self.0.upgrade().map(BlockMetadata)
+        self.1.upgrade().map(BlockMetadata)
+    }
+
+    pub fn try_upgrade(&self) -> Result<BlockMetadata, Error> {
+        self.1
+            .upgrade()
+            .map(BlockMetadata)
+            .ok_or(Error::BlockNotFound {
+                block_id: self.0.clone(),
+                backtrace: Backtrace::capture(),
+            })
     }
 }
 
@@ -25,13 +38,13 @@ mod traits {
 
     impl Default for BlockMetadataRef {
         fn default() -> Self {
-            Self::new(Weak::new())
+            Self::new(Default::default(), Weak::new())
         }
     }
 
     impl Clone for BlockMetadataRef {
         fn clone(&self) -> Self {
-            Self(Weak::clone(&self.0))
+            Self(self.0.clone(), Weak::clone(&self.1))
         }
     }
 

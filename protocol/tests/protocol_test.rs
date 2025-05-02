@@ -1,5 +1,5 @@
 use std::any::type_name;
-
+use std::backtrace::Backtrace;
 use block_factory::BlockFactory;
 use block_storage::BlockStorage;
 use common::{
@@ -78,6 +78,7 @@ fn test_protocol() -> Result<()> {
             .map_err(|_| MetadataNotFound {
                 metadata: type_name::<Milestone<Config>>(),
                 block_id: block1_metadata.block.id().clone(),
+                backtrace: Backtrace::capture(),
             })?
             .height
     );
@@ -104,11 +105,13 @@ fn test_protocol() -> Result<()> {
             .map_err(|_| MetadataNotFound {
                 metadata: type_name::<Milestone<Config>>(),
                 block_id: block_1_1_metadata.block.id().clone(),
+                backtrace: Backtrace::capture(),
             })?
             .height()
             .map_err(|_| MetadataNotFound {
                 metadata: type_name::<Milestone<Config>>(),
                 block_id: block_1_1_metadata.block.id().clone(),
+                backtrace: Backtrace::capture(),
             })?
     );
 

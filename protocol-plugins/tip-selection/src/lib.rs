@@ -7,7 +7,7 @@ use std::{
 use block_dag::{BlockDAG, BlockDAGMetadata};
 use common::{
     blocks::BlockMetadata,
-    errors::{Error::BlockNotFound, Result},
+    errors::{Result},
     ids::BlockID,
     rx::{Callbacks, Subscription},
 };
@@ -76,16 +76,16 @@ impl<C: VirtualVotingConfig> TipSelection<C> {
         let mut removed_tips = Vec::with_capacity(block.block.parents().len());
         let mut tips = self.tips.lock().expect("failed to lock");
         for parent_ref in parent_refs {
-            match parent_ref.upgrade() {
-                Some(parent) => {
+            match parent_ref.try_upgrade() {
+                Ok(parent) => {
                     if tips.remove(&parent) {
                         removed_tips.push(parent);
                     }
                 }
-                None => {
+                Err(err) => {
                     tips.extend(removed_tips.into_iter());
 
-                    return Err(BlockNotFound);
+                    return Err(err);
                 }
             }
         }

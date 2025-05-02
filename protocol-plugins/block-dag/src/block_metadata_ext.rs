@@ -2,7 +2,7 @@ use std::{collections::VecDeque, sync::Arc};
 
 use common::{
     blocks::BlockMetadata,
-    errors::{Error::BlockNotFound, Result},
+    errors::{Result},
 };
 use indexmap::IndexSet;
 
@@ -33,7 +33,7 @@ impl BlockDAGBlockMetadataExt for BlockMetadata {
                     .unwrap()
                     .iter()
                 {
-                    let parent_block = parent_ref.upgrade().ok_or(BlockNotFound)?;
+                    let parent_block = parent_ref.try_upgrade()?;
 
                     if should_visit(&parent_block)? && past_cone.insert(parent_block.clone()) {
                         queue.push_back(parent_block);

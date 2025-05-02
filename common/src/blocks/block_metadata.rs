@@ -2,7 +2,7 @@ use std::{
     any::type_name,
     sync::{Arc, RwLock},
 };
-
+use std::backtrace::Backtrace;
 use crate::{
     blocks::{Block, BlockMetadataRef},
     collections::AnyMap,
@@ -27,8 +27,9 @@ impl BlockMetadata {
 
     pub fn try_get<T: Send + Sync + Clone + 'static>(&self) -> Result<T> {
         self.metadata::<T>().value().ok_or(MetadataNotFound {
-            metadata: type_name::<T>(),
             block_id: self.block.id().clone(),
+            metadata: type_name::<T>(),
+            backtrace: Backtrace::capture(),       
         })
     }
 
@@ -45,7 +46,7 @@ impl BlockMetadata {
     }
 
     pub fn downgrade(&self) -> BlockMetadataRef {
-        BlockMetadataRef::new(Arc::downgrade(&self.0))
+        BlockMetadataRef::new(self.block.id().clone(), Arc::downgrade(&self.0))
     }
 }
 
