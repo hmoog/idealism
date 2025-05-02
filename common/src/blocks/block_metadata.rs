@@ -8,7 +8,7 @@ use crate::{
     blocks::{Block, BlockMetadataRef},
     collections::AnyMap,
     errors::{Error::MetadataNotFound, Result},
-    rx::Signal,
+    rx::{CallbackOnce, Signal},
 };
 
 pub struct BlockMetadata(pub(crate) Arc<BlockMetadataInner>);
@@ -30,6 +30,10 @@ impl BlockMetadata {
         self.metadata().set(value.clone());
 
         value
+    }
+
+    pub fn attach<T: Send + Sync + Clone + 'static>(&self, callback: impl CallbackOnce<T>) {
+        self.metadata::<T>().attach(callback);
     }
 
     pub fn try_get<T: Send + Sync + Clone + 'static>(&self) -> Result<T> {

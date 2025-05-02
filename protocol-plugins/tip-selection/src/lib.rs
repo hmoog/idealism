@@ -71,7 +71,7 @@ impl<C: VirtualVotingConfig> TipSelection<C> {
         let metadata = block;
 
         let block_dag_metadata = metadata.try_get::<Arc<BlockDAGMetadata>>()?;
-        let locked_parents = block_dag_metadata.parents.lock().unwrap();
+        let locked_parents = block_dag_metadata.parents.read().unwrap();
         let parent_refs = locked_parents.iter();
         let mut removed_tips = Vec::with_capacity(block.block.parents().len());
         let mut tips = self.tips.lock().expect("failed to lock");

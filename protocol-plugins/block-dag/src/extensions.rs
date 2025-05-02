@@ -26,7 +26,7 @@ impl BlockMetadataExt for BlockMetadata {
                 for parent_ref in current
                     .try_get::<Arc<BlockDAGMetadata>>()?
                     .parents
-                    .lock()
+                    .read()
                     .unwrap()
                     .iter()
                 {

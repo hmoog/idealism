@@ -20,7 +20,7 @@ impl BlockDAG {
         Self {
             block_available: Event::default(),
             block_storage: plugins.load(),
-            block_storage_subscription: Mutex::new(Some(Self::block_storage_subscription(
+            block_storage_subscription: Mutex::new(Some(Self::subscribe_block_storage(
                 weak.clone(),
                 &plugins.load(),
             ))),
@@ -31,7 +31,7 @@ impl BlockDAG {
         self.block_storage_subscription.lock().unwrap().take();
     }
 
-    fn block_storage_subscription(
+    fn subscribe_block_storage(
         weak_block_dag: Weak<Self>,
         block_storage: &BlockStorage,
     ) -> Subscription<Callbacks<Address>> {

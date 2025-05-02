@@ -23,7 +23,7 @@ impl<C: VirtualVotingConfig> VirtualVoting<C> {
         for block_ref in block
             .try_get::<Arc<BlockDAGMetadata>>()?
             .parents
-            .lock()
+            .read()
             .unwrap()
             .iter()
         {
