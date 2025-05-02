@@ -42,7 +42,7 @@ impl<C: VirtualVotingConfig> ManagedPlugin for VirtualVoting<C> {
             let config: Arc<C> = plugins.get().unwrap();
 
             Self {
-                subscription: Mutex::new(Some(block_dag.subscribe({
+                subscription: Mutex::new(Some(block_dag.block_available.subscribe({
                     move |block| {
                         println!("VIRTUAL VOTING PROCESSING BLOCK {}", block.block.id());
                         match &block.block {

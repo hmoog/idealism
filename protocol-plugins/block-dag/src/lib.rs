@@ -7,28 +7,26 @@ pub use block_metadata_ext::BlockDAGBlockMetadataExt;
 use block_storage::{Address, BlockStorage};
 use common::{
     blocks::BlockMetadata,
-    rx::{Callback, Callbacks, Event, Subscription},
+    rx::{Callbacks, Event, Subscription},
 };
 pub use metadata::BlockDAGMetadata;
 use protocol::{ManagedPlugin, Plugins};
 
 pub struct BlockDAG {
+    pub block_available: Event<BlockMetadata>,
     block_storage: Arc<BlockStorage>,
     block_storage_subscription: Mutex<Option<BlockStorageSubscription>>,
-    block_available: Event<BlockMetadata>,
 }
 
 impl BlockDAG {
     fn new(weak: &Weak<Self>, plugins: &mut Plugins) -> Self {
-        let block_storage: Arc<BlockStorage> = plugins.load();
-
         Self {
+            block_available: Event::default(),
+            block_storage: plugins.load(),
             block_storage_subscription: Mutex::new(Some(Self::block_storage_subscription(
-                &block_storage,
+                &plugins.load(),
                 weak.clone(),
             ))),
-            block_storage,
-            block_available: Event::default(),
         }
     }
 
@@ -37,7 +35,7 @@ impl BlockDAG {
     }
 
     fn block_storage_subscription(
-        block_storage: &Arc<BlockStorage>,
+        block_storage: &BlockStorage,
         weak: Weak<Self>,
     ) -> BlockStorageSubscription {
         block_storage.subscribe(move |address| {
@@ -84,12 +82,6 @@ impl BlockDAG {
     }
 }
 
-impl BlockDAG {
-    pub fn subscribe(&self, callback: impl Callback<BlockMetadata>) -> BlockDAGSubscription {
-        self.block_available.subscribe(callback)
-    }
-}
-
 impl ManagedPlugin for BlockDAG {
     fn construct(plugins: &mut Plugins) -> Arc<Self> {
         Arc::new_cyclic(|weak: &Weak<Self>| Self::new(weak, plugins))
@@ -101,4 +93,3 @@ impl ManagedPlugin for BlockDAG {
 }
 
 type BlockStorageSubscription = Subscription<Callbacks<Address>>;
-type BlockDAGSubscription = Subscription<Callbacks<BlockMetadata>>;

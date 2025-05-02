@@ -55,8 +55,8 @@ impl<C: VirtualVotingConfig> ConsensusRound<C> {
         self.consensus_subscription.lock().unwrap().take();
     }
 
-    fn block_dag_subscription(block_dag: &Arc<BlockDAG>, weak: Weak<Self>) -> BlockDAGSubscription {
-        block_dag.subscribe(move |block| {
+    fn block_dag_subscription(block_dag: &BlockDAG, weak: Weak<Self>) -> BlockDAGSubscription {
+        block_dag.block_available.subscribe(move |block| {
             let weak = weak.clone();
 
             block.metadata::<Arc<Vote<C>>>().attach(move |vote| {

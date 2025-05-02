@@ -50,7 +50,7 @@ impl<C: VirtualVotingConfig> TipSelection<C> {
     fn block_dag_subscription(block_dag: &Arc<BlockDAG>, weak: Weak<Self>) -> BlockDAGSubscription {
         let weak = weak.clone();
 
-        block_dag.subscribe(move |block| {
+        block_dag.block_available.subscribe(move |block| {
             let weak = weak.clone();
             let weak_block = block.downgrade();
 

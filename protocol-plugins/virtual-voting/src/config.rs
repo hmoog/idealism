@@ -3,7 +3,7 @@ use protocol::ProtocolConfig;
 
 use crate::{Vote, VoteBuilder};
 
-pub trait VirtualVotingConfig: ProtocolConfig + Default + Sync + Send + 'static {
+pub trait VirtualVotingConfig: ProtocolConfig {
     fn genesis_time(&self) -> u64;
 
     fn slot_oracle(&self, time: u64) -> u64;
