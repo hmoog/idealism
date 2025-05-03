@@ -75,14 +75,14 @@ impl BlockStorage {
         self.new_address.subscribe(callback)
     }
 
-    pub fn subscribe_plugin_to_new_block<Plugin: Sync + Send + 'static>(
+    pub fn plugin_subscribe_new_block<Plugin: Sync + Send + 'static>(
         &self,
         weak_plugin: &Weak<Plugin>,
         callback: fn(Arc<Plugin>, &BlockMetadata),
     ) -> Subscription<Callbacks<Address>> {
         let weak_plugin = weak_plugin.clone();
 
-        self.subscribe_to_new_address(move |address| {
+        self.new_address.subscribe(move |address| {
             let weak_plugin = weak_plugin.clone();
 
             address.attach(move |block| {

@@ -23,13 +23,7 @@ impl BlockMetadataExt for BlockMetadata {
             let mut queue = VecDeque::from([self.clone()]);
 
             while let Some(current) = queue.pop_front() {
-                for parent_ref in current
-                    .try_get::<Arc<BlockDAGMetadata>>()?
-                    .parents
-                    .read()
-                    .unwrap()
-                    .iter()
-                {
+                for parent_ref in current.try_get::<Arc<BlockDAGMetadata>>()?.parents().iter() {
                     let parent_block = parent_ref.try_upgrade()?;
 
                     if should_visit(&parent_block)? && past_cone.insert(parent_block.clone()) {

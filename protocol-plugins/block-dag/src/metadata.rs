@@ -1,4 +1,4 @@
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, RwLock, RwLockReadGuard};
 
 use common::{
     blocks::{BlockMetadata, BlockMetadataRef},
@@ -6,7 +6,7 @@ use common::{
 };
 
 pub struct BlockDAGMetadata {
-    pub parents: RwLock<Vec<BlockMetadataRef>>,
+    parents: RwLock<Vec<BlockMetadataRef>>,
     pub all_parents_available: Arc<Countdown>,
 }
 
@@ -31,5 +31,9 @@ impl BlockDAGMetadata {
                 });
             }
         });
+    }
+
+    pub fn parents(&self) -> RwLockReadGuard<Vec<BlockMetadataRef>> {
+        self.parents.read().unwrap()
     }
 }

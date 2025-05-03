@@ -28,15 +28,14 @@ pub struct Consensus<C: VirtualVotingConfig> {
 impl<C: VirtualVotingConfig> Consensus<C> {
     fn new(this: &Weak<Self>, plugins: &mut Plugins) -> Self {
         let block_dag: Arc<BlockDAG> = plugins.load();
-        let block_dag_subscription = Mutex::new(Some(block_dag.subscribe_plugin_to_metadata(
-            this,
-            |this, vote| {
+        let block_dag_subscription = Mutex::new(Some(
+            block_dag.plugin_subscribe_metadata_available(this, |this, vote| {
                 if let Err(err) = this.process_vote(vote) {
                     // TODO: handle the error more elegantly
                     println!("{:?}", err);
                 }
-            },
-        )));
+            }),
+        ));
 
         Self {
             chain_index: Default::default(),

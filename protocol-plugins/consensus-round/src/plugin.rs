@@ -56,17 +56,11 @@ impl<C: VirtualVotingConfig> ConsensusRound<C> {
     }
 
     fn block_dag_subscription(block_dag: &BlockDAG, weak: Weak<Self>) -> BlockDAGSubscription {
-        block_dag.block_available.subscribe(move |block| {
-            let weak = weak.clone();
-
-            block.metadata::<Arc<Vote<C>>>().attach(move |vote| {
-                if let Some(consensus_round) = weak.upgrade() {
-                    if let Err(err) = consensus_round.process_vote(vote) {
-                        // TODO: handle the error more elegantly
-                        println!("{:?}", err);
-                    }
-                }
-            });
+        block_dag.plugin_subscribe_metadata_available(&weak, |this, vote| {
+            if let Err(err) = this.process_vote(vote) {
+                // TODO: handle the error more elegantly
+                println!("{:?}", err);
+            }
         })
     }
 

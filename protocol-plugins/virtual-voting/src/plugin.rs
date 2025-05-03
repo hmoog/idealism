@@ -20,13 +20,7 @@ pub struct VirtualVoting<C: VirtualVotingConfig> {
 impl<C: VirtualVotingConfig> VirtualVoting<C> {
     pub fn referenced_votes(block: &BlockMetadata) -> Result<Votes<C>> {
         let mut result = Votes::default();
-        for block_ref in block
-            .try_get::<Arc<BlockDAGMetadata>>()?
-            .parents
-            .read()
-            .unwrap()
-            .iter()
-        {
+        for block_ref in block.try_get::<Arc<BlockDAGMetadata>>()?.parents().iter() {
             result.insert(block_ref.try_upgrade()?.try_get::<Vote<C>>()?);
         }
 
@@ -41,37 +35,35 @@ impl<C: VirtualVotingConfig> ManagedPlugin for VirtualVoting<C> {
             let config: Arc<C> = plugins.get().unwrap();
 
             Self {
-                subscription: Mutex::new(Some(block_dag.block_available.subscribe({
-                    move |block| {
-                        match &block.block {
-                            Block::NetworkBlock(_, network_block) => {
-                                let src: BlockMetadataRef = block.downgrade();
-                                match Self::referenced_votes(block) {
-                                    Ok(referenced_votes) => match Vote::new(
-                                        src,
-                                        &network_block.issuer_id,
-                                        0,
-                                        referenced_votes,
-                                    ) {
-                                        Ok(vote) => {
-                                            block.metadata().set(vote);
-                                        }
-                                        Err(err) => {
-                                            println!("Error creating vote1: {:?}", err);
-                                        }
-                                    },
-                                    Err(err) => {
-                                        println!("Error creating vote2: {:?}", err);
+                subscription: Mutex::new(Some(block_dag.subscribe_block_available(move |block| {
+                    match &block.block {
+                        Block::NetworkBlock(_, network_block) => {
+                            let src: BlockMetadataRef = block.downgrade();
+                            match Self::referenced_votes(block) {
+                                Ok(referenced_votes) => match Vote::new(
+                                    src,
+                                    &network_block.issuer_id,
+                                    0,
+                                    referenced_votes,
+                                ) {
+                                    Ok(vote) => {
+                                        block.metadata().set(vote);
                                     }
+                                    Err(err) => {
+                                        println!("Error creating vote1: {:?}", err);
+                                    }
+                                },
+                                Err(err) => {
+                                    println!("Error creating vote2: {:?}", err);
                                 }
                             }
-                            _ => {
-                                block
-                                    .metadata()
-                                    .set(Vote::new_genesis(block.downgrade(), config.clone()));
-                            }
-                        };
-                    }
+                        }
+                        _ => {
+                            block
+                                .metadata()
+                                .set(Vote::new_genesis(block.downgrade(), config.clone()));
+                        }
+                    };
                 }))),
                 _marker: PhantomData,
             }
