@@ -7,9 +7,11 @@ use std::{
 use block_dag::{BlockDAG, BlockDAGMetadata};
 use common::{
     blocks::BlockMetadata,
+    down,
     errors::Result,
     ids::BlockID,
     rx::{Callbacks, Subscription},
+    up, with,
 };
 use protocol::{ManagedPlugin, Plugins};
 use virtual_voting::{VirtualVotingConfig, Vote};
@@ -29,17 +31,13 @@ impl<C: VirtualVotingConfig> ManagedPlugin for TipSelection<C> {
 
             Self {
                 tips: Default::default(),
-                block_dag_subscription: Mutex::new(Some(
-                    block_dag.plugin_subscribe_block_and_metadata_available(
-                        this,
-                        |this, block, _: &Vote<C>| {
-                            if let Err(err) = this.process_block(&block) {
-                                // TODO: handle the error more elegantly
-                                println!("{:?}", err);
-                            }
-                        },
-                    ),
-                )),
+                block_dag_subscription: Mutex::new(Some(block_dag.block_available.subscribe(
+                    with!(this: move |block| with!(this: {
+                        block.attach::<Vote<C>>(down!(block: move |_| up!(this, block: {
+                            this.process_block(&block).unwrap_or_else(|e| println!("{:?}", e))
+                        })))
+                    })),
+                ))),
                 _marker: PhantomData,
             }
         })

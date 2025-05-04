@@ -9,6 +9,7 @@ use common::{
         UpdateType::{Notify, Retain},
         Variable,
     },
+    up, with,
 };
 use protocol::{ManagedPlugin, Plugins};
 use virtual_voting::{VirtualVotingConfig, Vote};
@@ -28,14 +29,13 @@ pub struct Consensus<C: VirtualVotingConfig> {
 impl<C: VirtualVotingConfig> Consensus<C> {
     fn new(this: &Weak<Self>, plugins: &mut Plugins) -> Self {
         let block_dag: Arc<BlockDAG> = plugins.load();
-        let block_dag_subscription = Mutex::new(Some(
-            block_dag.plugin_subscribe_metadata_available(this, |this, vote| {
-                if let Err(err) = this.process_vote(vote) {
-                    // TODO: handle the error more elegantly
-                    println!("{:?}", err);
-                }
+        let block_dag_subscription = Mutex::new(Some(block_dag.block_available.subscribe(
+            with!(this: move |block| {
+                block.attach(with!(this: move |vote| up!(this: {
+                    this.process_vote(vote).unwrap_or_else(|e| println!("{:?}", e))
+                })))
             }),
-        ));
+        )));
 
         Self {
             chain_index: Default::default(),

@@ -14,6 +14,7 @@ use common::{
         UpdateType::{Notify, Retain},
         Variable,
     },
+    up, with,
 };
 use consensus::Consensus;
 use protocol::{ManagedPlugin, Plugins};
@@ -55,13 +56,14 @@ impl<C: VirtualVotingConfig> ConsensusRound<C> {
         self.consensus_subscription.lock().unwrap().take();
     }
 
-    fn block_dag_subscription(block_dag: &BlockDAG, weak: Weak<Self>) -> BlockDAGSubscription {
-        block_dag.plugin_subscribe_metadata_available(&weak, |this, vote| {
-            if let Err(err) = this.process_vote(vote) {
-                // TODO: handle the error more elegantly
-                println!("{:?}", err);
-            }
-        })
+    fn block_dag_subscription(block_dag: &BlockDAG, this: Weak<Self>) -> BlockDAGSubscription {
+        block_dag
+            .block_available
+            .subscribe(with!(this: move |block| {
+                block.attach(with!(this: move |vote| up!(this: {
+                    this.process_vote(vote).unwrap_or_else(|err| println!("{:?}", err))
+                })))
+            }))
     }
 
     fn consensus_subscription(

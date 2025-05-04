@@ -3,36 +3,37 @@ use std::sync::{Arc, RwLock, RwLockReadGuard};
 use common::{
     blocks::{BlockMetadata, BlockMetadataRef},
     rx::Countdown,
+    up,
 };
 
 pub struct BlockDAGMetadata {
+    pub all_parents_available: Countdown,
     parents: RwLock<Vec<BlockMetadataRef>>,
-    pub all_parents_available: Arc<Countdown>,
 }
 
 impl BlockDAGMetadata {
-    pub fn new(parents_count: usize) -> Self {
+    pub(crate) fn new(parents_count: usize) -> Self {
         Self {
             parents: RwLock::new(vec![BlockMetadataRef::default(); parents_count]),
-            all_parents_available: Arc::new(Countdown::new(parents_count)),
+            all_parents_available: Countdown::new(parents_count),
         }
     }
 
-    pub fn set_parent_available(self: &Arc<Self>, index: usize, parent: &BlockMetadata) {
+    pub(crate) fn register_parent(self: &Arc<Self>, index: usize, parent: &BlockMetadata) {
         self.parents.write().unwrap()[index] = parent.downgrade();
 
-        parent.attach({
-            let weak_all_parents_available = Arc::downgrade(&self.all_parents_available);
-            |block_dag_metadata: &Arc<BlockDAGMetadata>| {
-                block_dag_metadata.all_parents_available.attach(move |_| {
-                    if let Some(all_parents_available) = weak_all_parents_available.upgrade() {
-                        all_parents_available.decrease();
-                    }
-                });
+        parent.attach::<Arc<BlockDAGMetadata>>({
+            let this = Arc::downgrade(&self);
+            |parent| {
+                parent
+                    .all_parents_available
+                    .attach(move |_| up!(this: this.all_parents_available.decrease()))
             }
         });
     }
+}
 
+impl BlockDAGMetadata {
     pub fn parents(&self) -> RwLockReadGuard<Vec<BlockMetadataRef>> {
         self.parents.read().unwrap()
     }

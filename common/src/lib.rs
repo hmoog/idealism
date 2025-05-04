@@ -25,6 +25,11 @@ pub mod collections {
     pub use any_map::AnyMap;
     pub use max_set::MaxSet;
 }
+pub mod extensions {
+    mod arc;
+
+    pub use arc::*;
+}
 pub mod errors {
     mod error;
     mod result;
@@ -66,4 +71,35 @@ pub mod rx {
     pub use signal::*;
     pub use subscription::*;
     pub use variable::*;
+}
+
+#[macro_export]
+macro_rules! up {
+    ( $( $var:ident ),+ : $body:expr ) => {{
+        $( let Some($var) = $var.upgrade() else { return; }; )+
+        $body
+    }};
+}
+
+#[macro_export]
+macro_rules! with {
+    ( $( $var:ident ),+ : $body:expr ) => {{
+        $( let $var = $var.clone(); )+
+        $body
+    }};
+}
+
+#[macro_export]
+macro_rules! down {
+    (self $(, $var:ident )* : $body:expr) => {{
+        let this = self.downgrade();
+        $(
+            let $var = $var.downgrade();
+        )*
+        $body
+    }};
+    ( $( $var:ident ),+ : $body:expr ) => {{
+        $( let $var = $var.downgrade(); )+
+        $body
+    }};
 }

@@ -35,7 +35,7 @@ impl<C: VirtualVotingConfig> ManagedPlugin for VirtualVoting<C> {
             let config: Arc<C> = plugins.get().unwrap();
 
             Self {
-                subscription: Mutex::new(Some(block_dag.subscribe_block_available(move |block| {
+                subscription: Mutex::new(Some(block_dag.block_available.subscribe(move |block| {
                     match &block.block {
                         Block::NetworkBlock(_, network_block) => {
                             let src: BlockMetadataRef = block.downgrade();
