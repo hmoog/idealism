@@ -10,7 +10,7 @@ pub struct AcceptedBlocks {
 
 impl Debug for AcceptedBlocks {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("BlocksOrderedEvent")
+        f.debug_struct("AcceptedBlocks")
             .field("current_height", &self.height)
             .field("ordered_blocks", &self.rounds)
             .finish()

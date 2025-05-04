@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-common = { path = "../../common" }
 block-storage = { path = "../block-storage"}
-indexmap = "2.7.1"
+common = { path = "../../common" }
+indexmap = "2.9.0"
 protocol = { path = "../../protocol" }

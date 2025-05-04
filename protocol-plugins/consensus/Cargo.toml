@@ -6,6 +6,6 @@ edition = "2024"
 [dependencies]
 block-dag = { path = "../block-dag" }
 common = { path = "../../common" }
-indexmap = "2.7.1"
+indexmap = "2.9.0"
 protocol = { path = "../../protocol" }
 virtual-voting = { path = "../virtual-voting" }

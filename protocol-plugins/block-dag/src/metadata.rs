@@ -2,6 +2,7 @@ use std::sync::{Arc, RwLock, RwLockReadGuard};
 
 use common::{
     blocks::{BlockMetadata, BlockMetadataRef},
+    extensions::ArcExt,
     rx::Countdown,
     up,
 };
@@ -23,7 +24,7 @@ impl BlockDAGMetadata {
         self.parents.write().unwrap()[index] = parent.downgrade();
 
         parent.attach::<Arc<BlockDAGMetadata>>({
-            let this = Arc::downgrade(&self);
+            let this = self.downgrade();
             |parent| {
                 parent
                     .all_parents_available

@@ -1,9 +1,6 @@
 mod acceptance_state;
 mod accepted_blocks;
-mod consensus_metadata;
-mod plugin;
+mod consensus;
+mod metadata;
 
-pub use acceptance_state::AcceptanceState;
-pub use accepted_blocks::AcceptedBlocks;
-pub use consensus_metadata::ConsensusMetadata;
-pub use plugin::Consensus;
+pub use crate::{acceptance_state::*, accepted_blocks::*, consensus::*, metadata::*};

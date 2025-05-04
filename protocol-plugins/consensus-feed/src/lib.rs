@@ -9,7 +9,6 @@ use crate::ConsensusFeedEvent::{
     LatestAcceptedMilestoneUpdated,
 };
 
-#[derive(Default)]
 pub struct ConsensusFeed<C: VirtualVotingConfig> {
     event: Event<ConsensusFeedEvent<C>>,
     consensus: Arc<Consensus<C>>,

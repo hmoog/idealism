@@ -16,7 +16,6 @@ use virtual_voting::{VirtualVotingConfig, Vote};
 
 use crate::{AcceptanceState, AcceptedBlocks, ConsensusMetadata};
 
-#[derive(Default)]
 pub struct Consensus<C: VirtualVotingConfig> {
     pub chain_index: Variable<u64>,
     pub heaviest_milestone_vote: Variable<Vote<C>>,
@@ -26,36 +25,39 @@ pub struct Consensus<C: VirtualVotingConfig> {
     block_dag_subscription: Mutex<Option<Subscription<Callbacks<BlockMetadata>>>>,
 }
 
-impl<C: VirtualVotingConfig> Consensus<C> {
-    fn new(this: &Weak<Self>, plugins: &mut Plugins) -> Self {
-        let block_dag: Arc<BlockDAG> = plugins.load();
-        let block_dag_subscription = Mutex::new(Some(block_dag.block_available.subscribe(
-            with!(this: move |block| {
-                block.attach(with!(this: move |vote| up!(this: {
-                    this.process_vote(vote).unwrap_or_else(|e| println!("{:?}", e))
-                })))
-            }),
-        )));
+impl<C: VirtualVotingConfig> ManagedPlugin for Consensus<C> {
+    fn new(plugins: &mut Plugins) -> Arc<Self> {
+        Arc::new_cyclic(|this: &Weak<Self>| {
+            let block_dag = plugins.load::<BlockDAG>();
 
-        Self {
-            chain_index: Default::default(),
-            heaviest_milestone_vote: Default::default(),
-            latest_accepted_milestone: Default::default(),
-            committee: Default::default(),
-            accepted_blocks: Default::default(),
-            block_dag_subscription,
-        }
+            Self {
+                chain_index: Default::default(),
+                heaviest_milestone_vote: Default::default(),
+                latest_accepted_milestone: Default::default(),
+                committee: Default::default(),
+                accepted_blocks: Default::default(),
+                block_dag_subscription: Mutex::new(Some(block_dag.block_available.subscribe(
+                    with!(this: move |block| {
+                        block.attach(with!(this: move |vote| up!(this: {
+                            this.process_vote(vote).unwrap_or_else(|e| println!("{:?}", e))
+                        })))
+                    }),
+                ))),
+            }
+        })
     }
 
     fn shutdown(&self) {
         self.block_dag_subscription.lock().unwrap().take();
     }
+}
 
+impl<C: VirtualVotingConfig> Consensus<C> {
     fn process_vote(&self, vote: &Vote<C>) -> virtual_voting::Result<()> {
         if vote.milestone.is_some() {
             self.update_heaviest_milestone_vote(vote)?;
             self.update_latest_accepted_milestone(vote)?;
-        };
+        }
 
         Ok(())
     }
@@ -139,15 +141,5 @@ impl<C: VirtualVotingConfig> Consensus<C> {
         }
 
         Ok(accepted_blocks)
-    }
-}
-
-impl<C: VirtualVotingConfig> ManagedPlugin for Consensus<C> {
-    fn new(plugins: &mut Plugins) -> Arc<Self> {
-        Arc::new_cyclic(|weak: &Weak<Self>| Self::new(weak, plugins))
-    }
-
-    fn shutdown(&self) {
-        self.shutdown();
     }
 }

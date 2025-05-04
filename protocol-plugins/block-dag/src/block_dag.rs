@@ -1,7 +1,13 @@
 use std::sync::{Arc, Mutex, Weak};
 
 use block_storage::{Address, BlockStorage};
-use common::{blocks::BlockMetadata, down, extensions::ArcExt, rx::{Callbacks, Event, Subscription}, up, with};
+use common::{
+    blocks::BlockMetadata,
+    down,
+    extensions::ArcExt,
+    rx::{Callbacks, Event, Subscription},
+    up, with,
+};
 use protocol::{ManagedPlugin, Plugins};
 
 use crate::BlockDAGMetadata;
