@@ -1,12 +1,12 @@
 use std::{
     collections::HashMap,
-    sync::{Arc, Mutex, Weak},
+    sync::{Arc, Mutex},
 };
 
 use common::{
     blocks::{Block, Block::GenesisBlock, BlockMetadata},
     ids::{BlockID, Id},
-    rx::{Callback, Callbacks, Event, Signal, Subscription},
+    rx::{Event, Signal},
 };
 use protocol::{ManagedPlugin, Plugins};
 
@@ -14,13 +14,13 @@ use crate::Address;
 
 #[derive(Default)]
 pub struct BlockStorage {
+    pub new_address: Event<Address>,
     blocks: Mutex<HashMap<BlockID, Address>>,
-    new_address: Event<Address>,
 }
 
 impl ManagedPlugin for BlockStorage {
     fn new(_: &mut Plugins) -> Arc<Self> {
-        Arc::new(Self::default())
+        Default::default()
     }
 
     fn start(&self) {
@@ -66,30 +66,5 @@ impl BlockStorage {
         }
 
         address
-    }
-
-    pub fn subscribe_to_new_address(
-        &self,
-        callback: impl Callback<Address>,
-    ) -> Subscription<Callbacks<Address>> {
-        self.new_address.subscribe(callback)
-    }
-
-    pub fn plugin_subscribe_new_block<Plugin: Sync + Send + 'static>(
-        &self,
-        weak_plugin: &Weak<Plugin>,
-        callback: fn(Arc<Plugin>, &BlockMetadata),
-    ) -> Subscription<Callbacks<Address>> {
-        let weak_plugin = weak_plugin.clone();
-
-        self.new_address.subscribe(move |address| {
-            let weak_plugin = weak_plugin.clone();
-
-            address.attach(move |block| {
-                if let Some(plugin) = weak_plugin.upgrade() {
-                    callback(plugin, block);
-                }
-            })
-        })
     }
 }

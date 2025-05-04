@@ -1,13 +1,7 @@
 use std::sync::{Arc, Mutex, Weak};
 
 use block_storage::{Address, BlockStorage};
-use common::{
-    blocks::BlockMetadata,
-    down,
-    extensions::ArcExt,
-    rx::{Callbacks, Event, Subscription},
-    up,
-};
+use common::{blocks::BlockMetadata, down, extensions::ArcExt, rx::{Callbacks, Event, Subscription}, up, with};
 use protocol::{ManagedPlugin, Plugins};
 
 use crate::BlockDAGMetadata;
@@ -26,7 +20,9 @@ impl ManagedPlugin for BlockDAG {
             Self {
                 block_available: Event::default(),
                 block_storage_subscription: Mutex::new(Some(
-                    block_storage.plugin_subscribe_new_block(this, BlockDAG::provide_metadata),
+                    block_storage.new_address.subscribe(with!(this: move |address| {
+                        address.attach(with!(this: move |block| up!(this: this.provide_metadata(block))))
+                    }))
                 )),
                 block_storage,
             }
