@@ -91,13 +91,6 @@ macro_rules! with {
 
 #[macro_export]
 macro_rules! down {
-    (self $(, $var:ident )* : $body:expr) => {{
-        let this = self.downgrade();
-        $(
-            let $var = $var.downgrade();
-        )*
-        $body
-    }};
     ( $( $var:ident ),+ : $body:expr ) => {{
         $( let $var = $var.downgrade(); )+
         $body

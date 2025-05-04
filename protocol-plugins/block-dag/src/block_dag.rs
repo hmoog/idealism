@@ -45,6 +45,13 @@ impl ManagedPlugin for BlockDAG {
 impl BlockDAG {
     fn provide_metadata(self: Arc<Self>, block: &BlockMetadata) {
         let metadata = block.set(Arc::new(BlockDAGMetadata::new(block.block.parents().len())));
+        
+        metadata.all_parents_available.attach({
+            let this = self.downgrade();
+            down!(block: move |_| up!(this, block: {
+                this.block_available.trigger(&block)
+            }))
+        });
 
         for (index, parent_id) in block.block.parents().iter().enumerate() {
             self.block_storage.address(parent_id).attach(
@@ -53,12 +60,5 @@ impl BlockDAG {
                 })),
             );
         }
-
-        metadata.all_parents_available.attach({
-            let this = self.downgrade();
-            down!(block: move |_| up!(this, block: {
-                this.block_available.trigger(&block)
-            }))
-        });
     }
 }
