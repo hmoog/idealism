@@ -25,11 +25,13 @@ impl ManagedPlugin for BlockDAG {
 
             Self {
                 block_available: Event::default(),
-                block_storage_subscription: Mutex::new(Some(
-                    block_storage.new_address.subscribe(with!(this: move |address| {
-                        address.attach(with!(this: move |block| up!(this: this.provide_metadata(block))))
-                    }))
-                )),
+                block_storage_subscription: Mutex::new(Some(block_storage.new_address.subscribe(
+                    with!(this: move |address| {
+                        address.attach(with!(this: move |block| up!(this: {
+                            this.provide_metadata(block)
+                        })))
+                    }),
+                ))),
                 block_storage,
             }
         })
@@ -54,7 +56,9 @@ impl BlockDAG {
 
         metadata.all_parents_available.attach({
             let this = self.downgrade();
-            down!(block: move |_| up!(this, block: this.block_available.trigger(&block)))
+            down!(block: move |_| up!(this, block: {
+                this.block_available.trigger(&block)
+            }))
         });
     }
 }

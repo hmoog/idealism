@@ -21,6 +21,7 @@ fn test_protocol() -> Result<()> {
             // define anonymous logging functionality (that subscribes on init)
             registry
                 .load::<ConsensusFeed<Config>>()
+                .event
                 .subscribe(|event| println!("consensus: {:?}", event))
                 .retain();
         })),
