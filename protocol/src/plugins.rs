@@ -11,9 +11,21 @@ pub struct Plugins {
 }
 
 impl Plugins {
-    pub fn start(&self) {
+    pub async fn start(&self) {
+        let mut handles = Vec::new();
+
         for instance in &self.trait_objects {
-            instance.start();
+            if let Some(fut) = instance.start() {
+                let handle = tokio::spawn(fut);
+                handles.push(handle);
+            }
+        }
+
+        for handle in handles {
+            match handle.await {
+                Ok(()) => {}
+                Err(e) => eprintln!("Plugin task panicked: {e}"),
+            }
         }
     }
 

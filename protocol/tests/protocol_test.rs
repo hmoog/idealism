@@ -1,30 +1,74 @@
-use std::{any::type_name, backtrace::Backtrace};
+use std::{any::type_name, backtrace::Backtrace, sync::Arc};
 
 use block_factory::BlockFactory;
 use block_storage::BlockStorage;
 use common::{
     errors::{Error::MetadataNotFound, Result},
     ids::IssuerID,
+    with,
 };
 use config::{Config, ProtocolParams, ProtocolPlugins};
 use consensus_feed::ConsensusFeed;
 use consensus_round::ConsensusRound;
-use protocol::Protocol;
+use protocol::{Protocol, ProtocolConfig};
+use validator::{Validator, ValidatorConfigParams};
 use virtual_voting::{Milestone, Vote};
+
+#[tokio::test]
+async fn test_protocol_async() {
+    let protocol = Arc::new(Protocol::new(
+        Config::default()
+            .with_protocol_params(
+                ProtocolParams::default().with_plugins(ProtocolPlugins::Custom(|cfg, registry| {
+                    ProtocolPlugins::Core.inject(cfg, registry);
+
+                    // define anonymous logging functionality (that subscribes on init)
+                    registry
+                        .load::<ConsensusFeed<Config>>()
+                        .event
+                        .subscribe(|event| println!("consensus: {:?}", event))
+                        .retain();
+
+                    registry.load::<Validator<Config>>();
+                })),
+            )
+            .with_params(ValidatorConfigParams {
+                validator_id: IssuerID::from([1u8; 32]),
+            }),
+    ));
+
+    tokio::spawn(with!(protocol: async move {
+        protocol.start().await;
+    }));
+
+    println!("started");
+
+    tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+
+    println!("stopped");
+}
 
 #[test]
 fn test_protocol() -> Result<()> {
-    let protocol = Protocol::new(Config::default().with_protocol_params(
-        ProtocolParams::default().with_plugins(ProtocolPlugins::Custom(|cfg, registry| {
-            ProtocolPlugins::Core.inject(cfg, registry);
+    let protocol = Arc::new(Protocol::new(
+        Config::default()
+            .with_protocol_params(
+                ProtocolParams::default().with_plugins(ProtocolPlugins::Custom(|cfg, registry| {
+                    ProtocolPlugins::Core.inject(cfg, registry);
 
-            // define anonymous logging functionality (that subscribes on init)
-            registry
-                .load::<ConsensusFeed<Config>>()
-                .event
-                .subscribe(|event| println!("consensus: {:?}", event))
-                .retain();
-        })),
+                    // define anonymous logging functionality (that subscribes on init)
+                    registry
+                        .load::<ConsensusFeed<Config>>()
+                        .event
+                        .subscribe(|event| println!("consensus: {:?}", event))
+                        .retain();
+
+                    registry.load::<Validator<Config>>();
+                })),
+            )
+            .with_params(ValidatorConfigParams {
+                validator_id: IssuerID::from([1u8; 32]),
+            }),
     ));
 
     let consensus_round = protocol.plugins.get::<ConsensusRound<Config>>().unwrap();
@@ -44,7 +88,7 @@ fn test_protocol() -> Result<()> {
         })
         .retain();
 
-    protocol.start();
+    let _ = protocol.start();
 
     let block_1 = block_factory.create_block(&IssuerID::from([1u8; 32]));
     let block_2 = block_factory.create_block(&IssuerID::from([2u8; 32]));

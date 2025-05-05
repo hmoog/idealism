@@ -23,7 +23,7 @@ impl Protocol {
         }
     }
 
-    pub fn start(&self) {
-        self.plugins.start();
+    pub async fn start(&self) {
+        self.plugins.start().await
     }
 }

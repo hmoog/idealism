@@ -22,9 +22,9 @@ impl ProtocolPlugins {
                 registry.load::<BlockStorage>();
                 registry.load::<BlockDAG>();
                 registry.load::<VirtualVoting<Config>>();
+                registry.load::<TipSelection<Config>>();
                 registry.load::<Consensus<Config>>();
                 registry.load::<ConsensusRound<Config>>();
-                registry.load::<TipSelection<Config>>();
                 registry.load::<BlockFactory<Config>>();
                 registry.load::<ConsensusFeed<Config>>();
             }

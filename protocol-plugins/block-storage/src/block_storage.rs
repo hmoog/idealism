@@ -1,5 +1,6 @@
 use std::{
     collections::HashMap,
+    pin::Pin,
     sync::{Arc, Mutex},
 };
 
@@ -23,8 +24,10 @@ impl ManagedPlugin for BlockStorage {
         Default::default()
     }
 
-    fn start(&self) {
+    fn start(&self) -> Option<Pin<Box<dyn Future<Output = ()> + Send>>> {
         self.insert(GenesisBlock(Id::default()));
+
+        None
     }
 
     fn shutdown(&self) {

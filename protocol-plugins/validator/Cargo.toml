@@ -1,0 +1,14 @@
+[package]
+name = "validator"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+block-factory = { path = "../block-factory" }
+block-storage = { path = "../block-storage" }
+common = { path = "../../common" }
+config = { path = "../config" }
+consensus-round = { path = "../consensus-round" }
+protocol = { path = "../../protocol" }
+virtual-voting = { path = "../virtual-voting" }
+inbox = { path = "../inbox" }

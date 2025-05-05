@@ -45,7 +45,7 @@ impl ManagedPlugin for BlockDAG {
 impl BlockDAG {
     fn provide_metadata(self: Arc<Self>, block: &BlockMetadata) {
         let metadata = block.set(Arc::new(BlockDAGMetadata::new(block.block.parents().len())));
-        
+
         metadata.all_parents_available.attach({
             let this = self.downgrade();
             down!(block: move |_| up!(this, block: {
