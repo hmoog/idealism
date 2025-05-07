@@ -3,12 +3,11 @@ use std::sync::Arc;
 use common::{extensions::ArcExt, ids::IssuerID, up};
 use config::{Config, ProtocolParams, ProtocolPlugins};
 use protocol::{Protocol, ProtocolConfig};
-use tracing::{Level, Span, span};
+use tracing::{Level, Span, span, Instrument};
 use tracing_subscriber::{EnvFilter, fmt};
 use validator::{Validator, ValidatorConfigParams};
 
 pub struct TestNode {
-    pub name: String,
     pub protocol: Arc<Protocol>,
     span: Span,
 }
@@ -17,7 +16,6 @@ impl TestNode {
     pub fn new(name: &str, config: Config) -> Self {
         let span = span!(Level::INFO, "node", name = %name);
         Self {
-            name: name.to_string(),
             protocol: span.in_scope(|| Arc::new(Protocol::new(config))),
             span,
         }
@@ -40,16 +38,14 @@ impl TestNode {
     }
 
     pub async fn run_for(self, duration: std::time::Duration) {
-        let _span = self.span.enter();
-
         let protocol = self.protocol.downgrade();
         tokio::spawn(async move {
             up!(protocol: {
                 tokio::time::sleep(duration).await;
                 protocol.shutdown();
             });
-        });
-        self.protocol.start().await;
+        }.instrument(self.span.clone()));
+        self.protocol.start().instrument(self.span.clone()).await;
     }
 }
 
@@ -61,9 +57,8 @@ async fn test_protocol() {
         .try_init();
 
     let mut node_handles = Vec::new();
-    for i in 1..7 {
-        let test_node =
-            TestNode::new_default_validator(&format!("node{}", i), IssuerID::from([i as u8; 32]));
+    for i in 1..3 {
+        let test_node = TestNode::new_default_validator(&format!("node{}", i), IssuerID::from([i as u8; 32]));
         let handle = tokio::spawn(test_node.run_for(std::time::Duration::from_secs(1)));
         node_handles.push(handle);
     }

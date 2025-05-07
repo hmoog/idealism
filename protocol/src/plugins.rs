@@ -38,8 +38,11 @@ impl Plugins {
 
     pub fn shutdown(&self) {
         for plugin in self.iter() {
-            let _plugin_span = span!(Level::INFO, "plugin", name = plugin.plugin_name()).entered();
-            span!(Level::INFO, "shutdown").in_scope(|| plugin.shutdown());
+            span!(Level::INFO, "plugin", name = plugin.plugin_name()).in_scope(|| {
+                span!(Level::INFO, "shutdown").in_scope(|| {
+                    plugin.shutdown()
+                })
+            })
         }
     }
 
