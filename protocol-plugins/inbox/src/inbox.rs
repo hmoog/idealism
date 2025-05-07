@@ -4,13 +4,13 @@ use std::{
 };
 
 use block_storage::BlockStorage;
-use common::{blocks::Block, down, extensions::ArcExt, up};
+use common::{blocks::Block, down, extensions::ArcExt, up, with};
 use protocol::{ManagedPlugin, Plugins};
 use tokio::{
     sync::mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel},
     task,
-    task::JoinHandle,
 };
+use tracing::{Level, Span, error, info, span};
 
 pub struct Inbox {
     sender: RwLock<Option<UnboundedSender<Block>>>,
@@ -21,7 +21,6 @@ pub struct Inbox {
 
 impl ManagedPlugin for Inbox {
     fn new(plugins: &mut Plugins) -> Arc<Self> {
-        println!("Creating Inbox");
         let (tx, rx) = unbounded_channel();
         Arc::new(Self {
             sender: RwLock::new(Some(tx)),
@@ -32,37 +31,39 @@ impl ManagedPlugin for Inbox {
     }
 
     fn start(&self) -> Option<Pin<Box<dyn Future<Output = ()> + Send>>> {
+        let num_workers = self.num_workers;
         let block_storage = self.block_storage.clone();
-
-        let mut workers: Vec<JoinHandle<()>> = Vec::new();
-        for i in 0..self.num_workers {
-            let rx = Arc::clone(&self.receiver);
-
-            workers.push(task::spawn_blocking(down!(block_storage: move || {
-                println!("Worker {i} starting");
-                loop {
-                    up!(block_storage: match rx.lock().unwrap().blocking_recv() {
-                        Some(block) => block_storage.insert(block),
-                        None => break, // channel closed
-                    });
-                }
-                println!("Worker {i} shutting down");
-            })));
-        }
-
-        println!("Inbox is running with {} workers.", self.num_workers);
+        let rx = Arc::clone(&self.receiver);
 
         Some(Box::pin(async move {
-            for (i, handle) in workers.into_iter().enumerate() {
-                match handle.await {
-                    Ok(_) => println!("Worker {i} finished successfully."),
-                    Err(e) => eprintln!("Worker {i} panicked: {e}"),
+            let mut worker_handles = Vec::new();
+            for i in 0..num_workers {
+                let worker_span = span!(parent: Span::current(), Level::INFO, "worker", id = i);
+                worker_handles.push((
+                    task::spawn_blocking(
+                        with!(worker_span: down!(block_storage, rx: move || up!(block_storage, rx: worker_span.in_scope(|| {
+                        info!(target: "inbox", "started");
+                        while let Some(block) = rx.lock().unwrap().blocking_recv() {
+                            let _span = span!(parent: worker_span.clone(), Level::INFO, "received", block_id = i).entered();
+                            block_storage.insert(block);
+                        }
+                        info!(target: "inbox", "stopped");
+                    })))),
+                    ),
+                    worker_span,
+                ));
+            }
+
+            for (worker_handle, worker_span) in worker_handles.into_iter() {
+                if let Err(e) = worker_handle.await {
+                    worker_span.in_scope(|| error!(target: "inbox", "panicked: {e}"))
                 }
             }
         }))
     }
 
     fn shutdown(&self) {
+        info!(target: "inbox", "closing inbox");
         self.sender.write().unwrap().take();
     }
 }

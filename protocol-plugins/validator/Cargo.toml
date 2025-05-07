@@ -12,3 +12,4 @@ consensus-round = { path = "../consensus-round" }
 protocol = { path = "../../protocol" }
 virtual-voting = { path = "../virtual-voting" }
 inbox = { path = "../inbox" }
+tracing = "0.1.41"

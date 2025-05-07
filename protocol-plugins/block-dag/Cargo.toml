@@ -8,3 +8,4 @@ block-storage = { path = "../block-storage"}
 common = { path = "../../common" }
 indexmap = "2.9.0"
 protocol = { path = "../../protocol" }
+tracing = "0.1.41"

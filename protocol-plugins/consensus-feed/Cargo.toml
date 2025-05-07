@@ -7,4 +7,5 @@ edition = "2024"
 common = { path = "../../common" }
 consensus = { path = "../consensus" }
 protocol = { path = "../../protocol" }
+tracing = "0.1.41"
 virtual-voting = { path = "../virtual-voting" }

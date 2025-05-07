@@ -6,3 +6,4 @@ edition = "2024"
 [dependencies]
 common = { path = "../../common" }
 protocol = { path = "../../protocol" }
+tracing = "0.1.41"

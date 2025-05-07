@@ -10,6 +10,7 @@ use common::{
     rx::{Event, Signal},
 };
 use protocol::{ManagedPlugin, Plugins};
+use tracing::info;
 
 use crate::Address;
 
@@ -25,8 +26,8 @@ impl ManagedPlugin for BlockStorage {
     }
 
     fn start(&self) -> Option<Pin<Box<dyn Future<Output = ()> + Send>>> {
+        info!(target: "block_storage", "issuing genesis block");
         self.insert(GenesisBlock(Id::default()));
-
         None
     }
 
@@ -38,7 +39,10 @@ impl ManagedPlugin for BlockStorage {
 impl BlockStorage {
     pub fn insert(&self, block: Block) -> BlockMetadata {
         self.address(block.id())
-            .get_or_insert_with(|| BlockMetadata::new(block))
+            .get_or_insert_with(|| {
+                info!(target: "block_storage", "new block metadata stored");
+                BlockMetadata::new(block)
+            })
             .clone()
             .unwrap()
     }
@@ -58,6 +62,7 @@ impl BlockStorage {
             blocks
                 .entry(block_id.clone())
                 .or_insert_with(|| {
+                    info!(target: "block_storage", "new address allocated for block");
                     is_new = true;
                     Arc::new(Signal::default())
                 })
