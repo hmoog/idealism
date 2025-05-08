@@ -3,6 +3,7 @@ use crate::{
     ids::{BlockID, IssuerID},
 };
 
+#[derive(Clone)]
 pub struct NetworkBlock {
     pub parents: Vec<BlockID>,
     pub issuer_id: IssuerID,

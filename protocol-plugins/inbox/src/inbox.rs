@@ -44,7 +44,7 @@ impl ManagedPlugin for Inbox {
                         up!(block_storage, rx: worker_span.in_scope(|| {
                             debug!(target: "inbox", "started");
                             while let Some(block) = rx.lock().unwrap().blocking_recv() {
-                                span!(parent: worker_span.clone(), Level::INFO, "block", block_id = i).in_scope(|| {
+                                span!(parent: worker_span.clone(), Level::INFO, "block", id = %block.id()).in_scope(|| {
                                     debug!(target: "inbox", "received");
                                     block_storage.insert(block);
                                 })

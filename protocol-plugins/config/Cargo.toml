@@ -14,3 +14,4 @@ common = { path = "../../common" }
 tip-selection = { path = "../tip-selection" }
 virtual-voting = { path = "../virtual-voting" }
 consensus-feed = { path = "../consensus-feed" }
+outbox = { path = "../outbox" }

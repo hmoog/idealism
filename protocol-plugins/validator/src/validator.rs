@@ -25,8 +25,9 @@ impl<C: ValidatorConfig> ManagedPlugin for Validator<C> {
             let inbox = plugins.load::<Inbox>();
 
             consensus_round.completed.subscribe(down!(config, inbox, block_factory: move |(_, new)| up!(config, inbox, block_factory: {
-                debug!(target: "validator", "issuing block for round {:?}", new.unwrap_or(0));
-                if let Err(e) = inbox.send(block_factory.create_block(&config.validator_id())) {
+                let block = block_factory.create_block(&config.validator_id());
+                debug!(target: "validator", "issuing block id {:?} for round {:?}", block.id(), new.unwrap_or(0));
+                if let Err(e) = inbox.send(block) {
                     error!(target: "validator", "issuing block for round {:?} failed: {e}", new);
                 }
             }))).retain();

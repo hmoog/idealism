@@ -1,0 +1,12 @@
+[package]
+name = "outbox"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+block-dag = { path = "../block-dag" }
+common = { path = "../../common" }
+protocol = { path = "../../protocol" }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync"] }
+tip-selection = { path = "../tip-selection" }
+tracing = "0.1.41"

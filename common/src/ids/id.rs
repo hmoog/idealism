@@ -1,5 +1,5 @@
 use std::{
-    fmt::{Debug, Display, Write},
+    fmt::{Debug, Display},
     hash,
     hash::Hash,
     marker::PhantomData,
@@ -40,24 +40,38 @@ impl<T: Hasher> Default for Id<T> {
     }
 }
 
-impl<T: Hasher> Debug for Id<T> {
+impl<T: Hasher> Display for Id<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.0)
+        let bytes = &self.0;
+        if bytes.len() < 6 {
+            // fallback in case of very short IDs
+            write!(f, "0x")?;
+            for b in bytes.iter() {
+                write!(f, "{:02x}", b)?;
+            }
+        } else {
+            write!(
+                f,
+                "0x{:02x}{:02x}{:02x}..{:02x}{:02x}{:02x}",
+                bytes[0],
+                bytes[1],
+                bytes[2],
+                bytes[bytes.len() - 3],
+                bytes[bytes.len() - 2],
+                bytes[bytes.len() - 1]
+            )?;
+        }
+        Ok(())
     }
 }
 
-impl<T: Hasher> Display for Id<T> {
+impl<T: Hasher> Debug for Id<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "0x{}",
-            self.0
-                .iter()
-                .fold(String::with_capacity(self.0.len() * 2), |mut s, b| {
-                    write!(s, "{:02x}", b).unwrap();
-                    s
-                })
-        )
+        write!(f, "0x")?;
+        for byte in self.0.iter() {
+            write!(f, "{:02x}", byte)?;
+        }
+        Ok(())
     }
 }
 

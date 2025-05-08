@@ -2,6 +2,7 @@ use std::{fmt, fmt::Debug};
 
 use crate::{blocks::NetworkBlock, ids::BlockID};
 
+#[derive(Clone)]
 pub enum Block {
     GenesisBlock(BlockID),
     NetworkBlock(BlockID, NetworkBlock),

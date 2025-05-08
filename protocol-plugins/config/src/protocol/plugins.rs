@@ -4,6 +4,7 @@ use block_storage::BlockStorage;
 use consensus::Consensus;
 use consensus_feed::ConsensusFeed;
 use consensus_round::ConsensusRound;
+use outbox::Outbox;
 use protocol::Plugins;
 use tip_selection::TipSelection;
 use virtual_voting::VirtualVoting;
@@ -23,6 +24,7 @@ impl ProtocolPlugins {
                 registry.load::<BlockDAG>();
                 registry.load::<VirtualVoting<Config>>();
                 registry.load::<TipSelection<Config>>();
+                registry.load::<Outbox>();
                 registry.load::<Consensus<Config>>();
                 registry.load::<ConsensusRound<Config>>();
                 registry.load::<BlockFactory<Config>>();
