@@ -1,7 +1,7 @@
 use std::{any::Any, sync::Arc};
 
 use common::collections::AnyMap;
-use tracing::{Instrument, Level, span};
+use tracing::{Instrument, Level, debug, error, span};
 
 use crate::{ManagedPlugin, Plugin};
 
@@ -16,33 +16,26 @@ impl Plugins {
         let mut handles = Vec::new();
 
         for instance in self.iter() {
-            let plugin_span = span!(Level::INFO, "plugin", name = instance.plugin_name()).entered();
-
-            if let Some(fut) = span!(Level::INFO, "startup").in_scope(|| instance.start()) {
-                handles.push((
-                    tokio::spawn(
-                        fut.instrument(span!(parent: plugin_span.clone(), Level::INFO, "async")),
-                    ),
-                    instance.plugin_name(),
-                ));
-            }
+            span!(Level::INFO, "plugin", name = instance.plugin_name()).in_scope(|| {
+                if let Some(fut) = span!(Level::INFO, "startup").in_scope(|| instance.start()) {
+                    let async_span = span!(Level::INFO, "async");
+                    handles.push((tokio::spawn(fut.instrument(async_span.clone())), async_span));
+                }
+            });
         }
 
-        for (handle, plugin_name) in handles {
+        for (handle, async_span) in handles {
             match handle.await {
                 Ok(()) => (),
-                Err(e) => eprintln!("async worker of plugin {plugin_name} panicked: {e}"),
+                Err(e) => async_span.in_scope(|| error!(target: "plugins", "task panicked: {e}")),
             }
         }
     }
 
     pub fn shutdown(&self) {
         for plugin in self.iter() {
-            span!(Level::INFO, "plugin", name = plugin.plugin_name()).in_scope(|| {
-                span!(Level::INFO, "shutdown").in_scope(|| {
-                    plugin.shutdown()
-                })
-            })
+            span!(Level::INFO, "plugin", name = plugin.plugin_name())
+                .in_scope(|| span!(Level::INFO, "shutdown").in_scope(|| plugin.shutdown()))
         }
     }
 
@@ -63,6 +56,9 @@ impl Plugins {
         }
 
         let instance = U::new(self);
+        span!(Level::INFO, "plugin", name = instance.plugin_name()).in_scope(|| {
+            debug!(target: "plugins", "dynamically loaded");
+        });
         self.instances.insert(instance.clone());
         self.trait_objects.push(instance.clone());
 

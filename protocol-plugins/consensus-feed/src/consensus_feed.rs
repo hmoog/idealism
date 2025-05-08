@@ -7,7 +7,7 @@ use common::{
 };
 use consensus::Consensus;
 use protocol::{ManagedPlugin, Plugins};
-use tracing::info;
+use tracing::trace;
 use virtual_voting::{VirtualVotingConfig, Vote};
 
 use crate::ConsensusFeedEvent;
@@ -63,7 +63,7 @@ impl<C: VirtualVotingConfig> ManagedPlugin for ConsensusFeed<C> {
     }
 
     fn shutdown(&self) {
-        info!(target: "consensus_feed", "unsubscribing from Consensus");
+        trace!(target: "consensus_feed", "unsubscribing from Consensus");
         self.subscriptions.lock().unwrap().take();
     }
 }

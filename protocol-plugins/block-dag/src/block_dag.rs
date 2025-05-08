@@ -9,7 +9,7 @@ use common::{
     up, with,
 };
 use protocol::{ManagedPlugin, Plugins};
-use tracing::info;
+use tracing::trace;
 
 use crate::BlockDAGMetadata;
 
@@ -39,7 +39,7 @@ impl ManagedPlugin for BlockDAG {
     }
 
     fn shutdown(&self) {
-        info!(target: "block_dag", "unsubscribing from BlockStorage");
+        trace!(target: "block_dag", "unsubscribing from BlockStorage");
         self.block_storage_subscription.lock().unwrap().take();
     }
 }

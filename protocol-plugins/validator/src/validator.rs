@@ -8,7 +8,7 @@ use common::{down, extensions::ArcExt, up};
 use consensus_round::ConsensusRound;
 use inbox::Inbox;
 use protocol::ManagedPlugin;
-use tracing::{error, info};
+use tracing::{debug, error};
 
 use crate::config::ValidatorConfig;
 
@@ -25,7 +25,7 @@ impl<C: ValidatorConfig> ManagedPlugin for Validator<C> {
             let inbox = plugins.load::<Inbox>();
 
             consensus_round.completed.subscribe(down!(config, inbox, block_factory: move |(_, new)| up!(config, inbox, block_factory: {
-                info!(target: "validator", "issuing block for round {:?}", new);
+                debug!(target: "validator", "issuing block for round {:?}", new.unwrap_or(0));
                 if let Err(e) = inbox.send(block_factory.create_block(&config.validator_id())) {
                     error!(target: "validator", "issuing block for round {:?} failed: {e}", new);
                 }

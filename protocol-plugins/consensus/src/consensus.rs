@@ -12,7 +12,7 @@ use common::{
     up, with,
 };
 use protocol::{ManagedPlugin, Plugins};
-use tracing::info;
+use tracing::trace;
 use virtual_voting::{VirtualVotingConfig, Vote};
 
 use crate::{AcceptanceState, AcceptedBlocks, ConsensusMetadata};
@@ -71,11 +71,11 @@ impl<C: VirtualVotingConfig> Consensus<C> {
             };
 
             if let Notify(_, Some(new)) = &result {
-                info!(target: "consensus", "heaviest milestone vote updated: {:?}", new);
+                trace!(target: "consensus", "heaviest milestone vote updated: {:?}", new);
                 let _ = self.committee.compute::<(), _>(move |current| match current {
                     Some(old) if new.committee.commitment() == old.commitment() => Retain(Some(old)),
                     _ => {
-                        info!(target: "consensus", "committee updated: {:?}", new.committee.commitment());
+                        trace!(target: "consensus", "committee updated: {:?}", new.committee.commitment());
                         Notify(current, Some(new.committee.clone()))
                     },
                 });

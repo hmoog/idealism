@@ -10,7 +10,7 @@ use tokio::{
     sync::mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel},
     task,
 };
-use tracing::{Level, Span, error, info, span};
+use tracing::{Level, Span, debug, error, span, trace};
 
 pub struct Inbox {
     sender: RwLock<Option<UnboundedSender<Block>>>,
@@ -40,15 +40,18 @@ impl ManagedPlugin for Inbox {
             for i in 0..num_workers {
                 let worker_span = span!(parent: Span::current(), Level::INFO, "worker", id = i);
                 worker_handles.push((
-                    task::spawn_blocking(
-                        with!(worker_span: down!(block_storage, rx: move || up!(block_storage, rx: worker_span.in_scope(|| {
-                        info!(target: "inbox", "started");
-                        while let Some(block) = rx.lock().unwrap().blocking_recv() {
-                            let _span = span!(parent: worker_span.clone(), Level::INFO, "received", block_id = i).entered();
-                            block_storage.insert(block);
-                        }
-                        info!(target: "inbox", "stopped");
-                    })))),
+                    task::spawn_blocking(with!(worker_span: down!(block_storage, rx: move || {
+                        up!(block_storage, rx: worker_span.in_scope(|| {
+                            debug!(target: "inbox", "started");
+                            while let Some(block) = rx.lock().unwrap().blocking_recv() {
+                                span!(parent: worker_span.clone(), Level::INFO, "block", block_id = i).in_scope(|| {
+                                    debug!(target: "inbox", "received");
+                                    block_storage.insert(block);
+                                })
+                            }
+                            debug!(target: "inbox", "stopped");
+                        }))
+                    })),
                     ),
                     worker_span,
                 ));
@@ -63,7 +66,7 @@ impl ManagedPlugin for Inbox {
     }
 
     fn shutdown(&self) {
-        info!(target: "inbox", "closing inbox");
+        trace!(target: "inbox", "closing inbox");
         self.sender.write().unwrap().take();
     }
 }
