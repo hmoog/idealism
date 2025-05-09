@@ -83,10 +83,23 @@ macro_rules! up {
 
 #[macro_export]
 macro_rules! with {
-    ( $( $var:ident ),+ : $body:expr ) => {{
-        $( let $var = $var.clone(); )+
+    // Match mixed vars: `a`, `(mut b)`, `c`, etc.
+    ( $( $var:tt ),+ : $body:expr ) => {{
+        $(
+            with!(@bind $var);
+        )+
         $body
     }};
+
+    // Internal rule to bind immutable: plain ident
+    (@bind $var:ident) => {
+        let $var = $var.clone();
+    };
+
+    // Internal rule to bind mutable: (mut ident)
+    (@bind (mut $var:ident)) => {
+        let mut $var = $var.clone();
+    };
 }
 
 #[macro_export]

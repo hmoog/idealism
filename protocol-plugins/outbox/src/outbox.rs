@@ -9,11 +9,11 @@ use common::{
 };
 use protocol::{ManagedPlugin, Plugins};
 use tip_selection::TipSelectionMetadata;
-use tokio::sync::mpsc::{UnboundedReceiver, unbounded_channel};
+use tokio::sync::{Mutex as AsyncMutex, mpsc::{UnboundedReceiver, unbounded_channel}};
 use tracing::{error, trace};
 
 pub struct Outbox {
-    pub receiver: Arc<Mutex<UnboundedReceiver<Block>>>,
+    pub receiver: AsyncMutex<UnboundedReceiver<Block>>,
     block_dag_subscription: Mutex<Option<Subscription<Callbacks<BlockMetadata>>>>,
 }
 
@@ -23,7 +23,7 @@ impl ManagedPlugin for Outbox {
         let (tx, rx) = unbounded_channel();
 
         Arc::new(Self {
-            receiver: Arc::new(Mutex::new(rx)),
+            receiver: AsyncMutex::new(rx),
             block_dag_subscription: Mutex::new(Some(block_dag.block_available.subscribe(
                 move |block| {
                     block.attach::<Arc<TipSelectionMetadata>>(with!(tx: down!(block: {
