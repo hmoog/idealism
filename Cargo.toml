@@ -1,4 +1,4 @@
 [workspace]
 resolver = "2"
 
-members = ["protocol-plugins/config", "protocol", "common", "protocol-plugins/virtual-voting", "zero", "protocol-plugins/block-dag", "protocol-plugins/block-storage", "protocol-plugins/consensus", "protocol-plugins/consensus-round", "protocol-plugins/tip-selection", "protocol-plugins/block-factory", "protocol-plugins/consensus-feed", "protocol-plugins/validator", "protocol-plugins/inbox", "protocol-plugins/outbox"]
+members = ["protocol-plugins/config", "protocol", "common", "protocol-plugins/virtual-voting", "zero", "protocol-plugins/block-dag", "protocol-plugins/block-storage", "protocol-plugins/consensus", "protocol-plugins/consensus-round", "protocol-plugins/tip-selection", "protocol-plugins/block-factory", "protocol-plugins/consensus-feed", "protocol-plugins/validator", "protocol-plugins/inbox", "protocol-plugins/outbox", "simulator"]
