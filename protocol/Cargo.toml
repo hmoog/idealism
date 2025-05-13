@@ -16,4 +16,6 @@ config = { path = "../protocol-plugins/config" }
 consensus-round = { path = "../protocol-plugins/consensus-round" }
 virtual-voting = { path = "../protocol-plugins/virtual-voting" }
 consensus-feed = { path = "../protocol-plugins/consensus-feed" }
+networking = { path = "../protocol-plugins/networking" }
 validator = { path = "../protocol-plugins/validator" }
+sim = { path = "../sim" }

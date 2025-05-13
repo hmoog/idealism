@@ -12,7 +12,7 @@ use common::{
     up, with,
 };
 use protocol::{ManagedPlugin, Plugins};
-use tracing::trace;
+use tracing::{error, trace};
 use virtual_voting::{VirtualVotingConfig, Vote};
 
 use crate::{AcceptanceState, AcceptedBlocks, ConsensusMetadata};
@@ -40,7 +40,7 @@ impl<C: VirtualVotingConfig> ManagedPlugin for Consensus<C> {
                 block_dag_subscription: Mutex::new(Some(block_dag.block_available.subscribe(
                     with!(this: move |block| {
                         block.attach(with!(this: move |vote| up!(this: {
-                            this.process_vote(vote).unwrap_or_else(|e| println!("{:?}", e))
+                            this.process_vote(vote).unwrap_or_else(|e| error!("{:?}", e))
                         })))
                     }),
                 ))),
@@ -104,7 +104,8 @@ impl<C: VirtualVotingConfig> Consensus<C> {
             None | Some(0) => panic!("TODO: implement reorg"),
             Some(range) => {
                 let milestones = new.milestone_range(range)?;
-                match milestones.last().expect("must exist") == old {
+                let last_milestone = Vote::try_from(milestones.last().expect("must exist").prev_milestone()?)?;
+                match &last_milestone == old {
                     false => panic!("TODO: implement reorg"),
                     true => self
                         .accepted_blocks

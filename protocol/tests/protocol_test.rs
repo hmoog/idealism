@@ -5,6 +5,8 @@ use config::{Config, ProtocolParams, ProtocolPlugins};
 use protocol::{Protocol, ProtocolConfig};
 use tracing::{Instrument, Level, Span, span};
 use tracing_subscriber::{EnvFilter, fmt};
+use networking::Networking;
+use sim::Network;
 use validator::{Validator, ValidatorConfigParams};
 
 pub struct TestNode {
@@ -59,15 +61,21 @@ async fn test_protocol() {
         .with_test_writer()
         .try_init();
 
-    let mut node_handles = Vec::new();
-    for i in 1..3 {
+    let network = Network::default();
+
+    let mut run_handles = Vec::new();
+    for i in 1..5 {
+        println!("Starting node {}", i);
         let test_node =
             TestNode::new_default_validator(&format!("node{}", i), IssuerID::from([i as u8; 32]));
+
+        let _ = test_node.protocol.plugins.get::<Networking>().unwrap().connect(&network).await;
+
         let handle = tokio::spawn(test_node.run_for(std::time::Duration::from_secs(1)));
-        node_handles.push(handle);
+        run_handles.push(handle);
     }
 
-    for handle in node_handles {
+    for handle in run_handles {
         let _ = handle.await;
     }
 }

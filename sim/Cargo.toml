@@ -1,5 +1,5 @@
 [package]
-name = "simulator"
+name = "sim"
 version = "0.1.0"
 edition = "2024"
 
@@ -7,3 +7,4 @@ edition = "2024"
 common = { path = "../common" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync"] }
 tracing = "0.1.41"
+async-trait = "0.1.88"

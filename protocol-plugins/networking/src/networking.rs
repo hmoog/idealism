@@ -1,22 +1,19 @@
 use std::sync::{Arc};
-use tokio::sync::mpsc::{UnboundedReceiver};
-use tokio::sync::{watch, RwLock};
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
+use tokio::sync::{watch, Mutex};
+use tokio::sync::watch::Receiver;
 use tokio::task::JoinHandle;
+use tracing::{error, trace};
 use common::blocks::Block;
-use common::with;
+use common::networking::{Endpoint, Network};
 use inbox::Inbox;
 use outbox::Outbox;
 use protocol::{ManagedPlugin, Plugins};
 
-pub struct Endpoint {
-    pub outbound: Network,
-    pub inbound: UnboundedReceiver<Block>,
-}
-
 pub struct Networking {
     inbox: Arc<Inbox>,
     outbox: Arc<Outbox>,
-    worker_details: RwLock<Option<(JoinHandle<()>, watch::Sender<()>)>>,
+    workers: Mutex<Option<(JoinHandle<()>, JoinHandle<()>, watch::Sender<()>)>>,
 }
 
 impl ManagedPlugin for Networking {
@@ -24,69 +21,86 @@ impl ManagedPlugin for Networking {
         Arc::new(Self {
             inbox: plugins.load(),
             outbox: plugins.load(),
-            worker_details: RwLock::new(None),
+            workers: Mutex::new(None),
         })
     }
 }
 
 impl Networking {
-    pub async fn connect(&self, endpoint: Endpoint) {
-        let Endpoint { mut inbound, outbound } = endpoint;
+    pub async fn connect<N: Network>(&self, network: &N) {
+        let Endpoint { inbound, outbound } = network.endpoint().await;
 
-        let mut worker_details = self.worker_details.write().await;
+        let mut workers = self.workers.lock().await;
 
-        // await for any previous task to finish
-        if let Some((running_task, _)) = worker_details.take() {
-            let _ = running_task.await;
+        // wait for any previous workers to finish
+        if let Some((inbound_worker, outbound_worker, shutdown)) = workers.take() {
+            drop(shutdown); // close the shutdown channel to signal workers to stop
+
+            // wait for workers to finish
+            if let Err(e) = inbound_worker.await {
+                error!(target: "networking", "inbound worker panicked: {:?}", e);
+            }
+            if let Err(e) = outbound_worker.await {
+                error!(target: "networking", "outbound worker panicked: {:?}", e);
+            }
         }
 
+        // create new workers
         let (shutdown_signal, is_shutdown) = watch::channel(());
+        *workers = Some((
+            Self::new_inbound_worker(self.inbox.clone(), inbound, is_shutdown.clone()),
+            Self::new_outbound_worker(self.outbox.clone(), outbound, is_shutdown.clone()),
+            shutdown_signal,
+        ));
+    }
 
-        // create a new task for inbound messages
-        let inbox = self.inbox.clone();
-        let inbound_task = tokio::spawn(with!((mut is_shutdown): async move {
+    pub async fn disconnect(&self) {
+        // wait for any previous workers to finish
+        if let Some((inbound_worker, outbound_worker, shutdown)) = self.workers.lock().await.take() {
+            drop(shutdown); // close the shutdown channel to signal workers to stop
+
+            // wait for workers to finish
+            if let Err(e) = inbound_worker.await {
+                error!(target: "networking", "inbound worker panicked: {:?}", e);
+            }
+            if let Err(e) = outbound_worker.await {
+                error!(target: "networking", "outbound worker panicked: {:?}", e);
+            }
+        }
+    }
+
+    pub fn new_inbound_worker(inbox: Arc<Inbox>, mut receiver: UnboundedReceiver<Block>, mut is_shutdown: Receiver<()>) -> JoinHandle<()> {
+        tokio::spawn(async move {
             loop {
                 tokio::select! {
-                    Some(block) = inbound.recv() => {
+                    Some(block) = receiver.recv() => {
                         if let Err(e) = inbox.send(block) {
-                            println!("Failed to receive block: {:?}", e);
+                            error!(target: "networking", "failed to receive block: {:?}", e);
+                        } else {
+                            trace!(target: "networking", "received block");
                         }
                     },
-                    _ = is_shutdown.changed() => break,
+                    _ = is_shutdown.changed() => break, // channel closed = shutdown
                 }
             }
-        }));
+        })
+    }
 
-        // create a new task for outbound messages
-        let outbox = self.outbox.clone();
-        let outbound_task = tokio::spawn(with!((mut is_shutdown): async move {
+    pub fn new_outbound_worker(outbox: Arc<Outbox>, sender: UnboundedSender<Block>, mut is_shutdown: Receiver<()>) -> JoinHandle<()> {
+        tokio::spawn(async move {
+            let mut outbox = outbox.receiver.lock().await;
             loop {
-                let mut outbox = outbox.receiver.lock().await;
                 tokio::select! {
                     Some(block) = outbox.recv() => {
-                        if let Err(e) = outbound.send(block) {
-                            println!("Failed to send block: {:?}", e);
+                        if let Err(e) = sender.send(block) {
+                            error!(target: "networking", "failed to send block: {:?}", e);
+                        } else {
+                            trace!(target: "networking", "sent block");
                         }
                     },
-                    _ = is_shutdown.changed() => break,
+                    _ = is_shutdown.changed() => break, // channel closed = shutdown
                 }
             }
-        }));
-
-        *worker_details = Some((outbound_task, shutdown_signal));
-    }
-}
-
-pub struct Worker {
-    pub task: JoinHandle<()>,
-    pub shutdown_signal: watch::Sender<()>,
-}
-
-pub struct Network {}
-
-impl Network {
-    pub fn send(&self, _block: Block) -> Result<(), tokio::sync::mpsc::error::SendError<Block>> {
-        // Implement the logic to send the block to the network
-        Ok(())
+        })
     }
 }
