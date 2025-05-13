@@ -12,6 +12,7 @@ block-dag = { path = "../block-dag" }
 block-storage = { path = "../block-storage"}
 common = { path = "../../common" }
 tip-selection = { path = "../tip-selection" }
+tracing = "0.1.41"
 virtual-voting = { path = "../virtual-voting" }
 consensus-feed = { path = "../consensus-feed" }
 outbox = { path = "../outbox" }

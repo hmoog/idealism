@@ -10,19 +10,23 @@ use common::{
     rx::{Event, Signal},
 };
 use protocol::{ManagedPlugin, Plugins};
-use tracing::{debug, trace};
+use tracing::{debug, info_span, trace, Span};
 
 use crate::Address;
 
-#[derive(Default)]
 pub struct BlockStorage {
     pub new_address: Event<Address>,
     blocks: Mutex<HashMap<BlockID, Address>>,
+    span: Span,
 }
 
 impl ManagedPlugin for BlockStorage {
     fn new(_: &mut Plugins) -> Arc<Self> {
-        Default::default()
+        Arc::new(Self {
+            new_address: Default::default(),
+            blocks: Default::default(),
+            span: info_span!("block_storage"),
+        })
     }
 
     fn start(&self) -> Option<Pin<Box<dyn Future<Output = ()> + Send>>> {
@@ -33,6 +37,10 @@ impl ManagedPlugin for BlockStorage {
 
     fn shutdown(&self) {
         self.blocks.lock().unwrap().clear();
+    }
+
+    fn span(&self) -> Span {
+        self.span.clone()
     }
 }
 

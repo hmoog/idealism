@@ -9,6 +9,7 @@ block-dag = { path = "../block-dag" }
 common = { path = "../../common" }
 zero = { path = "../../zero" }
 thiserror = "2.0.12"
+tracing = "0.1.41"
 
 [dev-dependencies]
 config = { path = "../config" }

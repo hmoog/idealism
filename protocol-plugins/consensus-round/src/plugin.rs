@@ -2,7 +2,7 @@ use std::{
     collections::HashSet,
     sync::{Arc, Mutex, Weak},
 };
-
+use tracing::{info_span, Span};
 use block_dag::BlockDAG;
 use common::{
     bft::Member,
@@ -28,6 +28,7 @@ pub struct ConsensusRound<C: VirtualVotingConfig> {
     block_dag_subscription: Mutex<Option<BlockDAGSubscription>>,
     consensus_subscription: Mutex<Option<ConsensusSubscription<C>>>,
     consensus: Arc<Consensus<C>>,
+    span: Span,
 }
 
 impl<C: VirtualVotingConfig> ConsensusRound<C> {
@@ -48,6 +49,7 @@ impl<C: VirtualVotingConfig> ConsensusRound<C> {
                 weak.clone(),
             ))),
             consensus,
+            span: info_span!("consensus_round"),
         }
     }
 
@@ -161,6 +163,10 @@ impl<C: VirtualVotingConfig> ManagedPlugin for ConsensusRound<C> {
 
     fn shutdown(&self) {
         self.shutdown();
+    }
+
+    fn span(&self) -> Span {
+        self.span.clone()
     }
 }
 

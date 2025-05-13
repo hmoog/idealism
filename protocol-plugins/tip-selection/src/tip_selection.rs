@@ -3,7 +3,7 @@ use std::{
     marker::PhantomData,
     sync::{Arc, Mutex, Weak},
 };
-
+use tracing::{info_span, Span};
 use block_dag::{BlockDAG, BlockDAGMetadata};
 use common::{
     blocks::BlockMetadata,
@@ -18,11 +18,10 @@ use virtual_voting::{VirtualVotingConfig, Vote};
 
 use crate::TipSelectionMetadata;
 
-#[derive(Default)]
 pub struct TipSelection<C: VirtualVotingConfig> {
     tips: Mutex<HashSet<BlockMetadata>>,
     block_dag_subscription: Mutex<Option<Subscription<Callbacks<BlockMetadata>>>>,
-
+    span: Span,
     _marker: PhantomData<C>,
 }
 
@@ -40,6 +39,7 @@ impl<C: VirtualVotingConfig> ManagedPlugin for TipSelection<C> {
                         })))
                     })),
                 ))),
+                span: info_span!("tip_selection"),
                 _marker: PhantomData,
             }
         })
@@ -47,6 +47,10 @@ impl<C: VirtualVotingConfig> ManagedPlugin for TipSelection<C> {
 
     fn shutdown(&self) {
         self.block_dag_subscription.lock().unwrap().take();
+    }
+
+    fn span(&self) -> Span {
+        self.span.clone()
     }
 }
 

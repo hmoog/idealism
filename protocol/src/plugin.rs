@@ -1,4 +1,5 @@
 use std::pin::Pin;
+use tracing::Span;
 
 pub trait Plugin: Send + Sync {
     fn plugin_name(&self) -> &'static str {
@@ -16,4 +17,6 @@ pub trait Plugin: Send + Sync {
     }
 
     fn shutdown(&self) {}
+
+    fn span(&self) -> Span;
 }

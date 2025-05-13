@@ -1,5 +1,5 @@
 use std::sync::Arc;
-
+use tracing::{info_span, Span};
 use common::{
     blocks::{Block, NetworkBlock},
     ids::IssuerID,
@@ -10,13 +10,19 @@ use virtual_voting::VirtualVotingConfig;
 
 pub struct BlockFactory<C: VirtualVotingConfig> {
     tip_selection: Arc<TipSelection<C>>,
+    span: Span,
 }
 
 impl<C: VirtualVotingConfig> ManagedPlugin for BlockFactory<C> {
     fn new(plugins: &mut Plugins) -> Arc<Self> {
         Arc::new(Self {
             tip_selection: plugins.load(),
+            span: info_span!("block_factory"),
         })
+    }
+
+    fn span(&self) -> Span {
+        self.span.clone()
     }
 }
 

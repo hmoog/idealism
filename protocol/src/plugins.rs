@@ -16,7 +16,7 @@ impl Plugins {
         let mut handles = Vec::new();
 
         for instance in self.iter() {
-            span!(Level::INFO, "plugin", name = instance.plugin_name()).in_scope(|| {
+            instance.span().in_scope(|| {
                 if let Some(fut) = span!(Level::INFO, "startup").in_scope(|| instance.start()) {
                     let async_span = span!(Level::INFO, "async");
                     handles.push((tokio::spawn(fut.instrument(async_span.clone())), async_span));
@@ -34,8 +34,7 @@ impl Plugins {
 
     pub fn shutdown(&self) {
         for plugin in self.iter() {
-            span!(Level::INFO, "plugin", name = plugin.plugin_name())
-                .in_scope(|| span!(Level::INFO, "shutdown").in_scope(|| plugin.shutdown()))
+            plugin.span().in_scope(|| span!(Level::INFO, "shutdown").in_scope(|| plugin.shutdown()))
         }
     }
 
@@ -56,7 +55,7 @@ impl Plugins {
         }
 
         let instance = U::new(self);
-        span!(Level::INFO, "plugin", name = instance.plugin_name()).in_scope(|| {
+        instance.span().in_scope(|| {
             debug!(target: "plugins", "dynamically loaded");
         });
         self.instances.insert(instance.clone());

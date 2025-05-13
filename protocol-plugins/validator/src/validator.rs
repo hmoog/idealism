@@ -8,11 +8,12 @@ use common::{down, extensions::ArcExt, up};
 use consensus_round::ConsensusRound;
 use inbox::Inbox;
 use protocol::ManagedPlugin;
-use tracing::{debug, error};
+use tracing::{debug, error, info_span, Span};
 
 use crate::config::ValidatorConfig;
 
 pub struct Validator<C: ValidatorConfig> {
+    span: Span,
     _marker: PhantomData<C>,
 }
 
@@ -33,8 +34,13 @@ impl<C: ValidatorConfig> ManagedPlugin for Validator<C> {
             }))).retain();
 
             Self {
+                span: info_span!("validator"),
                 _marker: PhantomData,
             }
         })
+    }
+
+    fn span(&self) -> Span {
+        self.span.clone()
     }
 }

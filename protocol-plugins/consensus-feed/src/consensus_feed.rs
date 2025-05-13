@@ -7,7 +7,7 @@ use common::{
 };
 use consensus::Consensus;
 use protocol::{ManagedPlugin, Plugins};
-use tracing::trace;
+use tracing::{info_span, trace, Span};
 use virtual_voting::{VirtualVotingConfig, Vote};
 
 use crate::ConsensusFeedEvent;
@@ -15,6 +15,7 @@ use crate::ConsensusFeedEvent;
 pub struct ConsensusFeed<C: VirtualVotingConfig> {
     pub event: Event<ConsensusFeedEvent<C>>,
     subscriptions: Mutex<Option<Subscriptions<C>>>,
+    span: Span,
 }
 
 impl<C: VirtualVotingConfig> ManagedPlugin for ConsensusFeed<C> {
@@ -58,6 +59,7 @@ impl<C: VirtualVotingConfig> ManagedPlugin for ConsensusFeed<C> {
                         })),
                     ),
                 })),
+                span: info_span!("consensus_feed"),
             }
         })
     }
@@ -65,6 +67,10 @@ impl<C: VirtualVotingConfig> ManagedPlugin for ConsensusFeed<C> {
     fn shutdown(&self) {
         trace!(target: "consensus_feed", "unsubscribing from Consensus");
         self.subscriptions.lock().unwrap().take();
+    }
+
+    fn span(&self) -> Span {
+        self.span.clone()
     }
 }
 

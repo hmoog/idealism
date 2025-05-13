@@ -1,7 +1,6 @@
 use std::{any::Any, sync::Arc};
-
 use common::collections::AnyMap;
-use protocol::{Plugin, Plugins};
+use protocol::{Plugins};
 
 use crate::{Config, ProtocolPlugins};
 
@@ -19,11 +18,6 @@ impl ProtocolParams {
 }
 
 impl protocol::ProtocolConfig for Config {
-    fn inject_plugins(&self, mut registry: Plugins) -> Plugins {
-        self.protocol_params.plugins.inject(self, &mut registry);
-        registry
-    }
-
     fn with_params<T: Any + Send + Sync + 'static>(mut self, params: T) -> Self {
         self.protocol_params.params.insert(Arc::new(params));
         self
@@ -32,6 +26,9 @@ impl protocol::ProtocolConfig for Config {
     fn params<T: Any + Send + Sync + 'static>(&self) -> Option<Arc<T>> {
         self.protocol_params.params.get::<Arc<T>>().cloned()
     }
-}
 
-impl Plugin for Config {}
+    fn inject_plugins(&self, mut registry: Plugins) -> Plugins {
+        self.protocol_params.plugins.inject(self, &mut registry);
+        registry
+    }
+}

@@ -7,4 +7,5 @@ edition = "2024"
 block-dag = { path = "../block-dag" }
 protocol = { path = "../../protocol" }
 common = { path = "../../common" }
+tracing = "0.1.41"
 virtual-voting = { path = "../virtual-voting" }

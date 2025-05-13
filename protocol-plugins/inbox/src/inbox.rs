@@ -10,13 +10,14 @@ use tokio::{
     sync::mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel},
     task,
 };
-use tracing::{Level, Span, debug, error, span, trace};
+use tracing::{Level, Span, debug, error, span, trace, info_span};
 
 pub struct Inbox {
     sender: RwLock<Option<UnboundedSender<Block>>>,
     receiver: Arc<Mutex<UnboundedReceiver<Block>>>,
     num_workers: usize,
     block_storage: Arc<BlockStorage>,
+    span: Span,
 }
 
 impl ManagedPlugin for Inbox {
@@ -27,6 +28,7 @@ impl ManagedPlugin for Inbox {
             receiver: Arc::new(Mutex::new(rx)),
             num_workers: 2,
             block_storage: plugins.load(),
+            span: info_span!("inbox"),
         })
     }
 
@@ -68,6 +70,10 @@ impl ManagedPlugin for Inbox {
     fn shutdown(&self) {
         trace!(target: "inbox", "closing inbox");
         self.sender.write().unwrap().take();
+    }
+
+    fn span(&self) -> Span {
+        self.span.clone()
     }
 }
 

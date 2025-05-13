@@ -10,11 +10,12 @@ use common::{
 use protocol::{ManagedPlugin, Plugins};
 use tip_selection::TipSelectionMetadata;
 use tokio::sync::{Mutex as AsyncMutex, mpsc::{UnboundedReceiver, unbounded_channel}};
-use tracing::{error, trace};
+use tracing::{error, info_span, trace, Span};
 
 pub struct Outbox {
     pub receiver: AsyncMutex<UnboundedReceiver<Block>>,
     block_dag_subscription: Mutex<Option<Subscription<Callbacks<BlockMetadata>>>>,
+    span: Span,
 }
 
 impl ManagedPlugin for Outbox {
@@ -37,11 +38,16 @@ impl ManagedPlugin for Outbox {
                     })))
                 },
             ))),
+            span: info_span!("outbox"),
         })
     }
 
     fn shutdown(&self) {
         trace!(target: "outbox", "unsubscribing from BlockDAG");
         self.block_dag_subscription.lock().unwrap().take();
+    }
+
+    fn span(&self) -> Span {
+        self.span.clone()
     }
 }

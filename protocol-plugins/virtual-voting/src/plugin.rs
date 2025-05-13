@@ -2,7 +2,7 @@ use std::{
     marker::PhantomData,
     sync::{Arc, Mutex, Weak},
 };
-
+use tracing::{info_span, Span};
 use block_dag::{BlockDAG, BlockDAGMetadata};
 use common::{
     blocks::{Block, BlockMetadata, BlockMetadataRef},
@@ -14,6 +14,7 @@ use crate::{Result, VirtualVotingConfig, Vote, Votes};
 
 pub struct VirtualVoting<C: VirtualVotingConfig> {
     subscription: Mutex<Option<Subscription<Callbacks<BlockMetadata>>>>,
+    span: Span,
     _marker: PhantomData<C>,
 }
 
@@ -65,6 +66,7 @@ impl<C: VirtualVotingConfig> ManagedPlugin for VirtualVoting<C> {
                         }
                     };
                 }))),
+                span: info_span!("virtual_voting"),
                 _marker: PhantomData,
             }
         })
@@ -72,5 +74,9 @@ impl<C: VirtualVotingConfig> ManagedPlugin for VirtualVoting<C> {
 
     fn shutdown(&self) {
         self.subscription.lock().unwrap().take();
+    }
+
+    fn span(&self) -> Span {
+        self.span.clone()
     }
 }

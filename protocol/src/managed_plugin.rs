@@ -1,5 +1,5 @@
 use std::{pin::Pin, sync::Arc};
-
+use tracing::Span;
 use crate::{Plugin, Plugins};
 
 pub trait ManagedPlugin: Sized + Send + Sync {
@@ -12,6 +12,8 @@ pub trait ManagedPlugin: Sized + Send + Sync {
     fn shutdown(&self) {
         // do nothing by default
     }
+
+    fn span(&self) -> tracing::Span;
 }
 
 impl<T: ManagedPlugin> Plugin for T {
@@ -21,5 +23,9 @@ impl<T: ManagedPlugin> Plugin for T {
 
     fn shutdown(&self) {
         ManagedPlugin::shutdown(self);
+    }
+
+    fn span(&self) -> Span {
+        ManagedPlugin::span(self)
     }
 }

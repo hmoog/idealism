@@ -9,7 +9,7 @@ use common::{
     up, with,
 };
 use protocol::{ManagedPlugin, Plugins};
-use tracing::trace;
+use tracing::{info_span, trace, Span};
 
 use crate::BlockDAGMetadata;
 
@@ -17,6 +17,7 @@ pub struct BlockDAG {
     pub block_available: Event<BlockMetadata>,
     block_storage_subscription: Mutex<Option<Subscription<Callbacks<Address>>>>,
     block_storage: Arc<BlockStorage>,
+    span: Span,
 }
 
 impl ManagedPlugin for BlockDAG {
@@ -34,6 +35,7 @@ impl ManagedPlugin for BlockDAG {
                     }),
                 ))),
                 block_storage,
+                span: info_span!("block_dag"),
             }
         })
     }
@@ -41,6 +43,10 @@ impl ManagedPlugin for BlockDAG {
     fn shutdown(&self) {
         trace!(target: "block_dag", "unsubscribing from BlockStorage");
         self.block_storage_subscription.lock().unwrap().take();
+    }
+
+    fn span(&self) -> Span {
+        self.span.clone()
     }
 }
 

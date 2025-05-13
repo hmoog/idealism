@@ -1,18 +1,13 @@
 use std::sync::{Arc, Mutex, Weak};
 
 use block_dag::{BlockDAG, BlockMetadataExt};
-use common::{
-    bft::Committee,
-    blocks::BlockMetadata,
-    rx::{
-        Callbacks, Event, Subscription, UpdateType,
-        UpdateType::{Notify, Retain},
-        Variable,
-    },
-    up, with,
-};
+use common::{bft::Committee, blocks::BlockMetadata, down, rx::{
+    Callbacks, Event, Subscription, UpdateType,
+    UpdateType::{Notify, Retain},
+    Variable,
+}, up, with};
 use protocol::{ManagedPlugin, Plugins};
-use tracing::{error, trace};
+use tracing::{error, info_span, trace, Span};
 use virtual_voting::{VirtualVotingConfig, Vote};
 
 use crate::{AcceptanceState, AcceptedBlocks, ConsensusMetadata};
@@ -24,6 +19,7 @@ pub struct Consensus<C: VirtualVotingConfig> {
     pub committee: Variable<Committee>,
     pub accepted_blocks: Event<AcceptedBlocks>,
     block_dag_subscription: Mutex<Option<Subscription<Callbacks<BlockMetadata>>>>,
+    span: Span,
 }
 
 impl<C: VirtualVotingConfig> ManagedPlugin for Consensus<C> {
@@ -39,17 +35,24 @@ impl<C: VirtualVotingConfig> ManagedPlugin for Consensus<C> {
                 accepted_blocks: Default::default(),
                 block_dag_subscription: Mutex::new(Some(block_dag.block_available.subscribe(
                     with!(this: move |block| {
-                        block.attach(with!(this: move |vote| up!(this: {
+                        block.attach(down!(block: with!(this: move |vote| up!(this, block: {
+                            block.set(Arc::new(ConsensusMetadata::default()));
+
                             this.process_vote(vote).unwrap_or_else(|e| error!("{:?}", e))
-                        })))
+                        }))))
                     }),
                 ))),
+                span: info_span!("consensus"),
             }
         })
     }
 
     fn shutdown(&self) {
         self.block_dag_subscription.lock().unwrap().take();
+    }
+
+    fn span(&self) -> Span {
+        self.span.clone()
     }
 }
 

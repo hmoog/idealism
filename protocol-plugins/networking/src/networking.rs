@@ -3,7 +3,7 @@ use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::sync::{watch, Mutex};
 use tokio::sync::watch::Receiver;
 use tokio::task::JoinHandle;
-use tracing::{error, trace};
+use tracing::{error, info_span, trace, Span};
 use common::blocks::Block;
 use common::networking::{Endpoint, Network};
 use inbox::Inbox;
@@ -14,6 +14,7 @@ pub struct Networking {
     inbox: Arc<Inbox>,
     outbox: Arc<Outbox>,
     workers: Mutex<Option<(JoinHandle<()>, JoinHandle<()>, watch::Sender<()>)>>,
+    span: Span,
 }
 
 impl ManagedPlugin for Networking {
@@ -22,7 +23,12 @@ impl ManagedPlugin for Networking {
             inbox: plugins.load(),
             outbox: plugins.load(),
             workers: Mutex::new(None),
+            span: info_span!("networking"),
         })
+    }
+
+    fn span(&self) -> Span {
+        self.span.clone()
     }
 }
 
