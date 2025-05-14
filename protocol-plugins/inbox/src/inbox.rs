@@ -36,11 +36,12 @@ impl ManagedPlugin for Inbox {
         let num_workers = self.num_workers;
         let block_storage = self.block_storage.clone();
         let rx = Arc::clone(&self.receiver);
+        let span = self.span();
 
         Some(Box::pin(async move {
             let mut worker_handles = Vec::new();
             for i in 0..num_workers {
-                let worker_span = span!(parent: Span::current(), Level::INFO, "worker", id = i);
+                let worker_span = span!(parent: span.clone(), Level::INFO, "worker", id = i);
                 worker_handles.push((
                     task::spawn_blocking(with!(worker_span: down!(block_storage, rx: move || {
                         up!(block_storage, rx: worker_span.in_scope(|| {

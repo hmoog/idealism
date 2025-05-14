@@ -33,7 +33,7 @@ impl Plugins {
     }
 
     pub fn shutdown(&self) {
-        for plugin in self.iter() {
+        for plugin in self.iter().rev() {
             plugin.span().in_scope(|| span!(Level::INFO, "shutdown").in_scope(|| plugin.shutdown()))
         }
     }
@@ -42,6 +42,7 @@ impl Plugins {
         if let Some(existing) = self.instances.get::<Arc<U>>() {
             return existing.clone();
         }
+        instance.span().in_scope(|| debug!("provided"));
 
         self.instances.insert(instance.clone());
         self.trait_objects.push(instance.clone());
@@ -55,9 +56,8 @@ impl Plugins {
         }
 
         let instance = U::new(self);
-        instance.span().in_scope(|| {
-            debug!(target: "plugins", "dynamically loaded");
-        });
+        instance.span().in_scope(|| debug!("loaded"));
+
         self.instances.insert(instance.clone());
         self.trait_objects.push(instance.clone());
 
@@ -68,7 +68,7 @@ impl Plugins {
         self.instances.get::<Arc<T>>().map(Arc::clone)
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &Arc<dyn Plugin>> {
+    pub fn iter(&self) -> impl DoubleEndedIterator<Item = &Arc<dyn Plugin>> {
         self.trait_objects.iter()
     }
 }
