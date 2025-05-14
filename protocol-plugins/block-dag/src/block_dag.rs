@@ -9,7 +9,7 @@ use common::{
     up, with,
 };
 use protocol::{ManagedPlugin, Plugins};
-use tracing::{info_span, trace, Span};
+use tracing::{Span, info_span, trace};
 
 use crate::BlockDAGMetadata;
 

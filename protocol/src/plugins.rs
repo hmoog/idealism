@@ -34,7 +34,9 @@ impl Plugins {
 
     pub fn shutdown(&self) {
         for plugin in self.iter().rev() {
-            plugin.span().in_scope(|| span!(Level::INFO, "shutdown").in_scope(|| plugin.shutdown()))
+            plugin
+                .span()
+                .in_scope(|| span!(Level::INFO, "shutdown").in_scope(|| plugin.shutdown()))
         }
     }
 

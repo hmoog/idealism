@@ -1,13 +1,19 @@
 use std::sync::{Arc, Mutex, Weak};
 
 use block_dag::{BlockDAG, BlockMetadataExt};
-use common::{bft::Committee, blocks::BlockMetadata, down, rx::{
-    Callbacks, Event, Subscription, UpdateType,
-    UpdateType::{Notify, Retain},
-    Variable,
-}, up, with};
+use common::{
+    bft::Committee,
+    blocks::BlockMetadata,
+    down,
+    rx::{
+        Callbacks, Event, Subscription, UpdateType,
+        UpdateType::{Notify, Retain},
+        Variable,
+    },
+    up, with,
+};
 use protocol::{ManagedPlugin, Plugins};
-use tracing::{error, info_span, trace, Span};
+use tracing::{Span, error, info_span, trace};
 use virtual_voting::{VirtualVotingConfig, Vote};
 
 use crate::{AcceptanceState, AcceptedBlocks, ConsensusMetadata};
@@ -107,7 +113,8 @@ impl<C: VirtualVotingConfig> Consensus<C> {
             None | Some(0) => panic!("TODO: implement reorg"),
             Some(range) => {
                 let milestones = new.milestone_range(range)?;
-                let last_milestone = Vote::try_from(milestones.last().expect("must exist").prev_milestone()?)?;
+                let last_milestone =
+                    Vote::try_from(milestones.last().expect("must exist").prev_milestone()?)?;
                 match &last_milestone == old {
                     false => panic!("TODO: implement reorg"),
                     true => self

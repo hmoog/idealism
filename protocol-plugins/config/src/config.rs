@@ -1,5 +1,6 @@
-use tracing::{info_span, Span};
 use protocol::Plugin;
+use tracing::{Span, info_span};
+
 use crate::{ProtocolParams, VirtualVotingParams};
 
 pub struct Config {

@@ -2,13 +2,14 @@ use std::{
     marker::PhantomData,
     sync::{Arc, Mutex, Weak},
 };
-use tracing::{info_span, Span};
+
 use block_dag::{BlockDAG, BlockDAGMetadata};
 use common::{
     blocks::{Block, BlockMetadata, BlockMetadataRef},
     rx::{Callbacks, Subscription},
 };
 use protocol::{ManagedPlugin, Plugins};
+use tracing::{Span, info_span};
 
 use crate::{Result, VirtualVotingConfig, Vote, Votes};
 

@@ -1,11 +1,12 @@
 use std::sync::Arc;
-use tracing::{info_span, Span};
+
 use common::{
     blocks::{Block, NetworkBlock},
     ids::IssuerID,
 };
 use protocol::{ManagedPlugin, Plugins};
 use tip_selection::TipSelection;
+use tracing::{Span, info_span};
 use virtual_voting::VirtualVotingConfig;
 
 pub struct BlockFactory<C: VirtualVotingConfig> {

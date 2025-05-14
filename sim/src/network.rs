@@ -1,12 +1,15 @@
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
-use tokio::sync::mpsc::{UnboundedSender, unbounded_channel};
-use tokio::sync::Mutex;
+use std::sync::{
+    Arc,
+    atomic::{AtomicUsize, Ordering},
+};
+
 use async_trait::async_trait;
+use common::{blocks::Block, networking, networking::Endpoint};
+use tokio::sync::{
+    Mutex,
+    mpsc::{UnboundedSender, unbounded_channel},
+};
 use tracing::trace;
-use common::blocks::Block;
-use common::networking;
-use common::networking::{Endpoint};
 
 type NodeId = usize;
 
@@ -34,7 +37,12 @@ impl networking::Network for Network {
                 let nodes = nodes.lock().await;
                 for (peer_id, peer_tx) in nodes.iter() {
                     if *peer_id != node_id {
-                        trace!("Sending block {} from peer {} to peer {}", block.id(), node_id, peer_id);
+                        trace!(
+                            "Sending block {} from peer {} to peer {}",
+                            block.id(),
+                            node_id,
+                            peer_id
+                        );
                         let _ = peer_tx.send(block.clone()); // ignore send failures
                     }
                 }

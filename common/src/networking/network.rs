@@ -1,4 +1,4 @@
-use crate::networking::{Endpoint};
+use crate::networking::Endpoint;
 
 #[async_trait::async_trait]
 pub trait Network: Send + Sync {

@@ -9,8 +9,11 @@ use common::{
 };
 use protocol::{ManagedPlugin, Plugins};
 use tip_selection::TipSelectionMetadata;
-use tokio::sync::{Mutex as AsyncMutex, mpsc::{UnboundedReceiver, unbounded_channel}};
-use tracing::{error, info_span, trace, Span};
+use tokio::sync::{
+    Mutex as AsyncMutex,
+    mpsc::{UnboundedReceiver, unbounded_channel},
+};
+use tracing::{Span, error, info_span, trace};
 
 pub struct Outbox {
     pub receiver: AsyncMutex<UnboundedReceiver<Block>>,

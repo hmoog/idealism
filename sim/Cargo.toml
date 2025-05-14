@@ -4,7 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+async-trait = "0.1.88"
 common = { path = "../common" }
+config = { path = "../protocol-plugins/config" }
+protocol = { path = "../protocol" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync"] }
 tracing = "0.1.41"
-async-trait = "0.1.88"
+validator = { path = "../protocol-plugins/validator" }

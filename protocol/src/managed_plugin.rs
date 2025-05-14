@@ -1,5 +1,7 @@
 use std::{pin::Pin, sync::Arc};
+
 use tracing::Span;
+
 use crate::{Plugin, Plugins};
 
 pub trait ManagedPlugin: Sized + Send + Sync {

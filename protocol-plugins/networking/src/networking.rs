@@ -1,14 +1,22 @@
-use std::sync::{Arc};
-use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
-use tokio::sync::{watch, Mutex};
-use tokio::sync::watch::Receiver;
-use tokio::task::JoinHandle;
-use tracing::{error, info_span, trace, Span};
-use common::blocks::Block;
-use common::networking::{Endpoint, Network};
+use std::sync::Arc;
+
+use common::{
+    blocks::Block,
+    networking::{Endpoint, Network},
+};
 use inbox::Inbox;
 use outbox::Outbox;
 use protocol::{ManagedPlugin, Plugins};
+use tokio::{
+    sync::{
+        Mutex,
+        mpsc::{UnboundedReceiver, UnboundedSender},
+        watch,
+        watch::Receiver,
+    },
+    task::JoinHandle,
+};
+use tracing::{Span, error, info_span, trace};
 
 pub struct Networking {
     inbox: Arc<Inbox>,
@@ -62,7 +70,8 @@ impl Networking {
 
     pub async fn disconnect(&self) {
         // wait for any previous workers to finish
-        if let Some((inbound_worker, outbound_worker, shutdown)) = self.workers.lock().await.take() {
+        if let Some((inbound_worker, outbound_worker, shutdown)) = self.workers.lock().await.take()
+        {
             drop(shutdown); // close the shutdown channel to signal workers to stop
 
             // wait for workers to finish
@@ -75,7 +84,11 @@ impl Networking {
         }
     }
 
-    pub fn new_inbound_worker(inbox: Arc<Inbox>, mut receiver: UnboundedReceiver<Block>, mut is_shutdown: Receiver<()>) -> JoinHandle<()> {
+    pub fn new_inbound_worker(
+        inbox: Arc<Inbox>,
+        mut receiver: UnboundedReceiver<Block>,
+        mut is_shutdown: Receiver<()>,
+    ) -> JoinHandle<()> {
         tokio::spawn(async move {
             loop {
                 tokio::select! {
@@ -92,7 +105,11 @@ impl Networking {
         })
     }
 
-    pub fn new_outbound_worker(outbox: Arc<Outbox>, sender: UnboundedSender<Block>, mut is_shutdown: Receiver<()>) -> JoinHandle<()> {
+    pub fn new_outbound_worker(
+        outbox: Arc<Outbox>,
+        sender: UnboundedSender<Block>,
+        mut is_shutdown: Receiver<()>,
+    ) -> JoinHandle<()> {
         tokio::spawn(async move {
             let mut outbox = outbox.receiver.lock().await;
             loop {

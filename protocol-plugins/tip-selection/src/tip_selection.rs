@@ -3,7 +3,7 @@ use std::{
     marker::PhantomData,
     sync::{Arc, Mutex, Weak},
 };
-use tracing::{info_span, Span};
+
 use block_dag::{BlockDAG, BlockDAGMetadata};
 use common::{
     blocks::BlockMetadata,
@@ -14,6 +14,7 @@ use common::{
     up, with,
 };
 use protocol::{ManagedPlugin, Plugins};
+use tracing::{Span, info_span};
 use virtual_voting::{VirtualVotingConfig, Vote};
 
 use crate::TipSelectionMetadata;

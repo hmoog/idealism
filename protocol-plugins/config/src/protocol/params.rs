@@ -1,6 +1,7 @@
 use std::{any::Any, sync::Arc};
+
 use common::collections::AnyMap;
-use protocol::{Plugins};
+use protocol::Plugins;
 
 use crate::{Config, ProtocolPlugins};
 

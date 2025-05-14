@@ -7,7 +7,7 @@ use common::{
 };
 use consensus::Consensus;
 use protocol::{ManagedPlugin, Plugins};
-use tracing::{info_span, trace, Span};
+use tracing::{Span, info_span, trace};
 use virtual_voting::{VirtualVotingConfig, Vote};
 
 use crate::ConsensusFeedEvent;

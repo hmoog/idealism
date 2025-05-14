@@ -2,7 +2,7 @@ use std::{
     collections::HashSet,
     sync::{Arc, Mutex, Weak},
 };
-use tracing::{info_span, Span};
+
 use block_dag::BlockDAG;
 use common::{
     bft::Member,
@@ -18,6 +18,7 @@ use common::{
 };
 use consensus::Consensus;
 use protocol::{ManagedPlugin, Plugins};
+use tracing::{Span, info_span};
 use virtual_voting::{Issuer, VirtualVotingConfig, Vote};
 
 pub struct ConsensusRound<C: VirtualVotingConfig> {

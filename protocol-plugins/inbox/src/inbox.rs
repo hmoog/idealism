@@ -10,7 +10,7 @@ use tokio::{
     sync::mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel},
     task,
 };
-use tracing::{Level, Span, debug, error, span, trace, info_span};
+use tracing::{Level, Span, debug, error, info_span, span, trace};
 
 pub struct Inbox {
     sender: RwLock<Option<UnboundedSender<Block>>>,

@@ -8,7 +8,7 @@ use common::{down, extensions::ArcExt, up, with};
 use consensus_round::ConsensusRound;
 use inbox::Inbox;
 use protocol::ManagedPlugin;
-use tracing::{error, info, info_span, Span};
+use tracing::{Span, error, info, info_span};
 
 use crate::config::ValidatorConfig;
 

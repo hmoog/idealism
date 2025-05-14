@@ -10,7 +10,7 @@ use common::{
     rx::{Event, Signal},
 };
 use protocol::{ManagedPlugin, Plugins};
-use tracing::{debug, info_span, trace, Span};
+use tracing::{Span, debug, info_span, trace};
 
 use crate::Address;
 
