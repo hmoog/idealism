@@ -45,14 +45,14 @@ impl ManagedPlugin for Inbox {
                 worker_handles.push((
                     task::spawn_blocking(with!(worker_span: down!(block_storage, rx: move || {
                         up!(block_storage, rx: worker_span.in_scope(|| {
-                            debug!(target: "inbox", "started");
+                            debug!("worker started");
                             while let Some(block) = rx.lock().unwrap().blocking_recv() {
                                 span!(parent: worker_span.clone(), Level::INFO, "block", id = %block.id()).in_scope(|| {
-                                    debug!(target: "inbox", "received");
+                                    debug!("block received");
                                     block_storage.insert(block);
                                 })
                             }
-                            debug!(target: "inbox", "stopped");
+                            debug!("worker stopped");
                         }))
                     })),
                     ),
@@ -62,14 +62,14 @@ impl ManagedPlugin for Inbox {
 
             for (worker_handle, worker_span) in worker_handles.into_iter() {
                 if let Err(e) = worker_handle.await {
-                    worker_span.in_scope(|| error!(target: "inbox", "panicked: {e}"))
+                    worker_span.in_scope(|| error!("worker panicked: {e}"))
                 }
             }
         }))
     }
 
     fn shutdown(&self) {
-        trace!(target: "inbox", "closing inbox");
+        trace!("closing inbox");
         self.sender.write().unwrap().take();
     }
 

@@ -15,7 +15,7 @@ pub trait ManagedPlugin: Sized + Send + Sync {
         // do nothing by default
     }
 
-    fn span(&self) -> tracing::Span;
+    fn span(&self) -> Span;
 }
 
 impl<T: ManagedPlugin> Plugin for T {

@@ -41,7 +41,7 @@ impl ManagedPlugin for BlockDAG {
     }
 
     fn shutdown(&self) {
-        trace!(target: "block_dag", "unsubscribing from BlockStorage");
+        trace!("shutting down");
         self.block_storage_subscription.lock().unwrap().take();
     }
 

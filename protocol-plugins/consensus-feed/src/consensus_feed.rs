@@ -65,7 +65,7 @@ impl<C: VirtualVotingConfig> ManagedPlugin for ConsensusFeed<C> {
     }
 
     fn shutdown(&self) {
-        trace!(target: "consensus_feed", "unsubscribing from Consensus");
+        trace!("unsubscribing from consensus");
         self.subscriptions.lock().unwrap().take();
     }
 

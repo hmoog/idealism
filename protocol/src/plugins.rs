@@ -27,7 +27,7 @@ impl Plugins {
         for (handle, async_span) in handles {
             match handle.await {
                 Ok(()) => (),
-                Err(e) => async_span.in_scope(|| error!(target: "plugins", "task panicked: {e}")),
+                Err(e) => async_span.in_scope(|| error!("task panicked: {e}")),
             }
         }
     }
@@ -44,7 +44,7 @@ impl Plugins {
         if let Some(existing) = self.instances.get::<Arc<U>>() {
             return existing.clone();
         }
-        instance.span().in_scope(|| debug!("provided"));
+        instance.span().in_scope(|| debug!("plugin provided"));
 
         self.instances.insert(instance.clone());
         self.trait_objects.push(instance.clone());
@@ -58,7 +58,7 @@ impl Plugins {
         }
 
         let instance = U::new(self);
-        instance.span().in_scope(|| debug!("loaded"));
+        instance.span().in_scope(|| debug!("plugin loaded"));
 
         self.instances.insert(instance.clone());
         self.trait_objects.push(instance.clone());

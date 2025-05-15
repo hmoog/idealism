@@ -33,9 +33,9 @@ impl ManagedPlugin for Outbox {
                     block.attach::<Arc<TipSelectionMetadata>>(with!(tx: down!(block: {
                         move |_| up!(block: {
                             if let Err(e) = tx.send(block.block.clone()) {
-                                error!(target: "outbox", "failed to send: {:?}", e);
+                                error!("failed to send block: {:?}", e);
                             } else {
-                                trace!(target: "outbox", "sent");
+                                trace!("forwarded block");
                             }
                         })
                     })))
@@ -46,7 +46,7 @@ impl ManagedPlugin for Outbox {
     }
 
     fn shutdown(&self) {
-        trace!(target: "outbox", "unsubscribing from BlockDAG");
+        trace!("unsubscribing from BlockDAG");
         self.block_dag_subscription.lock().unwrap().take();
     }
 

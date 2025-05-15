@@ -17,13 +17,13 @@ impl Protocol {
     }
 
     pub async fn start(&self) {
-        info!(target: "protocol", "started");
+        info!("starting protocol");
         self.plugins.start().await;
-        info!(target: "protocol", "stopped");
+        info!("stopped protocol");
     }
 
     pub fn shutdown(&self) {
-        info!(target: "protocol", "shutting down");
+        info!("shutting down protocol");
         self.plugins.shutdown();
     }
 }

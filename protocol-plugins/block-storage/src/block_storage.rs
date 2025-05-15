@@ -30,7 +30,7 @@ impl ManagedPlugin for BlockStorage {
     }
 
     fn start(&self) -> Option<Pin<Box<dyn Future<Output = ()> + Send>>> {
-        debug!(target: "block_storage", "issuing genesis block");
+        debug!("issuing genesis block");
         self.insert(GenesisBlock(Id::default()));
         None
     }
@@ -48,7 +48,7 @@ impl BlockStorage {
     pub fn insert(&self, block: Block) -> BlockMetadata {
         self.address(block.id())
             .get_or_insert_with(|| {
-                trace!(target: "block_storage", "new block metadata stored");
+                trace!("new block metadata stored");
                 BlockMetadata::new(block)
             })
             .clone()
@@ -70,7 +70,7 @@ impl BlockStorage {
             blocks
                 .entry(block_id.clone())
                 .or_insert_with(|| {
-                    trace!(target: "block_storage", "new address allocated for block");
+                    trace!("new address allocated for block");
                     is_new = true;
                     Arc::new(Signal::default())
                 })

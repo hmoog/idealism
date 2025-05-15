@@ -7,7 +7,8 @@ use tracing_subscriber::{EnvFilter, fmt};
 #[tokio::test]
 async fn test_protocol() {
     let _ = fmt()
-        .with_env_filter(EnvFilter::new("info"))
+        .with_target(false)
+        .with_env_filter(EnvFilter::new("trace"))
         .with_test_writer()
         .try_init();
 
