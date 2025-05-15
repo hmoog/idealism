@@ -10,3 +10,4 @@ protocol = { path = "../../protocol" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync"] }
 tip-selection = { path = "../tip-selection" }
 tracing = "0.1.41"
+async-trait = "0.1.88"

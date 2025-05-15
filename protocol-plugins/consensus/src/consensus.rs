@@ -1,5 +1,5 @@
 use std::sync::{Arc, Mutex, Weak};
-
+use async_trait::async_trait;
 use block_dag::{BlockDAG, BlockMetadataExt};
 use common::{
     bft::Committee,
@@ -28,6 +28,7 @@ pub struct Consensus<C: VirtualVotingConfig> {
     span: Span,
 }
 
+#[async_trait]
 impl<C: VirtualVotingConfig> ManagedPlugin for Consensus<C> {
     fn new(plugins: &mut Plugins) -> Arc<Self> {
         Arc::new_cyclic(|this: &Weak<Self>| {
@@ -53,7 +54,7 @@ impl<C: VirtualVotingConfig> ManagedPlugin for Consensus<C> {
         })
     }
 
-    fn shutdown(&self) {
+    async fn shutdown(&self) {
         self.block_dag_subscription.lock().unwrap().take();
     }
 

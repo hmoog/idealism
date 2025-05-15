@@ -2,7 +2,7 @@ use std::{
     collections::HashSet,
     sync::{Arc, Mutex, Weak},
 };
-
+use async_trait::async_trait;
 use block_dag::BlockDAG;
 use common::{
     bft::Member,
@@ -157,12 +157,13 @@ impl<C: VirtualVotingConfig> ConsensusRound<C> {
     }
 }
 
+#[async_trait]
 impl<C: VirtualVotingConfig> ManagedPlugin for ConsensusRound<C> {
     fn new(plugins: &mut Plugins) -> Arc<Self> {
         Arc::new_cyclic(|weak| Self::new(weak, plugins))
     }
 
-    fn shutdown(&self) {
+    async fn shutdown(&self) {
         self.shutdown();
     }
 

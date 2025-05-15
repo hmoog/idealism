@@ -1,5 +1,5 @@
 use std::sync::{Arc, Mutex, Weak};
-
+use async_trait::async_trait;
 use common::{
     bft::Committee,
     rx::{Callbacks, Event, Subscription},
@@ -18,6 +18,7 @@ pub struct ConsensusFeed<C: VirtualVotingConfig> {
     span: Span,
 }
 
+#[async_trait]
 impl<C: VirtualVotingConfig> ManagedPlugin for ConsensusFeed<C> {
     fn new(plugins: &mut Plugins) -> Arc<Self> {
         Arc::new_cyclic(|this: &Weak<ConsensusFeed<C>>| {
@@ -64,7 +65,7 @@ impl<C: VirtualVotingConfig> ManagedPlugin for ConsensusFeed<C> {
         })
     }
 
-    fn shutdown(&self) {
+    async fn shutdown(&self) {
         trace!("unsubscribing from consensus");
         self.subscriptions.lock().unwrap().take();
     }

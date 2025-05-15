@@ -1,7 +1,7 @@
-use std::pin::Pin;
-
+use async_trait::async_trait;
 use tracing::Span;
 
+#[async_trait]
 pub trait Plugin: Send + Sync {
     fn plugin_name(&self) -> &'static str {
         std::any::type_name::<Self>()
@@ -13,11 +13,9 @@ pub trait Plugin: Send + Sync {
             .unwrap()
     }
 
-    fn start(&self) -> Option<Pin<Box<dyn Future<Output = ()> + Send>>> {
-        None
-    }
+    async fn start(&self) {}
 
-    fn shutdown(&self) {}
+    async fn shutdown(&self) {}
 
     fn span(&self) -> Span;
 }

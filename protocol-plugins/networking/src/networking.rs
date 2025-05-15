@@ -1,5 +1,5 @@
 use std::sync::Arc;
-
+use async_trait::async_trait;
 use common::{
     blocks::Block,
     networking::{Endpoint, Network},
@@ -25,6 +25,7 @@ pub struct Networking {
     span: Span,
 }
 
+#[async_trait]
 impl ManagedPlugin for Networking {
     fn new(plugins: &mut Plugins) -> Arc<Self> {
         Arc::new(Self {
@@ -35,7 +36,7 @@ impl ManagedPlugin for Networking {
         })
     }
 
-    fn shutdown(&self) {
+    async fn shutdown(&self) {
         //
     }
 
@@ -47,11 +48,9 @@ impl ManagedPlugin for Networking {
 impl Networking {
     pub async fn connect<N: Network>(&self, network: &N) {
         let Endpoint { inbound, outbound } = network.endpoint().await;
-
         let mut workers = self.workers.lock().await;
         let _ = self.shutdown_workers(&mut workers).await;
 
-        // create new workers
         let (shutdown_signal, is_shutdown) = watch::channel(());
         *workers = Some((
             self.new_inbound_worker(self.inbox.clone(), inbound, is_shutdown.clone()),
@@ -123,10 +122,11 @@ impl Networking {
                 loop {
                     tokio::select! {
                         Some(block) = outbox.recv() => {
+                            let id = block.id().clone();
                             if let Err(e) = sender.send(block) {
-                                error!("failed to send block: {:?}", e);
+                                error!("failed to send block (id={:?}): {:?}", id, e);
                             } else {
-                                trace!("sent block");
+                                trace!("sent block (id={:?})", id);
                             }
                         },
                         _ = is_shutdown.changed() => break, // channel closed = shutdown

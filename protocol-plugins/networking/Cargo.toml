@@ -10,3 +10,4 @@ outbox = { path = "../outbox" }
 protocol = { path = "../../protocol" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync"] }
 tracing = "0.1.41"
+async-trait = "0.1.88"

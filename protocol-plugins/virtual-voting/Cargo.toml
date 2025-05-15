@@ -10,6 +10,7 @@ common = { path = "../../common" }
 zero = { path = "../../zero" }
 thiserror = "2.0.12"
 tracing = "0.1.41"
+async-trait = "0.1.88"
 
 [dev-dependencies]
 config = { path = "../config" }

@@ -1,8 +1,7 @@
 use std::{
-    pin::Pin,
     sync::{Arc, Mutex, RwLock},
 };
-
+use async_trait::async_trait;
 use block_storage::BlockStorage;
 use common::{blocks::Block, down, extensions::ArcExt, up, with};
 use protocol::{ManagedPlugin, Plugins};
@@ -10,7 +9,8 @@ use tokio::{
     sync::mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel},
     task,
 };
-use tracing::{Level, Span, debug, error, info_span, span, trace};
+use tokio::task::JoinHandle;
+use tracing::{Span, debug, error, info_span, trace, Instrument};
 
 pub struct Inbox {
     sender: RwLock<Option<UnboundedSender<Block>>>,
@@ -18,8 +18,10 @@ pub struct Inbox {
     num_workers: usize,
     block_storage: Arc<BlockStorage>,
     span: Span,
+    worker_handles: tokio::sync::Mutex<Option<Vec<JoinHandle<()>>>>,
 }
 
+#[async_trait]
 impl ManagedPlugin for Inbox {
     fn new(plugins: &mut Plugins) -> Arc<Self> {
         let (tx, rx) = unbounded_channel();
@@ -29,46 +31,44 @@ impl ManagedPlugin for Inbox {
             num_workers: 2,
             block_storage: plugins.load(),
             span: info_span!("inbox"),
+            worker_handles: tokio::sync::Mutex::new(None),
         })
     }
 
-    fn start(&self) -> Option<Pin<Box<dyn Future<Output = ()> + Send>>> {
+    async fn start(&self) {
         let num_workers = self.num_workers;
         let block_storage = self.block_storage.clone();
         let rx = Arc::clone(&self.receiver);
-        let span = self.span();
 
-        Some(Box::pin(async move {
-            let mut worker_handles = Vec::new();
-            for i in 0..num_workers {
-                let worker_span = span!(parent: span.clone(), Level::INFO, "worker", id = i);
-                worker_handles.push((
-                    task::spawn_blocking(with!(worker_span: down!(block_storage, rx: move || {
-                        up!(block_storage, rx: worker_span.in_scope(|| {
-                            debug!("worker started");
-                            while let Some(block) = rx.lock().unwrap().blocking_recv() {
-                                span!(parent: worker_span.clone(), Level::INFO, "block", id = %block.id()).in_scope(|| {
-                                    debug!("block received");
-                                    block_storage.insert(block);
-                                })
-                            }
-                            debug!("worker stopped");
-                        }))
-                    })),
-                    ),
-                    worker_span,
-                ));
-            }
+        let mut worker_handles = Vec::new();
+        for i in 0..num_workers {
+            let handle = tokio::spawn(with!(block_storage, rx: async move {
+                let worker_span = Span::current();
+                let worker_task = task::spawn_blocking(with!(worker_span: down!(block_storage, rx: move || {
+                    up!(block_storage, rx: worker_span.in_scope(|| {
+                        debug!("worker started");
+                        while let Some(block) = rx.lock().unwrap().blocking_recv() {
+                            info_span!("block", id = %block.id()).in_scope(|| {
+                                debug!("block received");
+                                block_storage.insert(block);
+                            })
+                        }
+                        debug!("worker stopped");
+                    }))
+                })));
 
-            for (worker_handle, worker_span) in worker_handles.into_iter() {
-                if let Err(e) = worker_handle.await {
-                    worker_span.in_scope(|| error!("worker panicked: {e}"))
+                if let Err(e) = worker_task.await {
+                    error!("worker panicked: {e}");
                 }
-            }
-        }))
+            }).instrument(info_span!("worker", id = i)));
+
+            worker_handles.push(handle);
+        }
+
+        *self.worker_handles.lock().await = Some(worker_handles);
     }
 
-    fn shutdown(&self) {
+    async fn shutdown(&self) {
         trace!("closing inbox");
         self.sender.write().unwrap().take();
     }

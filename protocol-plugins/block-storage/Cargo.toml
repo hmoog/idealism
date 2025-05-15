@@ -7,3 +7,4 @@ edition = "2024"
 common = { path = "../../common" }
 protocol = { path = "../../protocol" }
 tracing = "0.1.41"
+async-trait = "0.1.88"

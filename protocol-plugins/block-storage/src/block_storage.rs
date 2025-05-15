@@ -1,9 +1,8 @@
 use std::{
     collections::HashMap,
-    pin::Pin,
     sync::{Arc, Mutex},
 };
-
+use async_trait::async_trait;
 use common::{
     blocks::{Block, Block::GenesisBlock, BlockMetadata},
     ids::{BlockID, Id},
@@ -20,6 +19,7 @@ pub struct BlockStorage {
     span: Span,
 }
 
+#[async_trait]
 impl ManagedPlugin for BlockStorage {
     fn new(_: &mut Plugins) -> Arc<Self> {
         Arc::new(Self {
@@ -29,13 +29,12 @@ impl ManagedPlugin for BlockStorage {
         })
     }
 
-    fn start(&self) -> Option<Pin<Box<dyn Future<Output = ()> + Send>>> {
+    async fn start(&self) {
         debug!("issuing genesis block");
         self.insert(GenesisBlock(Id::default()));
-        None
     }
 
-    fn shutdown(&self) {
+    async fn shutdown(&self) {
         self.blocks.lock().unwrap().clear();
     }
 

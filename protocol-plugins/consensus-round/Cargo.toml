@@ -10,3 +10,4 @@ protocol = { path = "../../protocol" }
 common = { path = "../../common" }
 tracing = "0.1.41"
 virtual-voting = { path = "../virtual-voting" }
+async-trait = "0.1.88"

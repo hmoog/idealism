@@ -22,8 +22,8 @@ impl Protocol {
         info!("stopped protocol");
     }
 
-    pub fn shutdown(&self) {
+    pub async fn shutdown(&self) {
         info!("shutting down protocol");
-        self.plugins.shutdown();
+        self.plugins.shutdown().await;
     }
 }

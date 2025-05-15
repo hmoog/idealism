@@ -1,6 +1,6 @@
 use std::{ops::Deref, sync::Arc};
 
-use common::{extensions::ArcExt, ids::IssuerID, up};
+use common::{ids::IssuerID};
 use config::{Config, ProtocolParams, ProtocolPlugins};
 use protocol::{Protocol, ProtocolConfig};
 use tracing::{Instrument, Span};
@@ -35,17 +35,9 @@ impl Node {
     }
 
     pub async fn run_for(self, duration: std::time::Duration) {
-        let protocol = self.protocol.downgrade();
-        tokio::spawn(
-            async move {
-                up!(protocol: {
-                    tokio::time::sleep(duration).await;
-                    protocol.shutdown();
-                });
-            }
-            .instrument(self.span.clone()),
-        );
-        self.protocol.start().instrument(self.span.clone()).await;
+        self.start().instrument(self.span.clone()).await;
+        tokio::time::sleep(duration).await;
+        self.shutdown().await;
     }
 }
 

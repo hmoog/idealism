@@ -3,7 +3,7 @@ use std::{
     marker::PhantomData,
     sync::{Arc, Mutex, Weak},
 };
-
+use async_trait::async_trait;
 use block_dag::{BlockDAG, BlockDAGMetadata};
 use common::{
     blocks::BlockMetadata,
@@ -26,6 +26,7 @@ pub struct TipSelection<C: VirtualVotingConfig> {
     _marker: PhantomData<C>,
 }
 
+#[async_trait]
 impl<C: VirtualVotingConfig> ManagedPlugin for TipSelection<C> {
     fn new(plugins: &mut Plugins) -> Arc<Self> {
         Arc::new_cyclic(|this: &Weak<Self>| {
@@ -46,7 +47,7 @@ impl<C: VirtualVotingConfig> ManagedPlugin for TipSelection<C> {
         })
     }
 
-    fn shutdown(&self) {
+    async fn shutdown(&self) {
         self.block_dag_subscription.lock().unwrap().take();
     }
 

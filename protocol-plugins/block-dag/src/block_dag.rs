@@ -1,5 +1,5 @@
 use std::sync::{Arc, Mutex, Weak};
-
+use async_trait::async_trait;
 use block_storage::{Address, BlockStorage};
 use common::{
     blocks::BlockMetadata,
@@ -20,6 +20,7 @@ pub struct BlockDAG {
     span: Span,
 }
 
+#[async_trait]
 impl ManagedPlugin for BlockDAG {
     fn new(plugins: &mut Plugins) -> Arc<Self> {
         Arc::new_cyclic(|this: &Weak<Self>| {
@@ -40,7 +41,7 @@ impl ManagedPlugin for BlockDAG {
         })
     }
 
-    fn shutdown(&self) {
+    async fn shutdown(&self) {
         trace!("shutting down");
         self.block_storage_subscription.lock().unwrap().take();
     }

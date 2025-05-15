@@ -1,7 +1,7 @@
 use std::{any::Any, sync::Arc};
 
 use common::collections::AnyMap;
-use tracing::{Instrument, Level, debug, error, span};
+use tracing::{Instrument, debug};
 
 use crate::{ManagedPlugin, Plugin};
 
@@ -13,30 +13,14 @@ pub struct Plugins {
 
 impl Plugins {
     pub async fn start(&self) {
-        let mut handles = Vec::new();
-
-        for instance in self.iter() {
-            instance.span().in_scope(|| {
-                if let Some(fut) = span!(Level::INFO, "startup").in_scope(|| instance.start()) {
-                    let async_span = span!(Level::INFO, "async");
-                    handles.push((tokio::spawn(fut.instrument(async_span.clone())), async_span));
-                }
-            });
-        }
-
-        for (handle, async_span) in handles {
-            match handle.await {
-                Ok(()) => (),
-                Err(e) => async_span.in_scope(|| error!("task panicked: {e}")),
-            }
+        for plugin in self.iter() {
+            plugin.start().instrument(plugin.span()).await;
         }
     }
 
-    pub fn shutdown(&self) {
+    pub async fn shutdown(&self) {
         for plugin in self.iter().rev() {
-            plugin
-                .span()
-                .in_scope(|| span!(Level::INFO, "shutdown").in_scope(|| plugin.shutdown()))
+            plugin.shutdown().instrument(plugin.span()).await;
         }
     }
 

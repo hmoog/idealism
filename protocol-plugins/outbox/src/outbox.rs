@@ -1,5 +1,5 @@
 use std::sync::{Arc, Mutex};
-
+use async_trait::async_trait;
 use block_dag::BlockDAG;
 use common::{
     blocks::{Block, BlockMetadata},
@@ -21,6 +21,7 @@ pub struct Outbox {
     span: Span,
 }
 
+#[async_trait]
 impl ManagedPlugin for Outbox {
     fn new(plugins: &mut Plugins) -> Arc<Self> {
         let block_dag = plugins.load::<BlockDAG>();
@@ -45,7 +46,7 @@ impl ManagedPlugin for Outbox {
         })
     }
 
-    fn shutdown(&self) {
+    async fn shutdown(&self) {
         trace!("unsubscribing from BlockDAG");
         self.block_dag_subscription.lock().unwrap().take();
     }
