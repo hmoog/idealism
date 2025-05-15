@@ -10,7 +10,7 @@ use common::{
     up, with,
 };
 use protocol::{ManagedPlugin, Plugins};
-use tracing::{Span, info_span, trace};
+use tracing::{Span, info, info_span, trace};
 
 use crate::BlockDAGMetadata;
 
@@ -45,6 +45,7 @@ impl ManagedPlugin for BlockDAG {
     async fn shutdown(&self) {
         trace!("shutting down");
         self.block_storage_subscription.lock().unwrap().take();
+        info!("stopped");
     }
 
     fn span(&self) -> Span {

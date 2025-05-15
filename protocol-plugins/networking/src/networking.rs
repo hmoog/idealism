@@ -38,7 +38,7 @@ impl ManagedPlugin for Networking {
     }
 
     async fn shutdown(&self) {
-        //
+        self.disconnect().await;
     }
 
     fn span(&self) -> Span {
@@ -50,7 +50,7 @@ impl Networking {
     pub async fn connect<N: Network>(&self, network: &N) {
         let Endpoint { inbound, outbound } = network.endpoint().await;
         let mut workers = self.workers.lock().await;
-        let _ = self.shutdown_workers(&mut workers).await;
+        self.shutdown_workers(&mut workers).await;
 
         let (shutdown_signal, is_shutdown) = watch::channel(());
         *workers = Some((
@@ -61,7 +61,7 @@ impl Networking {
     }
 
     pub async fn disconnect(&self) {
-        let _ = self.shutdown_workers(&mut self.workers.lock().await).await;
+        self.shutdown_workers(&mut self.workers.lock().await).await;
     }
 
     async fn shutdown_workers(

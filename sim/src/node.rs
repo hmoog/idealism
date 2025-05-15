@@ -37,7 +37,7 @@ impl Node {
     pub async fn run_for(self, duration: std::time::Duration) {
         self.start().instrument(self.span.clone()).await;
         tokio::time::sleep(duration).await;
-        self.shutdown().await;
+        self.shutdown().instrument(self.span.clone()).await;
     }
 }
 

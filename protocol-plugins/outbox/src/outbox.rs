@@ -14,7 +14,7 @@ use tokio::sync::{
     Mutex as AsyncMutex,
     mpsc::{UnboundedReceiver, unbounded_channel},
 };
-use tracing::{Span, error, info_span, trace};
+use tracing::{Span, error, info, info_span, trace};
 
 pub struct Outbox {
     pub receiver: AsyncMutex<UnboundedReceiver<Block>>,
@@ -48,8 +48,9 @@ impl ManagedPlugin for Outbox {
     }
 
     async fn shutdown(&self) {
-        trace!("unsubscribing from BlockDAG");
+        trace!("shutting down");
         self.block_dag_subscription.lock().unwrap().take();
+        info!("stopped");
     }
 
     fn span(&self) -> Span {

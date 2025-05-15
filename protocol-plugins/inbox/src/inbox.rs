@@ -9,7 +9,7 @@ use tokio::{
     task,
     task::JoinHandle,
 };
-use tracing::{Instrument, Span, debug, error, info_span, trace};
+use tracing::{Instrument, Span, debug, error, info, info_span, trace};
 
 pub struct Inbox {
     sender: RwLock<Option<UnboundedSender<Block>>>,
@@ -68,8 +68,15 @@ impl ManagedPlugin for Inbox {
     }
 
     async fn shutdown(&self) {
-        trace!("closing inbox");
+        trace!("shutting down");
         self.sender.write().unwrap().take();
+
+        if let Some(worker_handles) = self.worker_handles.lock().await.take() {
+            for worker in worker_handles {
+                let _ = worker.await;
+            }
+        }
+        info!("stopped");
     }
 
     fn span(&self) -> Span {
