@@ -1,4 +1,5 @@
 use std::sync::{Arc, Mutex, Weak};
+
 use async_trait::async_trait;
 use block_dag::{BlockDAG, BlockMetadataExt};
 use common::{

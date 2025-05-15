@@ -2,6 +2,7 @@ use std::{
     collections::HashSet,
     sync::{Arc, Mutex, Weak},
 };
+
 use async_trait::async_trait;
 use block_dag::BlockDAG;
 use common::{

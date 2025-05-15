@@ -2,6 +2,7 @@ use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
 };
+
 use async_trait::async_trait;
 use common::{
     blocks::{Block, Block::GenesisBlock, BlockMetadata},

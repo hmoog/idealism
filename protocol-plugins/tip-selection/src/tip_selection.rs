@@ -3,6 +3,7 @@ use std::{
     marker::PhantomData,
     sync::{Arc, Mutex, Weak},
 };
+
 use async_trait::async_trait;
 use block_dag::{BlockDAG, BlockDAGMetadata};
 use common::{

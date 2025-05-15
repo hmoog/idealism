@@ -1,6 +1,6 @@
 use std::{ops::Deref, sync::Arc};
 
-use common::{ids::IssuerID};
+use common::ids::IssuerID;
 use config::{Config, ProtocolParams, ProtocolPlugins};
 use protocol::{Protocol, ProtocolConfig};
 use tracing::{Instrument, Span};

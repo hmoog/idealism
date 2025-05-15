@@ -1,6 +1,5 @@
-use std::{
-    sync::{Arc, Mutex, RwLock},
-};
+use std::sync::{Arc, Mutex, RwLock};
+
 use async_trait::async_trait;
 use block_storage::BlockStorage;
 use common::{blocks::Block, down, extensions::ArcExt, up, with};
@@ -8,9 +7,9 @@ use protocol::{ManagedPlugin, Plugins};
 use tokio::{
     sync::mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel},
     task,
+    task::JoinHandle,
 };
-use tokio::task::JoinHandle;
-use tracing::{Span, debug, error, info_span, trace, Instrument};
+use tracing::{Instrument, Span, debug, error, info_span, trace};
 
 pub struct Inbox {
     sender: RwLock<Option<UnboundedSender<Block>>>,
