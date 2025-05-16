@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use common::{
     blocks::Block,
     networking::{Endpoint, Network},
+    traced,
 };
 use inbox::Inbox;
 use outbox::Outbox;
@@ -17,7 +18,7 @@ use tokio::{
     },
     task::JoinHandle,
 };
-use tracing::{Instrument, Level, Span, error, info, info_span, span, trace};
+use tracing::{Level, Span, error, info_span, span, trace};
 
 pub struct Networking {
     inbox: Arc<Inbox>,
@@ -54,8 +55,8 @@ impl Networking {
 
         let (shutdown_signal, is_shutdown) = watch::channel(());
         *workers = Some((
-            self.new_inbound_worker(self.inbox.clone(), inbound, is_shutdown.clone()),
-            self.new_outbound_worker(self.outbox.clone(), outbound, is_shutdown.clone()),
+            self.inbound_worker(inbound, is_shutdown.clone()),
+            self.outbound_worker(outbound, is_shutdown.clone()),
             shutdown_signal,
         ));
     }
@@ -70,55 +71,46 @@ impl Networking {
     ) {
         if let Some((inbound_worker, outbound_worker, shutdown)) = workers.take() {
             drop(shutdown); // close the shutdown channel to signal workers to stop
-
             // wait for workers to finish
-            if let Err(e) = inbound_worker.await {
-                span!(parent: self.span.clone(), Level::INFO, "inbound")
-                    .in_scope(|| error!("worker panicked: {:?}", e));
-            }
-            if let Err(e) = outbound_worker.await {
-                span!(parent: self.span.clone(), Level::INFO, "outbound")
-                    .in_scope(|| error!("worker panicked: {:?}", e));
-            }
+            let _ = inbound_worker.await;
+            let _ = outbound_worker.await;
         }
     }
 
-    fn new_inbound_worker(
+    fn inbound_worker(
         &self,
-        inbox: Arc<Inbox>,
         mut receiver: UnboundedReceiver<Block>,
         mut is_shutdown: Receiver<()>,
     ) -> JoinHandle<()> {
-        tokio::spawn(
+        let inbox = self.inbox.clone();
+        traced::worker(
             async move {
-                info!("worker started");
                 loop {
                     tokio::select! {
                         Some(block) = receiver.recv() => {
+                            let id = block.id().clone();
                             if let Err(e) = inbox.send(block) {
-                                error!("failed to receive block: {:?}", e);
+                                error!("failed to receive block (id={:?}): {:?}", id, e);
                             } else {
-                                trace!("received block");
+                                trace!("received block (id={:?})", id);
                             }
                         },
                         _ = is_shutdown.changed() => break, // channel closed = shutdown
                     }
                 }
-                info!("worker stopped");
-            }
-            .instrument(span!(parent: self.span.clone(), Level::INFO, "inbound")),
+            },
+            span!(parent: self.span.clone(), Level::INFO, "inbound"),
         )
     }
 
-    fn new_outbound_worker(
+    fn outbound_worker(
         &self,
-        outbox: Arc<Outbox>,
         sender: UnboundedSender<Block>,
         mut is_shutdown: Receiver<()>,
     ) -> JoinHandle<()> {
-        tokio::spawn(
+        let outbox = self.outbox.clone();
+        traced::worker(
             async move {
-                info!("worker started");
                 let mut outbox = outbox.receiver.lock().await;
                 loop {
                     tokio::select! {
@@ -133,9 +125,8 @@ impl Networking {
                         _ = is_shutdown.changed() => break, // channel closed = shutdown
                     }
                 }
-                info!("worker stopped");
-            }
-            .instrument(span!(parent: self.span.clone(), Level::INFO, "outbound")),
+            },
+            span!(parent: self.span.clone(), Level::INFO, "outbound"),
         )
     }
 }

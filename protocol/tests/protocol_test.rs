@@ -21,7 +21,7 @@ async fn test_protocol() {
 
     let network = Network::default();
 
-    let mut run_handles = Vec::new();
+    let mut node_handles = Vec::new();
     for node in nodes {
         let _ = node
             .plugins
@@ -30,12 +30,12 @@ async fn test_protocol() {
             .connect(&network)
             .await;
 
-        run_handles.push(tokio::spawn(
+        node_handles.push(tokio::spawn(
             node.run_for(std::time::Duration::from_secs(1)),
         ));
     }
 
-    for handle in run_handles {
-        let _ = handle.await;
+    for node in node_handles {
+        let _ = node.await;
     }
 }
